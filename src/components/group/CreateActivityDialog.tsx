@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Camera, ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +48,41 @@ export const CreateActivityDialog = ({
     ? getSubjectsByGroup(selectedGroup)
     : [];
 
+  // Calculate points based on activity content
+  const calculatedPoints = useMemo(() => {
+    let points = 0;
+    
+    // Photo: +5 points (base)
+    if (selectedPhoto) {
+      points += 5;
+    }
+    
+    // Description: 2-8 points based on length
+    const descLength = description.trim().length;
+    if (descLength > 0 && descLength <= 50) {
+      points += 2;
+    } else if (descLength > 50 && descLength <= 150) {
+      points += 5;
+    } else if (descLength > 150) {
+      points += 8;
+    }
+    
+    // Subject selected: +5 points
+    if (selectedSubject) {
+      points += 5;
+    }
+    
+    return points;
+  }, [selectedPhoto, description, selectedSubject]);
+
+  const getDescriptionPoints = () => {
+    const len = description.trim().length;
+    if (len === 0) return 0;
+    if (len <= 50) return 2;
+    if (len <= 150) return 5;
+    return 8;
+  };
+
   const handlePhotoSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -91,7 +126,8 @@ export const CreateActivityDialog = ({
       targetGroup,
       selectedPhoto,
       description,
-      selectedSubject || undefined
+      selectedSubject || undefined,
+      calculatedPoints
     );
 
     if (result.success) {
@@ -216,13 +252,52 @@ export const CreateActivityDialog = ({
             </p>
           </div>
 
+          {/* Points Preview */}
+          <div className="p-3 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                Pontos que você ganhará:
+              </span>
+              <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                +{calculatedPoints}
+              </span>
+            </div>
+            
+            <div className="space-y-1 text-xs text-amber-700 dark:text-amber-300">
+              <div className="flex justify-between">
+                <span>📷 Foto</span>
+                <span className={selectedPhoto ? 'text-green-600 dark:text-green-400 font-medium' : 'text-muted-foreground'}>
+                  {selectedPhoto ? '+5' : '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>📝 Descrição {description.length > 0 && `(${description.trim().length} chars)`}</span>
+                <span className={getDescriptionPoints() > 0 ? 'text-green-600 dark:text-green-400 font-medium' : 'text-muted-foreground'}>
+                  {getDescriptionPoints() === 0 ? '—' : `+${getDescriptionPoints()}`}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>📚 Matéria</span>
+                <span className={selectedSubject ? 'text-green-600 dark:text-green-400 font-medium' : 'text-muted-foreground'}>
+                  {selectedSubject ? '+5' : '—'}
+                </span>
+              </div>
+            </div>
+            
+            {calculatedPoints < 18 && (
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-2 italic">
+                💡 Dica: descrições longas (+150 chars) e selecionar matéria dão mais pontos!
+              </p>
+            )}
+          </div>
+
           {/* Submit Button */}
           <Button
             className="w-full"
             onClick={handleSubmit}
             disabled={uploading || !selectedPhoto || !description.trim()}
           >
-            {uploading ? 'Enviando...' : 'Publicar Atividade (+10 pontos)'}
+            {uploading ? 'Enviando...' : `Publicar Atividade (+${calculatedPoints} pontos)`}
           </Button>
         </div>
       </DialogContent>

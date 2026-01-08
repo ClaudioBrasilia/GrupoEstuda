@@ -183,7 +183,8 @@ export const useStudyActivities = (groupId?: string) => {
     targetGroupId: string,
     photo: File,
     description: string,
-    subjectId?: string
+    subjectId?: string,
+    points: number = 10
   ) => {
     if (!user) {
       console.error('❌ Erro: Usuário não autenticado');
@@ -252,7 +253,7 @@ export const useStudyActivities = (groupId?: string) => {
           subject_id: subjectId || null,
           description,
           photo_path: fileName,
-          points_earned: 10,
+          points_earned: points,
         })
         .select()
         .single();
@@ -269,7 +270,7 @@ export const useStudyActivities = (groupId?: string) => {
       const { error: pointsError } = await supabase.rpc('add_user_points', {
         p_user_id: user.id,
         p_group_id: targetGroupId,
-        p_points: 10,
+        p_points: points,
       });
 
       if (pointsError) {
@@ -279,7 +280,7 @@ export const useStudyActivities = (groupId?: string) => {
         console.log('✅ Pontos adicionados com sucesso');
       }
 
-      toast.success('Atividade criada com sucesso! +10 pontos');
+      toast.success(`Atividade criada com sucesso! +${points} pontos`);
       console.log('✅ Atividade criada com sucesso!');
 
       // Refresh activities
