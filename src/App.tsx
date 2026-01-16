@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Plans from "./pages/subscription/Plans";
+import MyPlan from "./pages/subscription/MyPlan";
 import TestGenerator from "./pages/premium/TestGenerator";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -67,6 +68,7 @@ const App = () => {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
             <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+            <Route path="/my-plan" element={<ProtectedRoute><MyPlan /></ProtectedRoute>} />
             <Route path="/generate-test" element={<ProtectedRoute><TestGenerator /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

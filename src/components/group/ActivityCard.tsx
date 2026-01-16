@@ -8,9 +8,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
 interface ActivityCardProps {
-  activity: StudyActivity;
+  activity: StudyActivity & { user_plan?: string };
   onLike: (activityId: string) => void;
   onDelete: (activityId: string) => void;
   compact?: boolean;
@@ -51,7 +52,12 @@ export const ActivityCard = ({
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">{activity.user_name}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium">{activity.user_name}</p>
+                {activity.user_plan === 'premium' && (
+                  <PremiumBadge size="sm" />
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{timeAgo}</p>
             </div>
           </div>
