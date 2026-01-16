@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { useLeaderboardData } from '@/hooks/useLeaderboardData';
+import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
 const Leaderboard: React.FC = () => {
   const { t } = useTranslation();
@@ -145,9 +146,10 @@ const Leaderboard: React.FC = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium flex items-center gap-1.5">
                           {user.name}
-                          {user.isCurrentUser && <span className="text-xs ml-2 text-primary">(Você)</span>}
+                          {(user as any).plan === 'premium' && <PremiumBadge size="sm" />}
+                          {user.isCurrentUser && <span className="text-xs ml-1 text-primary">(Você)</span>}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {user.points} pontos

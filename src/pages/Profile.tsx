@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Trophy, Book, Calendar, Award, Bell, Settings } from 'lucide-react';
+import { Trophy, Book, Calendar, Award, Bell, Settings, Crown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
@@ -11,14 +11,18 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { useProfileData } from '@/hooks/useProfileData';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { AchievementsGrid } from '@/components/profile/AchievementsGrid';
+import { useAuth } from '@/context/AuthContext';
+import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
 const Profile: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { profileStats, loading } = useProfileData();
   const { achievements } = useAchievements();
   const { preferences, loading: preferencesLoading, updatePreference } = useUserPreferences();
@@ -71,7 +75,16 @@ const Profile: React.FC = () => {
             <Settings size={20} />
           </Button>
         </div>
-        <h2 className="text-2xl font-bold">{profileStats?.name || 'Usuário'}</h2>
+        <div className="flex items-center justify-center gap-2">
+          <h2 className="text-2xl font-bold">{profileStats?.name || 'Usuário'}</h2>
+          {user?.plan === 'premium' && <PremiumBadge size="lg" />}
+        </div>
+        {user?.plan === 'premium' && (
+          <Badge className="bg-gradient-to-r from-amber-400 to-yellow-500 text-white mb-1">
+            <Crown className="h-3 w-3 mr-1" />
+            Premium
+          </Badge>
+        )}
         <div className="text-muted-foreground mb-2">{t('profile.level')} {profileStats?.level || 1} {t('profile.scholar')}</div>
         
         <div className="flex items-center justify-center space-x-3 mb-4">

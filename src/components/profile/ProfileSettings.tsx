@@ -247,7 +247,7 @@ const ProfileSettings: React.FC = () => {
               )}
             </div>
             
-            <Link to="/plans">
+            <Link to="/my-plan">
               <Button className="w-full bg-study-primary">
                 {user?.plan === 'premium' ? t('profile.settings.manageSubscription') : t('profile.settings.managePlans')}
               </Button>
