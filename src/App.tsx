@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { ThemeProvider } from "next-themes";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { TimerProvider } from "./context/TimerContext";
 import Home from "./pages/Home";
@@ -44,12 +45,13 @@ const App = () => {
   
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TimerProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <QueryClientProvider client={queryClient}>
+          <TimerProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
@@ -72,10 +74,11 @@ const App = () => {
             <Route path="/generate-test" element={<ProtectedRoute><TestGenerator /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-        </TimerProvider>
-      </QueryClientProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+          </TimerProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 };

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { LanguagesIcon, UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -62,8 +63,9 @@ const AppHeader: React.FC = () => {
       <h1 className="text-xl font-bold text-center bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent flex-1">{title}</h1>
       
       <div className="flex items-center gap-2 flex-1 justify-end">
-        {user && <NotificationBell />}
+        <ThemeToggle />
         
+        {user && <NotificationBell />}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/10 transition-smooth">
