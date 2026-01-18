@@ -9,7 +9,7 @@ interface PageLayoutProps {
 
 const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col bg-study-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <AppHeader />
       <main className="flex-1 pb-16 px-4 pt-4 mb-2">
         {children}
