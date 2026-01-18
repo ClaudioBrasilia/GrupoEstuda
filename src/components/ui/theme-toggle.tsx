@@ -56,7 +56,7 @@ export function ThemeSelector() {
         <Button
           key={value}
           variant={theme === value ? "default" : "outline"}
-          className={`flex-1 gap-2 ${theme === value ? "bg-study-primary" : ""}`}
+          className="flex-1 gap-2"
           onClick={() => setTheme(value)}
         >
           <Icon className="h-4 w-4" />

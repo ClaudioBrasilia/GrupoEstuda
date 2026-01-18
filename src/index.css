@@ -108,11 +108,11 @@
 
   /* Custom styles for the app */
   .nav-link {
-    @apply flex flex-col items-center justify-center p-2 text-study-lightText hover:text-study-primary transition-colors;
+    @apply flex flex-col items-center justify-center p-2 text-muted-foreground hover:text-primary transition-colors;
   }
 
   .nav-link.active {
-    @apply text-study-primary;
+    @apply text-primary;
   }
 
   .progress-bar {
@@ -120,7 +120,7 @@
   }
 
   .progress-bar-fill {
-    @apply h-full bg-study-primary rounded-full animate-progress-fill;
+    @apply h-full bg-primary rounded-full animate-progress-fill;
   }
 
   .card {
@@ -128,14 +128,14 @@
   }
 
   .btn-primary {
-    @apply bg-study-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all;
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all;
   }
 
   .btn-secondary {
-    @apply bg-study-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all;
+    @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all;
   }
 
   .btn-outline {
-    @apply border border-study-primary text-study-primary px-4 py-2 rounded-lg hover:bg-study-primary hover:text-primary-foreground transition-all;
+    @apply border border-primary text-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-primary-foreground transition-all;
   }
 }
