@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
 
@@ -9,15 +8,27 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
   const [show, setShow] = useState(true);
+  const onFinishedRef = useRef(onFinished);
+
+  // Keep ref updated
+  useEffect(() => {
+    onFinishedRef.current = onFinished;
+  }, [onFinished]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setShow(false);
-      setTimeout(onFinished, 300); // Allow exit animation to complete
-    }, 1000); // Reduced from 2000ms to 1000ms
+    }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [onFinished]);
+    const finishTimer = setTimeout(() => {
+      onFinishedRef.current();
+    }, 1300); // 1000ms display + 300ms exit animation
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(finishTimer);
+    };
+  }, []); // Empty deps - run once
 
   return (
     <AnimatePresence>
