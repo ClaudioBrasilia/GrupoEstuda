@@ -43,17 +43,22 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   useEffect(() => {
     let isMounted = true;
+    let initialSessionHandled = false;
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event, currentSession) => {
         if (!isMounted) return;
         
-        setSession(session);
+        // Skip if this is the initial session and we already handled it
+        if (event === 'INITIAL_SESSION') {
+          initialSessionHandled = true;
+        }
         
-        if (session?.user) {
-          // Fetch profile and wait for it before setting loading to false
-          await fetchUserProfile(session.user.id, session.user.email!);
+        setSession(currentSession);
+        
+        if (currentSession?.user) {
+          await fetchUserProfile(currentSession.user.id, currentSession.user.email!);
         } else {
           setUser(null);
         }
@@ -64,24 +69,23 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       }
     );
 
-    // THEN check for existing session
-    const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!isMounted) return;
-      
-      setSession(session);
-      if (session?.user) {
-        await fetchUserProfile(session.user.id, session.user.email!);
-      }
-      if (isMounted) {
+    // Fallback: If onAuthStateChange doesn't fire INITIAL_SESSION quickly, check manually
+    const timeout = setTimeout(async () => {
+      if (!initialSessionHandled && isMounted) {
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        
+        setSession(existingSession);
+        if (existingSession?.user) {
+          await fetchUserProfile(existingSession.user.id, existingSession.user.email!);
+        }
         setIsLoading(false);
       }
-    };
-    
-    initSession();
+    }, 100);
 
     return () => {
       isMounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
