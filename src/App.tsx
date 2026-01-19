@@ -49,33 +49,32 @@ const App = () => {
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
-                {showingSplash ? (
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/terms" element={<TermsOfUse />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
+                    <Route path="/group/:groupId" element={<ProtectedRoute><GroupDetail /></ProtectedRoute>} />
+                    <Route path="/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
+                    <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                    <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+                    <Route path="/group/:groupId/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
+                    <Route path="/timer" element={<ProtectedRoute><Timer /></ProtectedRoute>} />
+                    <Route path="/water" element={<ProtectedRoute><Water /></ProtectedRoute>} />
+                    <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                    <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
+                    <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+                    <Route path="/my-plan" element={<ProtectedRoute><MyPlan /></ProtectedRoute>} />
+                    <Route path="/generate-test" element={<ProtectedRoute><TestGenerator /></ProtectedRoute>} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+                {showingSplash && (
                   <SplashScreen onFinished={handleSplashFinished} />
-                ) : (
-                  <BrowserRouter>
-                    <Routes>
-                      <Route path="/" element={<Home />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="/terms" element={<TermsOfUse />} />
-                      <Route path="/privacy" element={<PrivacyPolicy />} />
-                      <Route path="/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
-                      <Route path="/group/:groupId" element={<ProtectedRoute><GroupDetail /></ProtectedRoute>} />
-                      <Route path="/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
-                      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                      <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-                      <Route path="/group/:groupId/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-                      <Route path="/timer" element={<ProtectedRoute><Timer /></ProtectedRoute>} />
-                      <Route path="/water" element={<ProtectedRoute><Water /></ProtectedRoute>} />
-                      <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-                      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                      <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
-                      <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
-                      <Route path="/my-plan" element={<ProtectedRoute><MyPlan /></ProtectedRoute>} />
-                      <Route path="/generate-test" element={<ProtectedRoute><TestGenerator /></ProtectedRoute>} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </BrowserRouter>
                 )}
               </TooltipProvider>
             </TimerProvider>
