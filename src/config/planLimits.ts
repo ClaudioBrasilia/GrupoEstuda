@@ -16,7 +16,7 @@ export interface PlanLimits {
 
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   free: {
-    maxGroups: 3,
+    maxGroups: 1,
     maxMembersPerGroup: 5,
     maxUploadSizeMB: 5,
     historyDays: 30,
