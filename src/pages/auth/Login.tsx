@@ -1,11 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -29,10 +28,17 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/groups', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -56,7 +62,7 @@ const Login: React.FC = () => {
       }
       
       toast.success('Login realizado com sucesso');
-      navigate('/groups');
+      // Navigation will happen via useEffect when user state updates
     } catch (error) {
       setLoginError((error instanceof Error) ? error.message : 'Ocorreu um erro ao fazer login');
       toast.error('Falha no login: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
