@@ -10,6 +10,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
   const [show, setShow] = useState(true);
   const onFinishedRef = useRef(onFinished);
 
+  // Keep ref updated
   useEffect(() => {
     onFinishedRef.current = onFinished;
   }, [onFinished]);
@@ -19,17 +20,23 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
       setShow(false);
     }, 1000);
 
-    return () => clearTimeout(timer);
-  }, []);
+    const finishTimer = setTimeout(() => {
+      onFinishedRef.current();
+    }, 1300); // 1000ms display + 300ms exit animation
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(finishTimer);
+    };
+  }, []); // Empty deps - run once
 
   return (
-    <AnimatePresence onExitComplete={() => onFinishedRef.current()}>
+    <AnimatePresence>
       {show && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
           className="fixed inset-0 bg-gradient-to-b from-study-primary to-blue-700 flex flex-col items-center justify-center z-50"
         >
           <motion.div
