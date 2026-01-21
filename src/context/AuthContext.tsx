@@ -1,7 +1,8 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Session } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
+import { withTimeout } from '@/lib/authUtils';
 
 export type PlanType = 'free' | 'basic' | 'premium';
 
@@ -16,6 +17,7 @@ interface AuthContextType {
   user: UserProfile | null;
   session: Session | null;
   isLoading: boolean;
+  isAuthActionLoading: boolean;
   login: (email: string, password: string) => Promise<{ error: any }>;
   register: (name: string, email: string, password: string) => Promise<{ error: any }>;
   logout: () => Promise<void>;
@@ -26,6 +28,7 @@ const defaultAuthContext: AuthContextType = {
   user: null,
   session: null,
   isLoading: true,
+  isAuthActionLoading: false,
   login: async () => ({ error: null }),
   register: async () => ({ error: null }),
   logout: async () => {},
@@ -40,6 +43,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthActionLoading, setIsAuthActionLoading] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -130,41 +134,76 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   };
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
+    setIsAuthActionLoading(true);
     
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    setIsLoading(false);
-    return { error };
+    try {
+      const result = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        15000,
+        'Sem resposta do servidor. Verifique sua conexão e tente novamente.'
+      );
+      
+      return { error: result.error };
+    } catch (error) {
+      return { 
+        error: { 
+          message: error instanceof Error ? error.message : 'Erro ao fazer login' 
+        } 
+      };
+    } finally {
+      setIsAuthActionLoading(false);
+    }
   };
 
   const register = async (name: string, email: string, password: string) => {
-    setIsLoading(true);
+    setIsAuthActionLoading(true);
     
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          name: name
-        }
-      }
-    });
-    
-    setIsLoading(false);
-    return { error };
+    try {
+      const result = await withTimeout(
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: { name }
+          }
+        }),
+        15000,
+        'Sem resposta do servidor. Verifique sua conexão e tente novamente.'
+      );
+      
+      return { error: result.error };
+    } catch (error) {
+      return { 
+        error: { 
+          message: error instanceof Error ? error.message : 'Erro ao registrar' 
+        } 
+      };
+    } finally {
+      setIsAuthActionLoading(false);
+    }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    setIsAuthActionLoading(true);
+    try {
+      await withTimeout(
+        supabase.auth.signOut(),
+        10000,
+        'Erro ao sair. Tente novamente.'
+      );
+      setUser(null);
+      setSession(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force logout locally even if request fails
+      setUser(null);
+      setSession(null);
+    } finally {
+      setIsAuthActionLoading(false);
+    }
   };
 
   const updateUserPlan = async (plan: PlanType) => {
@@ -181,7 +220,16 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, login, register, logout, updateUserPlan }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      isLoading, 
+      isAuthActionLoading,
+      login, 
+      register, 
+      logout, 
+      updateUserPlan 
+    }}>
       {children}
     </AuthContext.Provider>
   );

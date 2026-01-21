@@ -28,9 +28,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
-  const { login, user, isLoading: authLoading } = useAuth();
+  const { login, user, isLoading: authLoading, isAuthActionLoading } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   
   // Redirect if already logged in
@@ -49,26 +48,18 @@ const Login: React.FC = () => {
   });
   
   const onSubmit = async (data: LoginFormValues) => {
-    try {
-      setIsLoading(true);
-      setLoginError(null);
-      
-      const { error } = await login(data.email, data.password);
-      
-      if (error) {
-        setLoginError(error.message);
-        toast.error('Falha no login: ' + error.message);
-        return;
-      }
-      
-      toast.success('Login realizado com sucesso');
-      // Navigation will happen via useEffect when user state updates
-    } catch (error) {
-      setLoginError((error instanceof Error) ? error.message : 'Ocorreu um erro ao fazer login');
-      toast.error('Falha no login: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
-    } finally {
-      setIsLoading(false);
+    setLoginError(null);
+    
+    const { error } = await login(data.email, data.password);
+    
+    if (error) {
+      setLoginError(error.message);
+      toast.error('Falha no login: ' + error.message);
+      return;
     }
+    
+    toast.success('Login realizado com sucesso');
+    // Navigation will happen via useEffect when user state updates
   };
   
   return (
@@ -133,9 +124,9 @@ const Login: React.FC = () => {
               <Button
                 type="submit"
                 className="w-full bg-study-primary"
-                disabled={isLoading}
+                disabled={isAuthActionLoading}
               >
-                {isLoading ? 'Carregando...' : t('login.loginButton')}
+                {isAuthActionLoading ? 'Carregando...' : t('login.loginButton')}
               </Button>
             </form>
           </Form>

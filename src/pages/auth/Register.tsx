@@ -41,9 +41,8 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Register: React.FC = () => {
   const { t } = useTranslation();
-  const { register: registerUser } = useAuth();
+  const { register: registerUser, isAuthActionLoading } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   
   const form = useForm<RegisterFormValues>({
@@ -58,26 +57,18 @@ const Register: React.FC = () => {
   });
   
   const onSubmit = async (data: RegisterFormValues) => {
-    try {
-      setIsLoading(true);
-      setRegisterError(null);
-      
-      const { error } = await registerUser(data.name, data.email, data.password);
-      
-      if (error) {
-        setRegisterError(error.message);
-        toast.error('Falha no cadastro: ' + error.message);
-        return;
-      }
-      
-      toast.success('Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.');
-      // Don't navigate immediately - user needs to verify email
-    } catch (error) {
-      setRegisterError((error instanceof Error) ? error.message : 'Ocorreu um erro ao registrar');
-      toast.error('Falha no registro: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
-    } finally {
-      setIsLoading(false);
+    setRegisterError(null);
+    
+    const { error } = await registerUser(data.name, data.email, data.password);
+    
+    if (error) {
+      setRegisterError(error.message);
+      toast.error('Falha no cadastro: ' + error.message);
+      return;
     }
+    
+    toast.success('Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.');
+    // Don't navigate immediately - user needs to verify email
   };
   
   return (
@@ -192,9 +183,9 @@ const Register: React.FC = () => {
               <Button
                 type="submit"
                 className="w-full bg-study-primary"
-                disabled={isLoading}
+                disabled={isAuthActionLoading}
               >
-                {isLoading ? 'Carregando...' : t('register.registerButton')}
+                {isAuthActionLoading ? 'Carregando...' : t('register.registerButton')}
               </Button>
             </form>
           </Form>
