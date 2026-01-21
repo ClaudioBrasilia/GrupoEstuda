@@ -195,7 +195,7 @@
     "english": "English",
     "portuguese": "Portuguese"
   },
-  "progress": {
+"progress": {
     "title": "Progress",
     "pagesRead": "Pages Read",
     "studyTime": "Study Time",
@@ -205,7 +205,25 @@
     "days": "days",
     "studyTimeByDay": "Study Time by Day",
     "pagesReadByDay": "Pages Read by Day",
-    "studyBySubject": "Study by Subject"
+    "studyBySubject": "Study by Subject",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "individual": "Individual",
+    "group": "Group",
+    "updated": "Updated",
+    "updateSuccess": "Progress updated successfully",
+    "updateError": "Could not update data",
+    "groupGoalsProgress": "Group Goals Progress",
+    "todaySessions": "Today's Study Sessions",
+    "todayTotal": "Today's Total",
+    "session": "session",
+    "sessions": "sessions",
+    "noSessionsToday": "No study sessions recorded today",
+    "startSessionHint": "Start a session in the Timer to begin!",
+    "complete": "complete",
+    "percentage": "Percentage"
   },
   "timer": {
     "title": "Timer",
