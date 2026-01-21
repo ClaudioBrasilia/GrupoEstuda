@@ -43,17 +43,19 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   useEffect(() => {
     let isMounted = true;
-    let initialSessionHandled = false;
+    let authResolved = false;
+
+    const resolveAuth = () => {
+      if (isMounted && !authResolved) {
+        authResolved = true;
+        setIsLoading(false);
+      }
+    };
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!isMounted) return;
-        
-        // Skip if this is the initial session and we already handled it
-        if (event === 'INITIAL_SESSION') {
-          initialSessionHandled = true;
-        }
         
         setSession(currentSession);
         
@@ -63,29 +65,40 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
           setUser(null);
         }
         
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        resolveAuth();
       }
     );
 
-    // Fallback: If onAuthStateChange doesn't fire INITIAL_SESSION quickly, check manually
-    const timeout = setTimeout(async () => {
-      if (!initialSessionHandled && isMounted) {
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
-        if (!isMounted) return;
-        
-        setSession(existingSession);
-        if (existingSession?.user) {
-          await fetchUserProfile(existingSession.user.id, existingSession.user.email!);
+    // Fallback: Verificar sessão manualmente após 2 segundos
+    const fallbackTimeout = setTimeout(async () => {
+      if (!authResolved && isMounted) {
+        try {
+          const { data: { session: existingSession } } = await supabase.auth.getSession();
+          if (!isMounted) return;
+          
+          setSession(existingSession);
+          if (existingSession?.user) {
+            await fetchUserProfile(existingSession.user.id, existingSession.user.email!);
+          }
+        } catch (error) {
+          console.warn('Failed to get session:', error);
         }
-        setIsLoading(false);
+        resolveAuth();
       }
-    }, 100);
+    }, 2000);
+
+    // Timeout máximo de segurança: 5 segundos
+    const maxTimeout = setTimeout(() => {
+      if (!authResolved) {
+        console.warn('Auth timeout reached, forcing loading to complete');
+        resolveAuth();
+      }
+    }, 5000);
 
     return () => {
       isMounted = false;
-      clearTimeout(timeout);
+      clearTimeout(fallbackTimeout);
+      clearTimeout(maxTimeout);
       subscription.unsubscribe();
     };
   }, []);
