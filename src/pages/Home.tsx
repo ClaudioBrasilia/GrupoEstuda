@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, isLoading } = useAuth();
+  const [forceShowButtons, setForceShowButtons] = useState(false);
   
   // If user is already logged in, redirect to groups page
   useEffect(() => {
@@ -16,6 +17,16 @@ const Home: React.FC = () => {
       navigate('/groups');
     }
   }, [user, isLoading, navigate]);
+
+  // Safety timeout: force show buttons after 3 seconds if still loading
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        setForceShowButtons(true);
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-accent/10 p-6">
@@ -37,7 +48,7 @@ const Home: React.FC = () => {
       </div>
       
       <div className="space-y-4 w-full max-w-xs animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
-        {isLoading ? (
+        {isLoading && !forceShowButtons ? (
           <Button 
             className="w-full" 
             disabled
