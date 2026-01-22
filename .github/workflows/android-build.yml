@@ -1,4 +1,4 @@
-name: Build Android with EAS
+name: Build Android APK
 
 on:
   push:
@@ -20,42 +20,57 @@ jobs:
           node-version: '18'
           cache: 'npm'
       
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      
       - name: Install dependencies
         run: npm ci
       
       - name: Build web assets
         run: npm run build
       
-      - name: Setup EAS CLI
-        run: npm install -g eas-cli
+      - name: Add Android platform
+        run: npx cap add android || true
       
-      - name: Build Android APK with EAS
-        env:
-          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+      - name: Sync Android
+        run: npx cap sync android
+      
+      - name: Build Android APK
         run: |
-          eas build --platform android --non-interactive --wait
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
       
       - name: Upload APK to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: ./dist/android/
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
       
       - name: Create Release
         if: success()
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
+          files: android/app/build/outputs/apk/release/app-release.apk
           tag_name: v1.0.0-android-${{ github.run_number }}
-          release_name: Android Build v1.0.0 #${{ github.run_number }}
+          name: Android Build v1.0.0 #${{ github.run_number }}
           body: |
-            Android APK build for Google Play Store
+            Android APK build for testing
             
             **Build Details:**
             - Run: ${{ github.run_number }}
             - Commit: ${{ github.sha }}
             - Branch: ${{ github.ref }}
+            
+            Download the APK file to test on your Android device.
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
