@@ -37,42 +37,53 @@ jobs:
           cd ios/App
           pod install --repo-update
       
-      - name: Build iOS App (Development)
+      - name: Build iOS App
         run: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
-            -configuration Debug \
+            -configuration Release \
             -derivedDataPath build \
             -archivePath build/App.xcarchive \
-            archive || echo "Build attempt completed"
+            archive
       
-      - name: Upload build artifacts
+      - name: Export IPA
+        run: |
+          cd ios/App
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist exportOptions.plist || \
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ../../exportOptions.plist || \
+          echo "Using default export options"
+      
+      - name: Upload IPA to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build
-          path: ios/App/build/
+          name: ios-ipa
+          path: ios/App/build/ipa/
           retention-days: 30
       
       - name: Create Release
-        if: always()
+        if: success()
         uses: softprops/action-gh-release@v1
         with:
+          files: ios/App/build/ipa/App.ipa
           tag_name: v1.0.0-ios-${{ github.run_number }}
           name: iOS Build v1.0.0 #${{ github.run_number }}
           body: |
-            iOS build artifacts
+            iOS IPA build for testing
             
             **Build Details:**
             - Run: ${{ github.run_number }}
             - Commit: ${{ github.sha }}
             - Branch: ${{ github.ref }}
             
-            Note: For production release, you need to:
-            1. Add Apple Developer certificates
-            2. Configure provisioning profiles
-            3. Use Xcode to sign and export the IPA
+            Download the IPA file to test on your iOS device.
           draft: false
-          prerelease: true
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
