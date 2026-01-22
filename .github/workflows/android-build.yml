@@ -1,9 +1,11 @@
-name: Build Android AAB
+name: Build Android with EAS
+
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,40 +20,26 @@ jobs:
           node-version: '18'
           cache: 'npm'
       
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-      
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-levels: 34
-          build-tools-version: 34.0.0
-      
       - name: Install dependencies
         run: npm ci
       
       - name: Build web assets
         run: npm run build
       
-      - name: Add Android platform
-        run: npx cap add android
+      - name: Setup EAS CLI
+        run: npm install -g eas-cli
       
-      - name: Sync Android
-        run: npx cap sync android
-      
-      - name: Build Android AAB
+      - name: Build Android APK with EAS
+        env:
+          EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
         run: |
-          cd android
-          ./gradlew bundleRelease
+          eas build --platform android --non-interactive --wait
       
-      - name: Upload AAB to artifacts
+      - name: Upload APK to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: android-aab
-          path: android/app/build/outputs/bundle/release/app-release.aab
+          name: android-apk
+          path: ./dist/android/
           retention-days: 30
       
       - name: Create Release
@@ -63,24 +51,11 @@ jobs:
           tag_name: v1.0.0-android-${{ github.run_number }}
           release_name: Android Build v1.0.0 #${{ github.run_number }}
           body: |
-            Android AAB build for Google Play Store
+            Android APK build for Google Play Store
             
             **Build Details:**
             - Run: ${{ github.run_number }}
             - Commit: ${{ github.sha }}
             - Branch: ${{ github.ref }}
-            
-            Download the AAB file from the artifacts section.
           draft: false
           prerelease: false
-      
-      - name: Upload Release Asset
-        if: success()
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: android/app/build/outputs/bundle/release/app-release.aab
-          asset_name: grupo-estuda-v1.0.0.aab
-          asset_content_type: application/octet-stream
