@@ -25,11 +25,11 @@ serve(async (req) => {
       );
     }
 
-    const { numQuestions, difficulty, subjects } = await req.json();
+    const { numQuestions, difficulty, subject, fileContent } = await req.json();
     
-    if (!subjects || subjects.length === 0) {
+    if (!subject && !fileContent) {
       return new Response(
-        JSON.stringify({ error: 'Selecione pelo menos uma matéria' }), 
+        JSON.stringify({ error: 'Forneça um assunto ou um arquivo para gerar as questões' }), 
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -37,8 +37,14 @@ serve(async (req) => {
       );
     }
 
-    const subjectNames = subjects.join(", ");
-    const prompt = `Crie ${numQuestions} questões de múltipla escolha sobre ${subjectNames}.
+    let contextSource = "";
+    if (fileContent) {
+      contextSource = `BASEADO NO SEGUINTE CONTEÚDO DE ARQUIVO:\n\n${fileContent}`;
+    } else {
+      contextSource = `SOBRE O SEGUINTE ASSUNTO: ${subject}`;
+    }
+
+    const prompt = `Crie ${numQuestions} questões de múltipla escolha ${contextSource}.
 
 ESPECIFICAÇÕES:
 - Dificuldade: ${difficulty}
@@ -83,14 +89,14 @@ Formato JSON:
             content: `Você é um professor especialista em criar questões de múltipla escolha no estilo ENEM, vestibulares (FUVEST, UNICAMP, UFRJ, etc.) e concursos públicos brasileiros.
 
 DIRETRIZES OBRIGATÓRIAS:
-- Base suas questões em provas REAIS recentes (2020-2024) desses exames
-- Use contextualização: textos literários, jornalísticos, charges, gráficos descritos, dados estatísticos
-- Inclua interdisciplinaridade quando apropriado (ex: História + Geografia, Química + Biologia)
-- Evite questões puramente decorativas; priorize raciocínio, interpretação e análise crítica
-- Use linguagem clara, formal e acadêmica típica do ENEM
-- Todas as 5 alternativas devem ser plausíveis e bem elaboradas
-- A resposta correta deve ser única e indiscutível
-- Inclua sempre uma breve explicação da resposta
+- Se houver um conteúdo de arquivo fornecido, gere as questões EXCLUSIVAMENTE baseadas nele.
+- Se houver apenas um assunto, gere questões aprofundadas sobre esse tema específico.
+- Use contextualização: textos literários, jornalísticos, charges, gráficos descritos, dados estatísticos.
+- Evite questões puramente decorativas; priorize raciocínio, interpretação e análise crítica.
+- Use linguagem clara, formal e acadêmica típica do ENEM.
+- Todas as 5 alternativas devem ser plausíveis e bem elaboradas.
+- A resposta correta deve ser única e indiscutível.
+- Inclua sempre uma breve explicação da resposta.
 
 Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
           },
@@ -107,7 +113,6 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
       const errorData = await response.json();
       console.error('Lovable AI error:', errorData);
       
-      // Rate limit excedido
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Limite de requisições excedido. Aguarde alguns segundos e tente novamente.' }), 
@@ -118,7 +123,6 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
         );
       }
       
-      // Créditos esgotados
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: 'Créditos Lovable AI esgotados. Adicione créditos em Settings -> Workspace -> Usage.' }), 
@@ -145,7 +149,6 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
       throw new Error('No content in OpenAI response');
     }
 
-    // Extract JSON from response
     let parsedQuestions;
     try {
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || 
@@ -164,7 +167,6 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
       );
     }
     
-    // Format questions
     const formattedQuestions = Array.isArray(parsedQuestions) 
       ? parsedQuestions.map((q, index) => ({
           id: q.id || index + 1,
@@ -176,8 +178,6 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
         })) 
       : [];
 
-    console.log(`Successfully generated ${formattedQuestions.length} questions`);
-    
     return new Response(
       JSON.stringify({ questions: formattedQuestions }), 
       { 
