@@ -1,8 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -14,21 +12,31 @@ serve(async (req) => {
   }
 
   try {
-    if (!lovableApiKey) {
-      console.error('LOVABLE_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ error: 'Lovable AI key not configured' }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+    // 1. Log do BODY RAW logo no início
+    const rawBody = await req.text();
+    console.log("BODY RAW:", rawBody);
+
+    // 2. Verificação explícita da OPENAI_API_KEY
+    const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAiKey) {
+      throw new Error("OPENAI_API_KEY missing");
     }
 
-    // Padronizando para os nomes solicitados
-    const { questionCount, difficulty, subject, fileContent } = await req.json();
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    // Usaremos a chave que estiver disponível, priorizando a solicitada
+    const apiKey = openAiKey || lovableApiKey;
+
+    // 3. JSON.parse manual e log do payload
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+      console.log("Parsed payload:", payload);
+    } catch (e) {
+      throw new Error(`Invalid JSON: ${e.message}`);
+    }
+
+    const { questionCount, difficulty, subject, fileContent } = payload;
     
-    // Validação obrigatória: subject ou fileContent deve estar presente
     if (!subject && !fileContent) {
       return new Response(
         JSON.stringify({ error: 'Erro: É necessário fornecer um assunto ou o conteúdo de um arquivo.' }), 
@@ -46,10 +54,10 @@ serve(async (req) => {
       contextSource = `SOBRE O SEGUINTE ASSUNTO: ${subject}`;
     }
 
-    const prompt = `Crie ${questionCount} questões de múltipla escolha ${contextSource}.
+    const prompt = `Crie ${questionCount || 10} questões de múltipla escolha ${contextSource}.
 
 ESPECIFICAÇÕES:
-- Dificuldade: ${difficulty}
+- Dificuldade: ${difficulty || 'medium'}
 - Estilo: ENEM/Vestibulares (FUVEST, UNICAMP, UFRJ)/Concursos brasileiros recentes
 - Ano base: 2020-2024 (use temas e formatos de provas recentes)
 - Cada questão deve ter:
@@ -76,11 +84,11 @@ Formato JSON:
   }
 ]`;
 
-    console.log('Calling Lovable AI Gateway...');
+    console.log('Calling AI Gateway...');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -113,30 +121,10 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Lovable AI error:', errorData);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Limite de requisições excedido. Aguarde alguns segundos e tente novamente.' }), 
-          { 
-            status: 429, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Créditos Lovable AI esgotados. Adicione créditos em Settings -> Workspace -> Usage.' }), 
-          { 
-            status: 402, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
+      console.error('AI error:', errorData);
       
       return new Response(
-        JSON.stringify({ error: `Lovable AI error: ${errorData.error?.message || 'Unknown error'}` }), 
+        JSON.stringify({ error: `AI error: ${errorData.error?.message || 'Unknown error'}` }), 
         { 
           status: response.status, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -148,7 +136,7 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
     const content = data.choices[0]?.message?.content;
     
     if (!content) {
-      throw new Error('No content in OpenAI response');
+      throw new Error('No content in AI response');
     }
 
     let parsedQuestions;
@@ -160,13 +148,7 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
       parsedQuestions = JSON.parse(jsonString);
     } catch (e) {
       console.error('JSON parsing error:', e, 'Raw content:', content);
-      return new Response(
-        JSON.stringify({ error: 'Erro ao processar resposta da IA' }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      throw new Error('Erro ao processar resposta da IA');
     }
     
     const formattedQuestions = Array.isArray(parsedQuestions) 
@@ -186,10 +168,11 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
-  } catch (error) {
-    console.error('Error in generate-test-questions function:', error);
+  } catch (err) {
+    // 4. Catch global retornando erro 500
+    console.error('Global error in Edge Function:', err);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }), 
+      JSON.stringify({ error: err.message }), 
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
