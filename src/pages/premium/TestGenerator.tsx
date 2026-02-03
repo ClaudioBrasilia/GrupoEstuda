@@ -128,8 +128,11 @@ const TestGenerator: React.FC = () => {
   };
 
   const handleGenerateTest = async () => {
-    if (!subject && !selectedFile) {
-      toast.error("Por favor, digite um assunto ou envie um arquivo.");
+    const trimmedSubject = subject.trim();
+    
+    // Validação rigorosa antes de prosseguir
+    if (!trimmedSubject && !selectedFile) {
+      alert("Digite um assunto ou envie um arquivo");
       return;
     }
     
@@ -155,14 +158,18 @@ const TestGenerator: React.FC = () => {
         }
       }
       
-      // Enviando exatamente os nomes de campos solicitados
+      const payload = {
+        questionCount: numQuestions,
+        difficulty: difficulty,
+        subject: selectedFile ? "" : trimmedSubject,
+        fileContent: fileContent
+      };
+
+      // Log do payload conforme solicitado
+      console.log("Payload enviado:", payload);
+      
       const { data, error } = await supabase.functions.invoke('generate-test-questions', {
-        body: {
-          questionCount: numQuestions,
-          difficulty: difficulty,
-          subject: selectedFile ? "" : subject,
-          fileContent: fileContent
-        }
+        body: payload
       });
 
       if (error) throw error;
@@ -289,7 +296,7 @@ const TestGenerator: React.FC = () => {
               <Button
                 onClick={handleGenerateTest}
                 className="w-full bg-study-primary h-12 text-lg font-semibold"
-                disabled={isGenerating || (!subject && !selectedFile)}
+                disabled={isGenerating || (!subject.trim() && !selectedFile)}
               >
                 {isGenerating ? (isUploading ? "Enviando arquivo..." : "Gerando questões...") : "Gerar Teste com IA"}
               </Button>
