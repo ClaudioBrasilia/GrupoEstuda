@@ -67,8 +67,12 @@ const Register: React.FC = () => {
       return;
     }
     
-    toast.success('Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.');
-    // Don't navigate immediately - user needs to verify email
+    toast.success('Cadastro realizado com sucesso! Redirecionando...');
+    
+    // Redirect manual após sucesso do cadastro
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1000);
   };
   
   return (
