@@ -25,11 +25,13 @@ serve(async (req) => {
       );
     }
 
-    const { numQuestions, difficulty, subject, fileContent } = await req.json();
+    // Padronizando para os nomes solicitados
+    const { questionCount, difficulty, subject, fileContent } = await req.json();
     
+    // Validação obrigatória: subject ou fileContent deve estar presente
     if (!subject && !fileContent) {
       return new Response(
-        JSON.stringify({ error: 'Forneça um assunto ou um arquivo para gerar as questões' }), 
+        JSON.stringify({ error: 'Erro: É necessário fornecer um assunto ou o conteúdo de um arquivo.' }), 
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -38,13 +40,13 @@ serve(async (req) => {
     }
 
     let contextSource = "";
-    if (fileContent) {
+    if (fileContent && fileContent.trim() !== "") {
       contextSource = `BASEADO NO SEGUINTE CONTEÚDO DE ARQUIVO:\n\n${fileContent}`;
     } else {
       contextSource = `SOBRE O SEGUINTE ASSUNTO: ${subject}`;
     }
 
-    const prompt = `Crie ${numQuestions} questões de múltipla escolha ${contextSource}.
+    const prompt = `Crie ${questionCount} questões de múltipla escolha ${contextSource}.
 
 ESPECIFICAÇÕES:
 - Dificuldade: ${difficulty}

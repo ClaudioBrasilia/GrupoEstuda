@@ -47,7 +47,6 @@ const TestGenerator: React.FC = () => {
   const [isCorrected, setIsCorrected] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   
-  // Novos estados para Assunto e Arquivo
   const [subject, setSubject] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -120,7 +119,7 @@ const TestGenerator: React.FC = () => {
       }
       
       setSelectedFile(file);
-      setSubject(''); // Limpa o assunto se um arquivo for selecionado
+      setSubject(''); 
     }
   };
 
@@ -140,20 +139,9 @@ const TestGenerator: React.FC = () => {
       let fileContent = "";
       
       if (selectedFile) {
-        // Para TXT, podemos ler diretamente. Para PDF/DOCX, em um ambiente real, 
-        // precisaríamos de uma função de extração no backend ou Edge Function.
-        // Como estamos estendendo a funcionalidade, vamos simular a leitura ou 
-        // enviar o arquivo para processamento se a Edge Function suportar.
-        // Por simplicidade e seguindo a regra de "Se houver arquivo -> usar conteúdo",
-        // vamos ler como texto se for TXT, ou apenas indicar o nome para a IA se for binário (limitação de client-side puro).
-        
         if (selectedFile.type === 'text/plain') {
           fileContent = await selectedFile.text();
         } else {
-          // Para PDF/DOCX, idealmente faríamos upload e a Edge Function leria.
-          // Aqui, vamos apenas enviar o nome e o fato de que é um arquivo para a IA 
-          // (ou poderíamos implementar o upload para o bucket study-activities conforme planejado).
-          
           setIsUploading(true);
           const fileExt = selectedFile.name.split('.').pop();
           const fileName = `${user?.id}/${Math.random()}.${fileExt}`;
@@ -162,18 +150,16 @@ const TestGenerator: React.FC = () => {
             .upload(fileName, selectedFile);
             
           if (uploadError) throw uploadError;
-          
-          // Nota: Em uma implementação completa, a Edge Function acessaria o arquivo.
-          // Para este escopo, vamos passar o nome do arquivo como referência.
           fileContent = `[Arquivo enviado: ${selectedFile.name}]`;
           setIsUploading(false);
         }
       }
       
+      // Enviando exatamente os nomes de campos solicitados
       const { data, error } = await supabase.functions.invoke('generate-test-questions', {
         body: {
-          numQuestions,
-          difficulty,
+          questionCount: numQuestions,
+          difficulty: difficulty,
           subject: selectedFile ? "" : subject,
           fileContent: fileContent
         }
