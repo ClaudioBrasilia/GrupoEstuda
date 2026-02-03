@@ -1,32 +1,31 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+Deno.serve(async (req) => {
+  console.log("HANDLER STARTED");
+  
+  // Tratamento do método OPTIONS para CORS
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // 1. Log do BODY RAW logo no início
-    const rawBody = await req.text();
-    console.log("BODY RAW:", rawBody);
-
-    // 2. Verificação explícita da OPENAI_API_KEY
+    // Verificação da OPENAI_API_KEY
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAiKey) {
+      console.error("OPENAI_API_KEY missing");
       throw new Error("OPENAI_API_KEY missing");
     }
 
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    // Usaremos a chave que estiver disponível, priorizando a solicitada
-    const apiKey = openAiKey || lovableApiKey;
+    // Log do BODY RAW
+    const rawBody = await req.text();
+    console.log("BODY RAW:", rawBody);
 
-    // 3. JSON.parse manual e log do payload
+    // JSON.parse manual e log do payload
     let payload;
     try {
       payload = JSON.parse(rawBody);
@@ -42,7 +41,7 @@ serve(async (req) => {
         JSON.stringify({ error: 'Erro: É necessário fornecer um assunto ou o conteúdo de um arquivo.' }), 
         { 
           status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
         }
       );
     }
@@ -88,7 +87,7 @@ Formato JSON:
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${openAiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -127,7 +126,7 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
         JSON.stringify({ error: `AI error: ${errorData.error?.message || 'Unknown error'}` }), 
         { 
           status: response.status, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
         }
       );
     }
@@ -165,17 +164,16 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
     return new Response(
       JSON.stringify({ questions: formattedQuestions }), 
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
   } catch (err) {
-    // 4. Catch global retornando erro 500
     console.error('Global error in Edge Function:', err);
     return new Response(
       JSON.stringify({ error: err.message }), 
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
   }
