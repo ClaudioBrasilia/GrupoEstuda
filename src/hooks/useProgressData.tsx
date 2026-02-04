@@ -66,6 +66,18 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     try {
       setLoading(true);
 
+      // Fetch subject IDs for the given group if groupId is provided
+      let subjectIds: string[] = [];
+      if (groupId) {
+        const { data: subjectsData, error: subjectsError } = await supabase
+          .from('subjects')
+          .select('id')
+          .eq('group_id', groupId);
+
+        if (subjectsError) throw subjectsError;
+        subjectIds = subjectsData.map(s => s.id);
+      }
+
       // Fetch study sessions based on selected time range
       const startDate = new Date();
       switch (timeRange) {
@@ -83,7 +95,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           break;
       }
       
-      const { data: sessions } = await supabase
+      let sessionsQuery = supabase
         .from('study_sessions')
         .select(`
           *,
@@ -96,24 +108,71 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         .gte('started_at', startDate.toISOString())
         .not('completed_at', 'is', null);
 
+      if (groupId && subjectIds.length > 0) {
+        sessionsQuery = sessionsQuery.in('subject_id', subjectIds);
+      } else if (groupId && subjectIds.length === 0) {
+        // If group has no subjects, no sessions will be found for this group
+        sessionsQuery = sessionsQuery.in('subject_id', ['']); // Return empty result
+      }
+
+      const { data: sessions, error: sessionsError } = await sessionsQuery;
+      if (sessionsError) throw sessionsError;
+
       // Calculate weekly data
       const weeklyData = generateWeeklyData(sessions || []);
       
       // Calculate totals
       const totalStudyTime = (sessions || []).reduce((sum, session) => sum + session.duration_minutes, 0);
-      const totalPages = Math.floor(totalStudyTime / 5) * 2; // Estimate 2 pages per 5 minutes
-      const totalExercises = Math.floor(totalStudyTime / 10); // Estimate 1 exercise per 10 minutes
+      
+      // Fetch goals progress (for pages and exercises)
+      let totalPages = 0;
+      let totalExercises = 0;
+      let goalsProgress: GoalProgressData[] = [];
+
+      if (groupId) {
+        const { data: goalsData, error: goalsError } = await supabase
+          .from('goals')
+          .select(`
+            id,
+            type,
+            current,
+            target,
+            subjects:subject_id (
+              name
+            )
+          `)
+          .eq('group_id', groupId);
+        
+        if (goalsError) throw goalsError;
+
+        goalsProgress = (goalsData || []).map(goal => ({
+          id: goal.id,
+          type: goal.type,
+          subject: goal.subjects?.name || 'Geral',
+          current: goal.current,
+          target: goal.target,
+          progress: Math.round((goal.current / goal.target) * 100)
+        }));
+
+        totalPages = goalsProgress
+          .filter(goal => goal.type === 'pages')
+          .reduce((sum, goal) => sum + goal.current, 0);
+        
+        totalExercises = goalsProgress
+          .filter(goal => goal.type === 'exercises')
+          .reduce((sum, goal) => sum + goal.current, 0);
+      } else {
+        // For global view, if no groupId, we might need a different logic for pages/exercises
+        // For now, keep them as 0 if not in a group context
+        totalPages = 0;
+        totalExercises = 0;
+      }
 
       // Calculate study streak
       const studyStreak = await calculateStudyStreak(user.id);
 
       // Fetch subject progress
       const subjectData = await fetchSubjectProgress(sessions || []);
-
-      // Fetch goals progress
-      // Se tiver groupId, buscamos as metas do grupo. Caso contrário, buscamos as metas globais do usuário (se houver essa lógica no banco)
-      // Por enquanto, mantemos a lógica de buscar por groupId se fornecido.
-      const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
 
       setStats({
         totalStudyTime,
@@ -163,7 +222,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       .subscribe();
 
     // Canal para metas (goals)
-    // Importante: Ouvir mudanças na tabela goals para atualizar os gráficos imediatamente
     const goalsFilter = groupId ? `group_id=eq.${groupId}` : undefined;
     
     const goalsChannel = supabase
