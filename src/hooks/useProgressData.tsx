@@ -110,13 +110,11 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       // Fetch subject progress
       const subjectData = await fetchSubjectProgress(sessions || []);
 
-      // Fetch goals progress (only for group view)
+      // Fetch goals progress
+      // Se tiver groupId, buscamos as metas do grupo. Caso contrário, buscamos as metas globais do usuário (se houver essa lógica no banco)
+      // Por enquanto, mantemos a lógica de buscar por groupId se fornecido.
       const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
 
-      // Fetch daily sessions (only for day view)
-      const dailySessions = timeRange === 'day' ? await fetchDailySessions(user.id) : [];
-
-      // Garantir que estamos criando um novo objeto de estado para forçar o re-render dos gráficos
       setStats({
         totalStudyTime,
         totalPages,
@@ -125,7 +123,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         weeklyData: [...weeklyData],
         subjectData: [...subjectData],
         goalsProgress: [...goalsProgress],
-        dailySessions: dailySessions ? [...dailySessions] : undefined
+        dailySessions: timeRange === 'day' ? await fetchDailySessions(user.id) : undefined
       });
     } catch (error) {
       console.error('Error fetching progress data:', error);
@@ -165,6 +163,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       .subscribe();
 
     // Canal para metas (goals)
+    // Importante: Ouvir mudanças na tabela goals para atualizar os gráficos imediatamente
     const goalsFilter = groupId ? `group_id=eq.${groupId}` : undefined;
     
     const goalsChannel = supabase
