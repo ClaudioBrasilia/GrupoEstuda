@@ -130,6 +130,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       let goalsProgress: GoalProgressData[] = [];
 
       if (groupId) {
+        // REMOVIDO FILTRO POR user_id POIS A TABELA goals NÃO POSSUI ESSA COLUNA
+        // A TABELA goals POSSUI group_id E created_by
         const { data: goalsData, error: goalsError } = await supabase
           .from('goals')
           .select(`
@@ -161,11 +163,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         totalExercises = goalsProgress
           .filter(goal => goal.type === 'exercises')
           .reduce((sum, goal) => sum + goal.current, 0);
-      } else {
-        // For global view, if no groupId, we might need a different logic for pages/exercises
-        // For now, keep them as 0 if not in a group context
-        totalPages = 0;
-        totalExercises = 0;
       }
 
       // Calculate study streak
@@ -296,30 +293,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         color: COLORS[index % COLORS.length]
       }))
       .sort((a, b) => b.value - a.value);
-  };
-
-  const fetchGoalsProgress = async (groupId: string): Promise<GoalProgressData[]> => {
-    const { data: goals } = await supabase
-      .from('goals')
-      .select(`
-        id,
-        type,
-        current,
-        target,
-        subjects:subject_id (
-          name
-        )
-      `)
-      .eq('group_id', groupId);
-
-    return (goals || []).map(goal => ({
-      id: goal.id,
-      type: goal.type,
-      subject: goal.subjects?.name || 'Geral',
-      current: goal.current,
-      target: goal.target,
-      progress: Math.round((goal.current / goal.target) * 100)
-    }));
   };
 
   const fetchDailySessions = async (userId: string): Promise<DailySessionData[]> => {
