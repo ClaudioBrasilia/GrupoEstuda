@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -60,62 +60,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchProgressData();
-    }
-  }, [user, groupId, timeRange]);
-
-  // Atualização em tempo real
-  useEffect(() => {
-    if (!user) return;
-
-    // Canal para sessões de estudo
-    const sessionsChannel = supabase
-      .channel('study_sessions_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Ouve INSERT, UPDATE e DELETE
-          schema: 'public',
-          table: 'study_sessions',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('📡 Atualização em tempo real (sessões) detectada:', payload);
-          fetchProgressData();
-        }
-      )
-      .subscribe();
-
-    // Canal para metas (goals)
-    // Se houver um groupId, filtramos por ele. Caso contrário, ouvimos todas as mudanças de metas do usuário.
-    const goalsFilter = groupId ? `group_id=eq.${groupId}` : undefined;
-    
-    const goalsChannel = supabase
-      .channel('goals_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Ouve INSERT, UPDATE e DELETE
-          schema: 'public',
-          table: 'goals',
-          filter: goalsFilter
-        },
-        (payload) => {
-          console.log('📡 Atualização em tempo real (metas) detectada:', payload);
-          fetchProgressData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(sessionsChannel);
-      supabase.removeChannel(goalsChannel);
-    };
-  }, [user, groupId, timeRange]);
-
-  const fetchProgressData = async () => {
+  const fetchProgressData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -160,7 +105,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       const totalExercises = Math.floor(totalStudyTime / 10); // Estimate 1 exercise per 10 minutes
 
       // Calculate study streak
-      const studyStreak = await calculateStudyStreak();
+      const studyStreak = await calculateStudyStreak(user.id);
 
       // Fetch subject progress
       const subjectData = await fetchSubjectProgress(sessions || []);
@@ -169,24 +114,82 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
 
       // Fetch daily sessions (only for day view)
-      const dailySessions = timeRange === 'day' ? await fetchDailySessions() : [];
+      const dailySessions = timeRange === 'day' ? await fetchDailySessions(user.id) : [];
 
+      // Garantir que estamos criando um novo objeto de estado para forçar o re-render dos gráficos
       setStats({
         totalStudyTime,
         totalPages,
         totalExercises,
         studyStreak,
-        weeklyData,
-        subjectData,
-        goalsProgress,
-        dailySessions
+        weeklyData: [...weeklyData],
+        subjectData: [...subjectData],
+        goalsProgress: [...goalsProgress],
+        dailySessions: dailySessions ? [...dailySessions] : undefined
       });
     } catch (error) {
       console.error('Error fetching progress data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, groupId, timeRange]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProgressData();
+    }
+  }, [fetchProgressData]);
+
+  // Atualização em tempo real
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('🔌 Configurando Realtime para Progresso...');
+
+    // Canal para sessões de estudo
+    const sessionsChannel = supabase
+      .channel(`study_sessions_progress_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('📡 Realtime: Mudança em study_sessions detectada', payload);
+          fetchProgressData();
+        }
+      )
+      .subscribe();
+
+    // Canal para metas (goals)
+    const goalsFilter = groupId ? `group_id=eq.${groupId}` : undefined;
+    
+    const goalsChannel = supabase
+      .channel(`goals_progress_${groupId || 'all'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'goals',
+          filter: goalsFilter
+        },
+        (payload) => {
+          console.log('📡 Realtime: Mudança em goals detectada', payload);
+          fetchProgressData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 Removendo canais Realtime...');
+      supabase.removeChannel(sessionsChannel);
+      supabase.removeChannel(goalsChannel);
+    };
+  }, [user, groupId, fetchProgressData]);
 
   const generateWeeklyData = (sessions: any[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -262,9 +265,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     }));
   };
 
-  const fetchDailySessions = async (): Promise<DailySessionData[]> => {
-    if (!user) return [];
-
+  const fetchDailySessions = async (userId: string): Promise<DailySessionData[]> => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -282,7 +283,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           name
         )
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .gte('started_at', today.toISOString())
       .lt('started_at', tomorrow.toISOString())
       .not('completed_at', 'is', null)
@@ -306,13 +307,11 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     }));
   };
 
-  const calculateStudyStreak = async (): Promise<number> => {
-    if (!user) return 0;
-
+  const calculateStudyStreak = async (userId: string): Promise<number> => {
     const { data: sessions } = await supabase
       .from('study_sessions')
       .select('started_at')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false });
 
