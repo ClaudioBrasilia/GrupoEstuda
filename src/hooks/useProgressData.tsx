@@ -70,7 +70,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    // Canal para sessões de estudo
+    const sessionsChannel = supabase
       .channel('study_sessions_changes')
       .on(
         'postgres_changes',
@@ -81,14 +82,36 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('📡 Atualização em tempo real detectada:', payload);
+          console.log('📡 Atualização em tempo real (sessões) detectada:', payload);
+          fetchProgressData();
+        }
+      )
+      .subscribe();
+
+    // Canal para metas (goals)
+    // Se houver um groupId, filtramos por ele. Caso contrário, ouvimos todas as mudanças de metas do usuário.
+    const goalsFilter = groupId ? `group_id=eq.${groupId}` : undefined;
+    
+    const goalsChannel = supabase
+      .channel('goals_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Ouve INSERT, UPDATE e DELETE
+          schema: 'public',
+          table: 'goals',
+          filter: goalsFilter
+        },
+        (payload) => {
+          console.log('📡 Atualização em tempo real (metas) detectada:', payload);
           fetchProgressData();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(sessionsChannel);
+      supabase.removeChannel(goalsChannel);
     };
   }, [user, groupId, timeRange]);
 
