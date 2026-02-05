@@ -411,15 +411,26 @@ export const useGroupData = (groupId: string | undefined) => {
     
     try {
       // Update goal progress with timestamp
-      const { error: goalError } = await supabase
+      const { data: updatedGoalsData, error: goalError } = await supabase
         .from('goals')
         .update({ 
           current: newCurrent,
           updated_at: new Date().toISOString()
         })
-        .eq('id', goalId);
+        .eq('id', goalId)
+        .select('id, group_id, type, current, target, updated_at');
+
+      console.log('GOALS UPDATE RESULT:', { data: updatedGoalsData, error: goalError });
       
       if (goalError) throw goalError;
+
+      const { data: recentGoalsData, error: recentGoalsError } = await supabase
+        .from('goals')
+        .select('id, group_id, type, current, target, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(20);
+
+      console.log('GOALS RECENT ROWS:', { data: recentGoalsData, error: recentGoalsError });
       
       // Get current points and add new points
       const { data: currentPointsData } = await supabase
