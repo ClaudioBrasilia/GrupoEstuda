@@ -130,8 +130,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       let goalsProgress: GoalProgressData[] = [];
 
       if (groupId) {
-        // REMOVIDO FILTRO POR user_id POIS A TABELA goals NÃO POSSUI ESSA COLUNA
-        // A TABELA goals POSSUI group_id E created_by
         const { data: goalsData, error: goalsError } = await supabase
           .from('goals')
           .select(`
@@ -147,20 +145,22 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         
         if (goalsError) throw goalsError;
 
-        goalsProgress = (goalsData || []).map(goal => ({
+        const normalizedGoals = goalsData || [];
+
+        goalsProgress = normalizedGoals.map(goal => ({
           id: goal.id,
           type: goal.type,
           subject: goal.subjects?.name || 'Geral',
           current: goal.current,
           target: goal.target,
-          progress: Math.round((goal.current / goal.target) * 100)
+          progress: goal.target > 0 ? Math.round((goal.current / goal.target) * 100) : 0
         }));
 
-        totalPages = goalsProgress
+        totalPages = normalizedGoals
           .filter(goal => goal.type === 'pages')
           .reduce((sum, goal) => sum + goal.current, 0);
         
-        totalExercises = goalsProgress
+        totalExercises = normalizedGoals
           .filter(goal => goal.type === 'exercises')
           .reduce((sum, goal) => sum + goal.current, 0);
       }
@@ -198,9 +198,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   useEffect(() => {
     if (!user) return;
 
-    console.log('🔌 Configurando Realtime para Progresso...');
+    console.log('🔌 Configurando Realtime para Progresso (study_sessions)...');
 
-    // Canal para sessões de estudo
     const sessionsChannel = supabase
       .channel(`study_sessions_progress_${user.id}`)
       .on(
@@ -218,18 +217,26 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       )
       .subscribe();
 
-    // Canal para metas (goals)
-    const goalsFilter = groupId ? `group_id=eq.${groupId}` : undefined;
-    
+    return () => {
+      console.log('🔌 Removendo canal Realtime (study_sessions)...');
+      supabase.removeChannel(sessionsChannel);
+    };
+  }, [user, fetchProgressData]);
+
+  useEffect(() => {
+    if (!groupId) return;
+
+    console.log('🔌 Configurando Realtime para Progresso (goals)...');
+
     const goalsChannel = supabase
-      .channel(`goals_progress_${groupId || 'all'}`)
+      .channel(`goals_progress_${groupId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'goals',
-          filter: goalsFilter
+          filter: `group_id=eq.${groupId}`
         },
         (payload) => {
           console.log('📡 Realtime: Mudança em goals detectada', payload);
@@ -239,11 +246,10 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       .subscribe();
 
     return () => {
-      console.log('🔌 Removendo canais Realtime...');
-      supabase.removeChannel(sessionsChannel);
+      console.log('🔌 Removendo canal Realtime (goals)...');
       supabase.removeChannel(goalsChannel);
     };
-  }, [user, groupId, fetchProgressData]);
+  }, [groupId, fetchProgressData]);
 
   const generateWeeklyData = (sessions: any[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
