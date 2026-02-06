@@ -228,20 +228,43 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
     console.log('🔌 Configurando Realtime para Progresso (goals)...');
 
+    const handleGoalsChange = (payload: { new?: { group_id?: string }; old?: { group_id?: string } }) => {
+      const groupIdFromPayload = payload.new?.group_id ?? payload.old?.group_id;
+
+      if (groupIdFromPayload !== groupId) return;
+
+      console.log('📡 Realtime: Mudança em goals detectada', payload);
+      fetchProgressData();
+    };
+
     const goalsChannel = supabase
       .channel(`goals_progress_${groupId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
-          table: 'goals',
-          filter: `group_id=eq.${groupId}`
+          table: 'goals'
         },
-        (payload) => {
-          console.log('📡 Realtime: Mudança em goals detectada', payload);
-          fetchProgressData();
-        }
+        handleGoalsChange
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'goals'
+        },
+        handleGoalsChange
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'goals'
+        },
+        handleGoalsChange
       )
       .subscribe();
 
