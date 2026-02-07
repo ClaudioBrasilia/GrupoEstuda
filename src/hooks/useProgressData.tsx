@@ -125,8 +125,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       const totalStudyTime = (sessions || []).reduce((sum, session) => sum + session.duration_minutes, 0);
       
       // Fetch goals progress (for pages and exercises)
-      let totalPages = 0;
-      let totalExercises = 0;
+      let totalPages = Math.floor(totalStudyTime / 5) * 2;
+      let totalExercises = Math.floor(totalStudyTime / 10);
       let goalsProgress: GoalProgressData[] = [];
 
       if (groupId) {
