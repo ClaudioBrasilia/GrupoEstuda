@@ -14,17 +14,26 @@ import { useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 const ProgressPage: React.FC = () => {
+  const { groupId } = useParams();
   const [timeRange, setTimeRange] = useState('week');
-  const [view, setView] = useState<'individual' | 'group'>('individual');
+  const [view, setView] = useState<'individual' | 'group'>(groupId ? 'group' : 'individual');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { t } = useTranslation();
-  const { groupId } = useParams();
   const { toast } = useToast();
   
   const { stats, loading, refreshData } = useProgressData(
     view === 'group' ? groupId : undefined,
     timeRange as 'day' | 'week' | 'month' | 'year'
   );
+
+  useEffect(() => {
+    if (groupId) {
+      setView('group');
+      return;
+    }
+
+    setView('individual');
+  }, [groupId]);
 
   useEffect(() => {
     refreshData();
