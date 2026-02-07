@@ -26,6 +26,10 @@ const ProgressPage: React.FC = () => {
     timeRange as 'day' | 'week' | 'month' | 'year'
   );
 
+  useEffect(() => {
+    refreshData();
+  }, [refreshData, view, timeRange, groupId]);
+
   // Auto-refresh quando a página ganha foco
   useEffect(() => {
     const handleFocus = () => {

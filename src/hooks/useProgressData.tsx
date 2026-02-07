@@ -244,7 +244,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'goals'
+          table: 'goals',
+          filter: `group_id=eq.${groupId}`
         },
         handleGoalsChange
       )
@@ -253,7 +254,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'goals'
+          table: 'goals',
+          filter: `group_id=eq.${groupId}`
         },
         handleGoalsChange
       )
@@ -262,7 +264,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'goals'
+          table: 'goals',
+          filter: `group_id=eq.${groupId}`
         },
         handleGoalsChange
       )
