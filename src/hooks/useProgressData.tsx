@@ -163,6 +163,34 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         totalExercises = normalizedGoals
           .filter(goal => goal.type === 'exercises')
           .reduce((sum, goal) => sum + goal.current, 0);
+      } else {
+        const { data: memberGroups, error: memberGroupsError } = await supabase
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', user.id);
+
+        if (memberGroupsError) throw memberGroupsError;
+
+        const groupIds = (memberGroups || []).map(member => member.group_id);
+
+        if (groupIds.length > 0) {
+          const { data: goalsData, error: goalsError } = await supabase
+            .from('goals')
+            .select('type, current')
+            .in('group_id', groupIds);
+
+          if (goalsError) throw goalsError;
+
+          const normalizedGoals = goalsData || [];
+
+          totalPages = normalizedGoals
+            .filter(goal => goal.type === 'pages')
+            .reduce((sum, goal) => sum + goal.current, 0);
+          
+          totalExercises = normalizedGoals
+            .filter(goal => goal.type === 'exercises')
+            .reduce((sum, goal) => sum + goal.current, 0);
+        }
       }
 
       // Calculate study streak
