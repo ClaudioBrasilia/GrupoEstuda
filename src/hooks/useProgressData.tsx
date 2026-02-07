@@ -125,8 +125,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       const totalStudyTime = (sessions || []).reduce((sum, session) => sum + session.duration_minutes, 0);
       
       // Fetch goals progress (for pages and exercises)
-      let totalPages = 0;
-      let totalExercises = 0;
+      let totalPages = Math.floor(totalStudyTime / 5) * 2;
+      let totalExercises = Math.floor(totalStudyTime / 10);
       let goalsProgress: GoalProgressData[] = [];
 
       if (groupId) {
@@ -155,22 +155,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           target: goal.target,
           progress: goal.target > 0 ? Math.round((goal.current / goal.target) * 100) : 0
         }));
-
-        totalPages = normalizedGoals
-          .filter(goal => goal.type === 'pages')
-          .reduce((sum, goal) => sum + goal.current, 0);
-        
-        totalExercises = normalizedGoals
-          .filter(goal => goal.type === 'exercises')
-          .reduce((sum, goal) => sum + goal.current, 0);
-      } else {
-        const { data: goalsData, error: goalsError } = await supabase
-          .from('goals')
-          .select('type, current');
-
-        if (goalsError) throw goalsError;
-
-        const normalizedGoals = goalsData || [];
 
         totalPages = normalizedGoals
           .filter(goal => goal.type === 'pages')
