@@ -7,11 +7,8 @@
 unzip grupo_estuda_app.zip
 cd grupo_estuda_app
 
-# Instalar dependências
+# Instalar dependências (pnpm recomendado)
 pnpm install
-
-# Ou com npm
-npm install
 ```
 
 ## 2. Configurar Supabase
@@ -29,10 +26,10 @@ const SUPABASE_ANON_KEY = "sua-chave-aqui";
 
 ```bash
 # Iniciar servidor de desenvolvimento
-pnpm dev
+pnpm start
 
-# Ou com npm
-npm run dev
+# Opcional: iniciar API + Expo
+pnpm dev
 ```
 
 Acesse http://localhost:8081 no navegador.
@@ -58,7 +55,18 @@ pnpm ios
 pnpm android
 ```
 
-## 5. Estrutura de Arquivos Importante
+## 5. Build de teste (APK via EAS preview)
+
+Gere um APK instalável para testes rápidos (fora da Play Store):
+
+```bash
+eas login
+eas build -p android --profile preview
+```
+
+Quando o build terminar, o EAS fornece um link. Envie esse link para os testadores baixarem e instalarem o APK no Android.
+
+## 6. Estrutura de Arquivos Importante
 
 - `app/(tabs)/index.tsx` - Tela inicial com WebView
 - `lib/supabase.ts` - Configuração do Supabase
@@ -67,7 +75,7 @@ pnpm android
 - `BUILD_AND_PUBLISH.md` - Guia de publicação
 - `SUPABASE_INTEGRATION.md` - Documentação Supabase
 
-## 6. Próximos Passos
+## 7. Próximos Passos
 
 1. Criar tabelas no Supabase (users, groups, group_members)
 2. Implementar telas de login/registro
@@ -75,7 +83,7 @@ pnpm android
 4. Testar em dispositivos reais
 5. Fazer build e publicar
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 ### Erro: "Cannot find module"
 ```bash
