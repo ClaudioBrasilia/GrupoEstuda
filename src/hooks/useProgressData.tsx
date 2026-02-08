@@ -257,6 +257,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
     console.log('🔌 Configurando Realtime para Progresso (goals)...');
 
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+
     const handleGoalsChange = (payload: { new?: { group_id?: string }; old?: { group_id?: string } }) => {
       const groupIdFromPayload = payload.new?.group_id ?? payload.old?.group_id;
 
@@ -264,6 +266,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
       console.log('📡 Realtime: Mudança em goals detectada', payload);
       fetchProgressData();
+      retryTimeout = setTimeout(() => fetchProgressData(), 500);
     };
 
     const goalsChannel = supabase
@@ -302,6 +305,9 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
     return () => {
       console.log('🔌 Removendo canal Realtime (goals)...');
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
       supabase.removeChannel(goalsChannel);
     };
   }, [groupId, fetchProgressData]);
