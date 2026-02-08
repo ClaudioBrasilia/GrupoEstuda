@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { StudySessionWithSubject } from '@/types/progress';
 
 export interface ProgressStats {
   totalStudyTime: number;
@@ -220,7 +221,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     if (user) {
       fetchProgressData();
     }
-  }, [fetchProgressData]);
+  }, [fetchProgressData, user]);
 
   // Atualização em tempo real
   useEffect(() => {
@@ -305,7 +306,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     };
   }, [groupId, fetchProgressData]);
 
-  const generateWeeklyData = (sessions: any[]): WeeklyStudyData[] => {
+  const generateWeeklyData = (sessions: StudySessionWithSubject[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     const data: WeeklyStudyData[] = [];
 
@@ -336,7 +337,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     return data;
   };
 
-  const fetchSubjectProgress = async (sessions: any[]): Promise<SubjectProgressData[]> => {
+  const fetchSubjectProgress = async (sessions: StudySessionWithSubject[]): Promise<SubjectProgressData[]> => {
     const subjectStats: { [key: string]: number } = {};
     
     sessions.forEach(session => {
@@ -408,7 +409,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     if (!sessions || sessions.length === 0) return 0;
 
     let streak = 0;
-    let currentDate = new Date();
+    const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
     const studyDates = new Set(

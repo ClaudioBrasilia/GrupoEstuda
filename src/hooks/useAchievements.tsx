@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -21,13 +21,7 @@ export function useAchievements() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchAchievements();
-    }
-  }, [user]);
-
-  const fetchAchievements = async () => {
+  const fetchAchievements = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -60,7 +54,13 @@ export function useAchievements() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchAchievements();
+    }
+  }, [user, fetchAchievements]);
 
   const checkAndUnlockAchievements = async () => {
     if (!user) return;
