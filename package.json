@@ -11,6 +11,7 @@
     "start": "expo start",
     "start:server": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
+    "typecheck": "pnpm check",
     "lint": "expo lint",
     "format": "prettier --write .",
     "test": "vitest run",

@@ -1,0 +1,55 @@
+name: CI (pnpm + Expo)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (20 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate pnpm
+        run: corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (if available)
+        run: |
+          if pnpm -s run | grep -q "^  lint"; then
+            pnpm lint
+          else
+            echo "lint script not found; skipping."
+          fi
+
+      - name: Typecheck (if available)
+        run: |
+          if pnpm -s run | grep -q "^  typecheck"; then
+            pnpm typecheck
+          else
+            echo "typecheck script not found; skipping."
+          fi
+
+      - name: Test (if available)
+        run: |
+          if pnpm -s run | grep -q "^  test"; then
+            pnpm test
+          else
+            echo "test script not found; skipping."
+          fi
+
+      - name: Expo doctor (if available)
+        run: |
+          npx --yes expo-doctor || npx --yes expo doctor
