@@ -19,16 +19,5 @@
         "buildType": "app-bundle"
       }
     }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "ascAppId": "1234567890"
-      },
-      "android": {
-        "serviceAccount": "path/to/service-account.json",
-        "track": "internal"
-      }
-    }
   }
 }
