@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -22,13 +22,7 @@ export function useLeaderboardData(timeRange: string = 'week') {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchLeaderboardData();
-    }
-  }, [user, timeRange]);
-
-  const fetchLeaderboardData = async () => {
+  const fetchLeaderboardData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -128,7 +122,13 @@ export function useLeaderboardData(timeRange: string = 'week') {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchLeaderboardData();
+    }
+  }, [user, timeRange, fetchLeaderboardData]);
 
   return {
     globalLeaderboard,

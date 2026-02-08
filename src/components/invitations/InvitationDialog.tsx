@@ -52,7 +52,7 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, searchUsersByName]);
 
   const handleReset = () => {
     setEmail('');

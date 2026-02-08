@@ -1,7 +1,8 @@
 
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session } from '@supabase/supabase-js';
+import { AuthError, Session } from '@supabase/supabase-js';
 import { withTimeout } from '@/lib/authUtils';
 
 export type PlanType = 'free' | 'basic' | 'premium';
@@ -18,8 +19,8 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthActionLoading: boolean;
-  login: (email: string, password: string) => Promise<{ error: any }>;
-  register: (name: string, email: string, password: string) => Promise<{ error: any }>;
+  login: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  register: (name: string, email: string, password: string) => Promise<{ error: AuthError | null }>;
   logout: () => Promise<void>;
   updateUserPlan: (plan: PlanType) => Promise<void>;
 }
