@@ -1,0 +1,62 @@
+Starting project at /home/ubuntu/grupo_estuda_app
+React Compiler enabled
+Metro is running in CI mode, reloads are disabled. Remove CI=true to enable watch mode.
+Starting Metro Bundler
+Tunnel connected.
+Tunnel ready.
+The following packages should be updated for best compatibility with the installed expo version:
+  expo@54.0.29 - expected version: ~54.0.31
+  expo-audio@1.1.0 - expected version: ~1.1.1
+  expo-constants@18.0.12 - expected version: ~18.0.13
+  expo-linking@8.0.10 - expected version: ~8.0.11
+  expo-notifications@0.32.15 - expected version: ~0.32.16
+  expo-router@6.0.19 - expected version: ~6.0.21
+  expo-splash-screen@31.0.12 - expected version: ~31.0.13
+  react-native-webview@13.16.0 - expected version: 13.15.0
+Your project may not work correctly until you install the expected versions of the packages.
+Waiting on http://localhost:8490
+Logs for your project will appear below.
+Tunnel connection has been closed. This is often related to intermittent connection issues between the dev server and ngrok. Restart the dev server to try connecting to ngrok again.
+Check the Ngrok status page for outages: https://status.ngrok.com/
+Tunnel connected.
+Tunnel connection has been closed. This is often related to intermittent connection issues between the dev server and ngrok. Restart the dev server to try connecting to ngrok again.
+Check the Ngrok status page for outages: https://status.ngrok.com/
+Tunnel connected.
+Tunnel connection has been closed. This is often related to intermittent connection issues between the dev server and ngrok. Restart the dev server to try connecting to ngrok again.
+Check the Ngrok status page for outages: https://status.ngrok.com/
+Killed
+
+  #  Node.js[33652]: void node::ResetStdio() at ../src/node.cc:760
+  #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
+
+----- Native stack trace -----
+
+ 1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [npm exec expo start --tunnel --port 8490]
+ 2: 0xf42264  [npm exec expo start --tunnel --port 8490]
+ 3: 0x7f35d8c45495  [/lib/x86_64-linux-gnu/libc.so.6]
+ 4: 0x7f35d8c45610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
+ 5: 0xe98a4f node::DefaultProcessExitHandlerInternal(node::Environment*, node::ExitCode) [npm exec expo start --tunnel --port 8490]
+ 6: 0xf01e4f node::Environment::Exit(node::ExitCode) [npm exec expo start --tunnel --port 8490]
+ 7: 0x1d755e2  [npm exec expo start --tunnel --port 8490]
+
+  #  Node.js[33652]: void node::ResetStdio() at ../src/node.cc:760
+  #  Assertion failed: !(err != 0) || (err == -1 && (*__errno_location ()) == 1)
+
+----- Native stack trace -----
+
+ 1: 0xf95cf7 node::Assert(node::AssertionInfo const&) [npm exec expo start --tunnel --port 8490]
+ 2: 0xf42264  [npm exec expo start --tunnel --port 8490]
+ 3: 0xf42982 node::TrapWebAssemblyOrContinue(int, siginfo_t*, void*) [npm exec expo start --tunnel --port 8490]
+ 4: 0x7f35d8c42520  [/lib/x86_64-linux-gnu/libc.so.6]
+ 5: 0x1929147 v8::internal::tracing::TraceEventHelper::GetTracingController() [npm exec expo start --tunnel --port 8490]
+ 6: 0x13dc745 v8::internal::Isolate::CaptureDetailedStackTrace(int, v8::StackTrace::StackTraceOptions) [npm exec expo start --tunnel --port 8490]
+ 7: 0x126a133 v8::StackTrace::CurrentStackTrace(v8::Isolate*, int, v8::StackTrace::StackTraceOptions) [npm exec expo start --tunnel --port 8490]
+ 8: 0xf95c46 node::GetCurrentStackTrace(v8::Isolate*, int) [npm exec expo start --tunnel --port 8490]
+ 9: 0xee0c8b node::DumpJavaScriptBacktrace(_IO_FILE*) [npm exec expo start --tunnel --port 8490]
+10: 0xf95d03 node::Assert(node::AssertionInfo const&) [npm exec expo start --tunnel --port 8490]
+11: 0xf42264  [npm exec expo start --tunnel --port 8490]
+12: 0x7f35d8c45495  [/lib/x86_64-linux-gnu/libc.so.6]
+13: 0x7f35d8c45610 on_exit [/lib/x86_64-linux-gnu/libc.so.6]
+14: 0xe98a4f node::DefaultProcessExitHandlerInternal(node::Environment*, node::ExitCode) [npm exec expo start --tunnel --port 8490]
+15: 0xf01e4f node::Environment::Exit(node::ExitCode) [npm exec expo start --tunnel --port 8490]
+16: 0x1d755e2  [npm exec expo start --tunnel --port 8490]
