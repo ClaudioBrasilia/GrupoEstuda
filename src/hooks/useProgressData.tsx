@@ -302,6 +302,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
     return () => {
       console.log('🔌 Removendo canal Realtime (goals)...');
+      goalsChannel.unsubscribe();
       supabase.removeChannel(goalsChannel);
     };
   }, [groupId, fetchProgressData]);
