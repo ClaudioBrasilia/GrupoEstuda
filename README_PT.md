@@ -47,6 +47,23 @@ Isso iniciará:
 - Servidor API (porta 3000)
 - Web (porta 8081)
 
+## Fluxo de teste com APK (EAS preview)
+
+Use este perfil para gerar um APK instalável e compartilhar com testadores (sem Play Store).
+
+### 1. Gerar APK de teste
+
+```bash
+eas login
+eas build -p android --profile preview
+```
+
+O resultado esperado é um **APK** instalável (build interno), ideal para testes rápidos.
+
+### 2. Compartilhar com testadores
+
+Após o build concluir, o EAS fornece um link para download. Envie esse link para os testadores instalarem o APK no Android.
+
 ### 3. Testar no Navegador (Web)
 
 Acesse `http://localhost:8081` no seu navegador.
