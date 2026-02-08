@@ -1,0 +1,141 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 96%;
+    --foreground: 215 25% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 20%;
+
+    --primary: 215 90% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 168 65% 52%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 18% 90%;
+    --muted-foreground: 215 18% 45%;
+
+    --accent: 265 75% 62%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 355 88% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 86%;
+    --input: 210 18% 89%;
+    --ring: 215 90% 58%;
+
+    --radius: 0.75rem;
+    
+    /* Gradientes elegantes */
+    --gradient-primary: linear-gradient(135deg, hsl(215, 90%, 58%), hsl(195, 85%, 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(168, 65%, 52%), hsl(145, 70%, 48%));
+    --gradient-accent: linear-gradient(135deg, hsl(265, 75%, 62%), hsl(280, 80%, 58%));
+    --gradient-hero: linear-gradient(180deg, hsl(0, 0%, 100%), hsl(265, 75%, 98%));
+    
+    /* Sombras elegantes */
+    --shadow-sm: 0 2px 8px -2px hsl(215, 90%, 58%, 0.1);
+    --shadow-md: 0 4px 16px -4px hsl(215, 90%, 58%, 0.15);
+    --shadow-lg: 0 8px 32px -8px hsl(215, 90%, 58%, 0.2);
+    --shadow-glow: 0 0 40px hsl(215, 90%, 58%, 0.3);
+    
+    /* Transições suaves */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    --background: 215 20% 16%;
+    --foreground: 210 15% 94%;
+
+    --card: 215 18% 19%;
+    --card-foreground: 210 15% 94%;
+
+    --popover: 215 18% 19%;
+    --popover-foreground: 210 15% 94%;
+
+    --primary: 215 85% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 168 60% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 215 15% 24%;
+    --muted-foreground: 210 12% 68%;
+
+    --accent: 265 70% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 355 85% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 15% 26%;
+    --input: 215 15% 26%;
+    --ring: 215 85% 60%;
+    
+    /* Gradientes para dark mode */
+    --gradient-primary: linear-gradient(135deg, hsl(215, 85%, 60%), hsl(195, 80%, 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(168, 60%, 50%), hsl(145, 65%, 48%));
+    --gradient-accent: linear-gradient(135deg, hsl(265, 70%, 60%), hsl(280, 75%, 58%));
+    --gradient-hero: linear-gradient(180deg, hsl(215, 20%, 16%), hsl(265, 70%, 20%));
+    
+    /* Sombras para dark mode */
+    --shadow-sm: 0 2px 8px -2px hsl(0, 0%, 0%, 0.3);
+    --shadow-md: 0 4px 16px -4px hsl(0, 0%, 0%, 0.4);
+    --shadow-lg: 0 8px 32px -8px hsl(0, 0%, 0%, 0.5);
+    --shadow-glow: 0 0 40px hsl(215, 85%, 60%, 0.2);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* Custom styles for the app */
+  .nav-link {
+    @apply flex flex-col items-center justify-center p-2 text-muted-foreground hover:text-primary transition-colors;
+  }
+
+  .nav-link.active {
+    @apply text-primary;
+  }
+
+  .progress-bar {
+    @apply h-2 w-full bg-muted rounded-full overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full bg-primary rounded-full animate-progress-fill;
+  }
+
+  .card {
+    @apply bg-card rounded-xl shadow-md p-4 border border-border;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-all;
+  }
+
+  .btn-outline {
+    @apply border border-primary text-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-primary-foreground transition-all;
+  }
+}

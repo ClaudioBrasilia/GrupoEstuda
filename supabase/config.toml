@@ -1,0 +1,10 @@
+project_id = "nwtodahupgqbatxeluat"
+
+[functions.generate-test-questions]
+verify_jwt = true
+
+[functions.water-reminder]
+verify_jwt = false
+
+[functions.check-leaderboard-changes]
+verify_jwt = false

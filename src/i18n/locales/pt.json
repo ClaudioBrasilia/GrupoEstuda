@@ -1,0 +1,351 @@
+{
+  "app": {
+    "name": "Grupo Estuda",
+    "slogan": "Alcance suas metas de estudo junto com seus amigos"
+  },
+  "loading": "Carregando...",
+  "navigation": {
+    "groups": "Grupos",
+    "progress": "Progresso",
+    "water": "Água",
+    "leaders": "Ranking",
+    "profile": "Perfil",
+    "timer": "Cronômetro"
+  },
+  "home": {
+    "getStarted": "Começar"
+  },
+  "groups": {
+    "title": "Grupos de Estudo",
+    "search": "Buscar grupos...",
+    "create": "Criar Novo Grupo de Estudo",
+    "noGroups": "Nenhum grupo de estudo encontrado",
+    "createFirst": "Criar Seu Primeiro Grupo",
+    "members": "membros",
+    "fixedGroups": {
+      "vestibularBrasil": "Vestibular Brasil"
+    },
+    "addSubjects": "Adicionar Matérias",
+    "addVestibular": "Adicionar Módulo Vestibular",
+    "deleteSubject": "Excluir Matéria",
+    "subjects": {
+      "portuguese": "Português",
+      "math": "Matemática",
+      "history": "História",
+      "geography": "Geografia",
+      "physics": "Física",
+      "chemistry": "Química",
+      "biology": "Biologia",
+      "literature": "Literatura",
+      "english": "Inglês",
+      "essay": "Redação"
+    }
+  },
+  "login": {
+    "title": "Entrar",
+    "email": "Email",
+    "password": "Senha",
+    "loginButton": "Entrar",
+    "registerPrompt": "Não tem uma conta?",
+    "registerButton": "Cadastre-se aqui",
+    "forgotPassword": "Esqueceu a senha?"
+  },
+  "register": {
+    "title": "Criar Conta",
+    "name": "Nome",
+    "email": "Email",
+    "password": "Senha",
+    "confirmPassword": "Confirmar Senha",
+    "registerButton": "Cadastrar",
+    "loginPrompt": "Já tem uma conta?",
+    "loginButton": "Faça login aqui"
+  },
+  "plans": {
+    "title": "Escolha Seu Plano",
+    "free": {
+      "name": "Gratuito",
+      "price": "Grátis",
+      "features": [
+        "Participar de grupos de estudo",
+        "Acompanhar atividades básicas",
+        "Controle de água",
+        "Acesso limitado ao ranking"
+      ]
+    },
+    "basic": {
+      "name": "Básico",
+      "price": "R$ 19,90/mês",
+      "features": [
+        "Todos os recursos gratuitos",
+        "Sem anúncios",
+        "Acompanhamento avançado de progresso",
+        "Criação de grupos personalizados"
+      ]
+    },
+    "premium": {
+      "name": "Premium",
+      "price": "R$ 39,90/mês",
+      "features": [
+        "Todos os recursos básicos",
+        "Geração de testes com IA",
+        "Grupos ilimitados",
+        "Análises avançadas"
+      ]
+    },
+    "subscribe": "Assinar",
+    "current": "Seu plano atual"
+  },
+  "aiTests": {
+    "title": "Gerar Teste",
+    "questionsNumber": "Número de questões",
+    "selectSubjects": "Selecionar matérias",
+    "difficulty": "Nível de dificuldade",
+    "difficulties": {
+      "easy": "Fácil",
+      "medium": "Médio",
+      "hard": "Difícil"
+    },
+    "generate": "Gerar Teste",
+    "premiumFeature": "Este é um recurso premium",
+    "upgrade": "Fazer upgrade para desbloquear",
+    "generatedTest": "Teste Gerado",
+    "createAnother": "Criar Outro Teste",
+    "saveTest": "Salvar Teste",
+    "submitAnswers": "Enviar Respostas",
+    "generating": "Gerando...",
+    "selectAtLeastOne": "Por favor, selecione pelo menos uma matéria",
+    "generatingSuccess": "Teste gerado com sucesso!",
+    "generatingFailed": "Falha ao gerar teste",
+    "apiKeyTitle": "Digite a Chave da API OpenAI",
+    "apiKeyDescription": "Para gerar questões de teste, você precisa fornecer uma chave da API OpenAI",
+    "apiKeyPlaceholder": "Digite sua chave da API OpenAI",
+    "saveApiKey": "Salvar e Continuar",
+    "apiKeySaved": "Chave da API salva com sucesso",
+    "resetTimer": "Cronômetro reiniciado",
+    "progress": "Progresso",
+    "questionsAnswered": "questões respondidas",
+    "yourScore": "Sua Nota",
+    "correct": "Certas",
+    "wrong": "Erradas",
+    "reviewWrong": "Revisar Questões Erradas",
+    "unansweredWarning": "Você deixou {{count}} questão(ões) sem resposta! Deseja submeter mesmo assim?",
+    "correctionSuccess": "Teste corrigido! Você acertou {{correct}} de {{total}} questões.",
+    "correctAnswer": "Resposta correta",
+    "yourAnswer": "Sua resposta",
+    "invalidQuestions": "Algumas questões foram geradas incorretamente. Por favor, tente gerar novamente.",
+    "messages": {
+      "excellent": "🎉 Excelente! Continue assim!",
+      "good": "👍 Bom trabalho! Você está no caminho certo.",
+      "improving": "📚 Continue estudando, você está melhorando!",
+      "keepTrying": "💪 Não desista! A prática leva à perfeição."
+    }
+  },
+  "chat": {
+    "sendMessage": "Enviar mensagem",
+    "placeholder": "Digite sua mensagem...",
+    "noMessages": "Nenhuma mensagem ainda. Comece a conversa!"
+  },
+  "language": {
+    "title": "Idioma",
+    "english": "Inglês",
+    "portuguese": "Português"
+  },
+  "settings": {
+    "title": "Configurações",
+    "profile": "Perfil",
+    "notifications": "Notificações",
+    "language": "Idioma",
+    "logout": "Sair"
+  },
+  "timer": {
+    "title": "Cronômetro de Estudo",
+    "start": "Iniciar",
+    "pause": "Pausar",
+    "stop": "Parar",
+    "reset": "Reiniciar",
+    "resume": "Continuar",
+    "timeElapsed": "Tempo Decorrido",
+    "selectSubject": "Selecionar Matéria",
+    "selectGroup": "Selecionar Grupo",
+    "pointsPerMinute": "ponto por minuto",
+    "points": "pontos",
+    "history": "Histórico de Estudos",
+    "subject": "Matéria",
+    "duration": "Duração",
+    "date": "Data",
+    "noSessions": "Nenhuma sessão de estudo ainda"
+  },
+  "files": {
+    "title": "Arquivos do Grupo",
+    "upload": "Enviar Arquivo",
+    "noFiles": "Nenhum arquivo enviado ainda",
+    "uploadFirst": "Seja o primeiro a enviar um arquivo!",
+    "selectFile": "Selecionar arquivo",
+    "uploading": "Enviando...",
+    "uploadSuccess": "Arquivo enviado com sucesso!",
+    "uploadError": "Erro ao enviar arquivo",
+    "download": "Baixar",
+    "delete": "Excluir",
+    "confirmDelete": "Tem certeza que deseja excluir este arquivo?",
+    "deleteSuccess": "Arquivo excluído com sucesso!",
+    "deleteError": "Erro ao excluir arquivo"
+  },
+  "goals": {
+    "title": "Metas do Grupo",
+    "addGoal": "Adicionar Meta",
+    "noGoals": "Nenhuma meta definida ainda",
+    "subject": "Matéria",
+    "type": "Tipo",
+    "target": "Meta",
+    "current": "Atual",
+    "progress": "Progresso",
+    "updateProgress": "Atualizar Progresso",
+    "enterAmount": "Digite a quantidade",
+    "types": {
+      "exercises": "Exercícios",
+      "pages": "Páginas",
+      "time": "Tempo (minutos)"
+    }
+  },
+  "achievements": {
+    "studyWarrior": "Guerreiro do Estudo",
+    "studyWarriorDesc": "Alcance 100 pontos",
+    "knowledgeSeeker": "Buscador de Conhecimento",
+    "knowledgeSeekerDesc": "Alcance 500 pontos",
+    "problemSolver": "Solucionador de Problemas",
+    "problemSolverDesc": "Alcance 1000 pontos",
+    "studyMaster": "Mestre dos Estudos",
+    "studyMasterDesc": "Alcance 2500 pontos",
+    "studyLegend": "Lenda dos Estudos",
+    "studyLegendDesc": "Alcance 5000 pontos",
+    "groupLeader": "Líder de Grupo",
+    "groupLeaderDesc": "Participe de 1 grupo",
+    "socialButterfly": "Borboleta Social",
+    "socialButterflyDesc": "Participe de 3 grupos",
+    "communityBuilder": "Construtor de Comunidade",
+    "communityBuilderDesc": "Participe de 5 grupos",
+    "consistent": "Consistente",
+    "consistentDesc": "Complete 7 sessões de estudo",
+    "dedicated": "Dedicado",
+    "dedicatedDesc": "Complete 30 sessões de estudo",
+    "unstoppable": "Imparável",
+    "unstoppableDesc": "Complete 100 sessões de estudo",
+    "hydrationMaster": "Mestre da Hidratação",
+    "hydrationMasterDesc": "Mantenha a meta de água por 7 dias",
+    "waterChampion": "Campeão da Água",
+    "waterChampionDesc": "Mantenha a meta de água por 30 dias"
+  },
+  "profile": {
+    "title": "Perfil",
+    "level": "Nível",
+    "scholar": "Estudioso",
+    "points": "pontos",
+    "rank": "Posição",
+    "toNextLevel": "pontos para o próximo nível",
+    "studyStats": "Estatísticas de Estudo",
+    "myGroups": "Meus Grupos",
+    "achievements": "Conquistas",
+    "earned": "Conquistadas",
+    "locked": "Bloqueadas",
+    "notificationSettings": "Configurações de Notificação",
+    "goalReminders": "Lembretes de Metas",
+    "dailyReminders": "Receber lembretes diários de suas metas",
+    "groupActivity": "Atividade do Grupo",
+    "groupUpdates": "Atualizações dos seus grupos de estudo",
+    "achievementNotifications": "Conquistas",
+    "achievementAlerts": "Notificações quando você conquistar algo",
+    "weeklyReport": "Relatório Semanal",
+    "progressSummary": "Resumo semanal do seu progresso",
+    "logout": "Sair",
+    "settings": {
+      "profile": "Perfil",
+      "security": "Segurança", 
+      "subscription": "Assinatura",
+      "name": "Nome",
+      "email": "Email",
+      "currentPassword": "Senha Atual",
+      "newPassword": "Nova Senha",
+      "confirmPassword": "Confirmar Senha"
+    },
+    "achievementNames": {
+      "studyWarrior": "Guerreiro do Estudo",
+      "knowledgeSeeker": "Buscador de Conhecimento",
+      "groupLeader": "Líder de Grupo",
+      "problemSolver": "Solucionador de Problemas",
+      "hydrationMaster": "Mestre da Hidratação",
+      "dedicationStar": "Estrela da Dedicação"
+    },
+    "achievementDescriptions": {
+      "studyWarrior": "Conquiste 100 pontos de estudo",
+      "knowledgeSeeker": "Conquiste 500 pontos de estudo",
+      "groupLeader": "Participe de pelo menos 1 grupo de estudo",
+      "problemSolver": "Conquiste 1000 pontos de estudo",
+      "hydrationMaster": "Mantenha uma boa hidratação por 7 dias",
+      "dedicationStar": "Alcance o nível 10"
+    }
+  },
+  "water": {
+    "title": "Consumo de Água",
+    "intake": "Consumo de Hoje",
+    "goal": "Meta",
+    "weeklyIntake": "Consumo Semanal de Água",
+    "addWater": "Adicionar Água",
+    "todaysIntake": "Consumo de Hoje"
+  },
+  "leaderboard": {
+    "title": "Ranking",
+    "global": "Global",
+    "group": "Grupo",
+    "week": "Semana",
+    "month": "Mês",
+    "allTime": "Todo Período",
+    "selectGroup": "Selecionar grupo",
+    "you": "Você",
+    "points": "pontos"
+  },
+"progress": {
+    "title": "Progresso",
+    "pagesRead": "Páginas Lidas",
+    "studyTime": "Tempo de Estudo",
+    "exercises": "Exercícios",
+    "studyStreak": "Sequência de Estudos",
+    "minutes": "min",
+    "days": "dias",
+    "studyTimeByDay": "Tempo de Estudo por Dia",
+    "pagesReadByDay": "Páginas Lidas por Dia",
+    "studyBySubject": "Estudo por Matéria",
+    "day": "Dia",
+    "week": "Semana",
+    "month": "Mês",
+    "year": "Ano",
+    "individual": "Individual",
+    "group": "Grupo",
+    "updated": "Atualizado",
+    "updateSuccess": "Progresso atualizado com sucesso",
+    "updateError": "Não foi possível atualizar os dados",
+    "groupGoalsProgress": "Progresso das Metas do Grupo",
+    "todaySessions": "Sessões de Estudo de Hoje",
+    "todayTotal": "Total de Hoje",
+    "session": "sessão",
+    "sessions": "sessões",
+    "noSessionsToday": "Nenhuma sessão de estudo registrada hoje",
+    "startSessionHint": "Inicie uma sessão no Timer para começar!",
+    "complete": "completo",
+    "percentage": "Percentagem"
+  },
+  "group": {
+    "members": "Membros do Grupo",
+    "inviteMember": "Convidar Membro",
+    "admin": "Admin",
+    "addSubject": "Adicionar Matéria"
+  },
+  "days": {
+    "mon": "Seg",
+    "tue": "Ter", 
+    "wed": "Qua",
+    "thu": "Qui",
+    "fri": "Sex",
+    "sat": "Sáb",
+    "sun": "Dom"
+  }
+}
