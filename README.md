@@ -14,11 +14,11 @@ Simply visit the [Lovable Project](https://lovable.dev/projects/ef41847b-ab77-4d
 
 Changes made via Lovable will be committed automatically to this repo.
 
-**Use your preferred IDE**
+**Use your preferred IDE (pnpm recommended)**
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+The only requirement is having Node.js installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating). This repo is optimized for **pnpm** (see `packageManager` and `pnpm-lock.yaml`), so prefer pnpm over npm to avoid peer dependency conflicts.
 
 Follow these steps:
 
@@ -30,10 +30,13 @@ git clone <YOUR_GIT_URL>
 cd <YOUR_PROJECT_NAME>
 
 # Step 3: Install the necessary dependencies.
-npm i
+pnpm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Step 4: Start the Expo dev server (works on Windows).
+pnpm start
+
+# Optional: run both the API server and Expo dev server together.
+pnpm dev
 ```
 
 **Edit a file directly in GitHub**
@@ -54,11 +57,10 @@ npm run dev
 
 This project is built with:
 
-- Vite
+- Expo (React Native)
+- Expo Router
 - TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- NativeWind/Tailwind CSS
 
 ## How can I deploy this project?
 
