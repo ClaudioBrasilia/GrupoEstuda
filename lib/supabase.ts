@@ -1,8 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Credenciais do Supabase (obtidas do painel do projeto)
-const SUPABASE_URL = "https://230beb1cfaab22bf115bb6fa18aad3a035c0c571ccdacccbac1e07174ca41c85.supabase.co";
-const SUPABASE_ANON_KEY = "1dfc121d1cec7e85141f7ddfa17b93b83103f3bfecc9734777dcaa7391dbee9d";
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.warn("Supabase env vars are missing. Check EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.");
+}
 
 // Criar cliente Supabase
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

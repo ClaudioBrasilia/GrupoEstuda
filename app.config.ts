@@ -1,5 +1,5 @@
 // Load environment variables with proper priority (system > .env)
-import "./scripts/load-env.js";
+import "./scripts/load-env.cjs";
 import type { ExpoConfig } from "expo/config";
 
 // Bundle ID format: space.manus.<project_name_dots>.<timestamp>
@@ -60,6 +60,11 @@ const config: ExpoConfig = {
         category: ["BROWSABLE", "DEFAULT"],
       },
     ],
+  },
+  extra: {
+    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
+    supabasePublishableKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "",
+    supabaseProjectId: process.env.EXPO_PUBLIC_SUPABASE_PROJECT_ID ?? "",
   },
   web: {
     bundler: "metro",

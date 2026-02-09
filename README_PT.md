@@ -14,7 +14,7 @@ Um aplicativo móvel moderno para a plataforma Grupo Estuda, desenvolvido com Re
 
 ## Requisitos
 
-- Node.js 16+ e pnpm (recomendado)
+- Node.js 20.19.4+ (recomendado) e pnpm (ou npm)
 - Expo CLI (opcional): `npm install -g expo-cli`
 - Para iOS: Xcode (macOS) ou Expo Go (iOS)
 - Para Android: Android Studio ou Expo Go (Android)
@@ -28,10 +28,28 @@ cd grupo_estuda_app
 pnpm install
 ```
 
+Ou com npm:
+
+```bash
+npm install
+```
+
+Copie o arquivo de variáveis de ambiente:
+
+```bash
+cp .env.example .env
+```
+
 ### 2. Iniciar Servidor de Desenvolvimento
 
 ```bash
 pnpm start
+```
+
+Ou com npm:
+
+```bash
+npm run start
 ```
 
 Isso iniciará o Expo (Metro bundler) e funciona no Windows.

@@ -18,7 +18,7 @@ Changes made via Lovable will be committed automatically to this repo.
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-The only requirement is having Node.js installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating). This repo is optimized for **pnpm** (see `packageManager` and `pnpm-lock.yaml`), so prefer pnpm over npm to avoid peer dependency conflicts.
+The only requirement is having Node.js installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating). Use Node **20.19.4+** (see `.nvmrc`). This repo supports npm and pnpm; pnpm is recommended for faster installs, but npm should work without legacy flags.
 
 Follow these steps:
 
@@ -32,8 +32,17 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 pnpm install
 
+# Or with npm
+npm install
+
+# Step 3.1: Configure environment variables
+cp .env.example .env
+
 # Step 4: Start the Expo dev server (works on Windows).
 pnpm start
+
+# Or with npm
+npm run start
 
 # Optional: run both the API server and Expo dev server together.
 pnpm dev
