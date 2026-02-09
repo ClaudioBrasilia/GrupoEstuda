@@ -15,7 +15,7 @@
     "doctor": "expo doctor",
     "lint": "expo lint",
     "format": "prettier --write .",
-    "test": "vitest run",
+    "test": "vitest run --config vitest.config.ts",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "android": "expo run:android",
     "ios": "expo run:ios",

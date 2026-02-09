@@ -13,11 +13,8 @@ interface WebViewContainerProps {
 let WebViewComponent: any = null;
 
 if (Platform.OS !== "web") {
-  try {
-    WebViewComponent = require("react-native-webview").WebView;
-  } catch (e) {
-    // WebView não disponível
-  }
+  const { WebView } = require("react-native-webview");
+  WebViewComponent = WebView;
 }
 
 export function WebViewContainer({
@@ -370,14 +367,13 @@ export function WebViewContainer({
         allowFileAccess={true}
         allowUniversalAccessFromFileURLs={true}
         allowsInlineMediaPlayback={true}
-        onShowFileChooser={(event) => {
+        onShowFileChooser={(event: unknown) => {
           // Isso permite que o seletor de arquivos nativo do Android/iOS seja aberto corretamente
-          return true; 
+          return true;
         }}
         mixedContentMode="always"
-        domStorageEnabled={true}
-        javaScriptEnabled={true}
-        onFileDownload={({ nativeEvent: { downloadUrl } }) => {
+        onFileDownload={({ nativeEvent }: { nativeEvent: { downloadUrl: string } }) => {
+          const { downloadUrl } = nativeEvent;
           console.log("Download iniciado:", downloadUrl);
         }}
       />
