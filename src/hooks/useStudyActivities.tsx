@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,17 +21,23 @@ export interface StudyActivity {
   user_liked: boolean;
 }
 
-interface StudyActivityLike {
-  user_id: string;
-}
-
 export const useStudyActivities = (groupId?: string) => {
   const { user } = useAuth();
   const [activities, setActivities] = useState<StudyActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  const fetchGlobalActivities = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      if (groupId) {
+        fetchGroupActivities();
+      } else {
+        fetchGlobalActivities();
+      }
+    }
+  }, [user, groupId]);
+
+  const fetchGlobalActivities = async () => {
     try {
       setLoading(true);
 
@@ -61,8 +67,8 @@ export const useStudyActivities = (groupId?: string) => {
             .from('study-activities')
             .getPublicUrl(activity.photo_path);
 
-          const userLiked = (activity.study_activity_likes as StudyActivityLike[]).some(
-            (like) => like.user_id === user?.id
+          const userLiked = activity.study_activity_likes.some(
+            (like: any) => like.user_id === user?.id
           );
 
           return {
@@ -91,9 +97,9 @@ export const useStudyActivities = (groupId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  };
 
-  const fetchGroupActivities = useCallback(async () => {
+  const fetchGroupActivities = async () => {
     if (!groupId) return;
 
     try {
@@ -125,8 +131,8 @@ export const useStudyActivities = (groupId?: string) => {
             .from('study-activities')
             .getPublicUrl(activity.photo_path);
 
-          const userLiked = (activity.study_activity_likes as StudyActivityLike[]).some(
-            (like) => like.user_id === user?.id
+          const userLiked = activity.study_activity_likes.some(
+            (like: any) => like.user_id === user?.id
           );
 
           return {
@@ -154,17 +160,7 @@ export const useStudyActivities = (groupId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [groupId, user]);
-
-  useEffect(() => {
-    if (user) {
-      if (groupId) {
-        fetchGroupActivities();
-      } else {
-        fetchGlobalActivities();
-      }
-    }
-  }, [user, groupId, fetchGroupActivities, fetchGlobalActivities]);
+  };
 
   const compressImage = async (file: File): Promise<File> => {
     const options = {
@@ -296,9 +292,9 @@ export const useStudyActivities = (groupId?: string) => {
       }
 
       return { success: true, data };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('❌ Erro completo ao criar atividade:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao criar atividade';
+      const errorMessage = error.message || 'Erro desconhecido ao criar atividade';
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {

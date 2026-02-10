@@ -2,12 +2,11 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LanguagesIcon, UserIcon, Share2 } from 'lucide-react';
+import { LanguagesIcon, UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,49 +49,16 @@ const AppHeader: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  const { toast } = useToast();
   
   const title = getPageTitle(location.pathname, t);
   
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
   };
-
-  const handleShare = async () => {
-    const shareData = {
-      title: 'Grupo Estuda',
-      text: 'Junte-se a nós no Grupo Estuda e melhore seu desempenho acadêmico!',
-      url: window.location.origin,
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(window.location.origin);
-        toast({
-          title: "Link copiado!",
-          description: "O link do app foi copiado para sua área de transferência.",
-        });
-      }
-    } catch (err) {
-      console.error('Erro ao compartilhar:', err);
-    }
-  };
   
   return (
     <header className="bg-gradient-to-r from-background via-background to-primary/5 border-b border-border/50 backdrop-blur-sm py-4 px-6 sticky top-0 z-10 flex items-center justify-between shadow-elegant">
-      <div className="flex-1 flex items-center gap-2">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={handleShare}
-          className="text-foreground hover:bg-primary/10 transition-smooth"
-          title="Compartilhar"
-        >
-          <Share2 size={20} />
-        </Button>
-      </div>
+      <div className="flex-1"></div>
       
       <h1 className="text-xl font-bold text-center bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent flex-1">{title}</h1>
       

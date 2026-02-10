@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { Input } from '@/components/ui/input';
@@ -34,7 +34,13 @@ const ProfileSettings: React.FC = () => {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [waterGoal, setWaterGoal] = useState('2500');
 
-  const fetchProfile = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -52,13 +58,7 @@ const ProfileSettings: React.FC = () => {
       setName(data.name || '');
       setWaterGoal(data.water_goal_ml?.toString() || '2500');
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user, fetchProfile]);
+  };
   
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();

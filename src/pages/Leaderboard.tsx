@@ -132,8 +132,6 @@ const Leaderboard: React.FC = () => {
               return 'bg-gray-200 text-gray-700';
             };
             
-            const premiumPlan = 'plan' in user ? (user as { plan?: string }).plan : undefined;
-
             return (
               <Card key={user.id} className={`${user.isCurrentUser ? 'border-primary border-2' : ''}`}>
                 <CardContent className="p-4 flex items-center justify-between">
@@ -150,7 +148,7 @@ const Leaderboard: React.FC = () => {
                       <div>
                         <div className="font-medium flex items-center gap-1.5">
                           {user.name}
-                          {premiumPlan === 'premium' && <PremiumBadge size="sm" />}
+                          {(user as any).plan === 'premium' && <PremiumBadge size="sm" />}
                           {user.isCurrentUser && <span className="text-xs ml-1 text-primary">(Você)</span>}
                         </div>
                         <div className="text-xs text-muted-foreground">

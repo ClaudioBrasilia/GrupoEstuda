@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -20,29 +20,13 @@ export function useUserPreferences() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const createDefaultPreferences = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .insert([
-          {
-            user_id: user.id,
-            goal_reminders: true,
-            group_activity: true,
-            achievements: true,
-            weekly_report: false,
-          }
-        ]);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error creating default preferences:', error);
+  useEffect(() => {
+    if (user) {
+      fetchPreferences();
     }
   }, [user]);
 
-  const fetchPreferences = useCallback(async () => {
+  const fetchPreferences = async () => {
     if (!user) return;
 
     try {
@@ -79,13 +63,29 @@ export function useUserPreferences() {
     } finally {
       setLoading(false);
     }
-  }, [createDefaultPreferences, user]);
+  };
 
-  useEffect(() => {
-    if (user) {
-      fetchPreferences();
+  const createDefaultPreferences = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .insert([
+          {
+            user_id: user.id,
+            goal_reminders: true,
+            group_activity: true,
+            achievements: true,
+            weekly_report: false,
+          }
+        ]);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error creating default preferences:', error);
     }
-  }, [user, fetchPreferences]);
+  };
 
   const updatePreference = async (key: keyof UserPreferences, value: boolean) => {
     if (!user) return;

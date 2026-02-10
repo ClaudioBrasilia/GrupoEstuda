@@ -1,8 +1,8 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
-import { Subject, GoalType, FileType, Message, Member } from '@/types/groupTypes';
+import { Subject, GoalType, FileType, Message } from '@/types/groupTypes';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -68,11 +68,53 @@ export const useGroupData = (groupId: string | undefined) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [userPoints, setUserPoints] = useState<number>(0);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupName, setGroupName] = useState<string>('');
 
-  const fetchGroupData = useCallback(async () => {
+  useEffect(() => {
+    if (!groupId || !user) return;
+    
+    fetchGroupData();
+    
+    // Set up real-time subscription for messages
+    const channel = supabase
+      .channel(`group-${groupId}-messages`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `group_id=eq.${groupId}`
+        },
+        async (payload) => {
+          // Fetch the author's profile name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', payload.new.user_id)
+            .single();
+
+          const newMessage = {
+            id: payload.new.id,
+            userId: payload.new.user_id,
+            userName: profile?.name || 'Unknown User',
+            text: payload.new.content,
+            timestamp: new Date(payload.new.created_at)
+          };
+
+          setMessages(prev => [...prev, newMessage]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [groupId, user]);
+
+  const fetchGroupData = async () => {
     if (!groupId || !user) return;
     
     setLoading(true);
@@ -196,49 +238,7 @@ export const useGroupData = (groupId: string | undefined) => {
     } finally {
       setLoading(false);
     }
-  }, [groupId, user]);
-
-  useEffect(() => {
-    if (!groupId || !user) return;
-    
-    fetchGroupData();
-    
-    // Set up real-time subscription for messages
-    const channel = supabase
-      .channel(`group-${groupId}-messages`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `group_id=eq.${groupId}`
-        },
-        async (payload) => {
-          // Fetch the author's profile name
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('id', payload.new.user_id)
-            .single();
-
-          const newMessage = {
-            id: payload.new.id,
-            userId: payload.new.user_id,
-            userName: profile?.name || 'Unknown User',
-            text: payload.new.content,
-            timestamp: new Date(payload.new.created_at)
-          };
-
-          setMessages(prev => [...prev, newMessage]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [groupId, user, fetchGroupData]);
+  };
 
   const handleAddSubject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -411,26 +411,15 @@ export const useGroupData = (groupId: string | undefined) => {
     
     try {
       // Update goal progress with timestamp
-      const { data: updatedGoalsData, error: goalError } = await supabase
+      const { error: goalError } = await supabase
         .from('goals')
         .update({ 
           current: newCurrent,
           updated_at: new Date().toISOString()
         })
-        .eq('id', goalId)
-        .select('id, group_id, type, current, target, updated_at');
-
-      console.log('GOALS UPDATE RESULT:', { data: updatedGoalsData, error: goalError });
+        .eq('id', goalId);
       
       if (goalError) throw goalError;
-
-      const { data: recentGoalsData, error: recentGoalsError } = await supabase
-        .from('goals')
-        .select('id, group_id, type, current, target, updated_at')
-        .order('updated_at', { ascending: false })
-        .limit(20);
-
-      console.log('GOALS RECENT ROWS:', { data: recentGoalsData, error: recentGoalsError });
       
       // Get current points and add new points
       const { data: currentPointsData } = await supabase

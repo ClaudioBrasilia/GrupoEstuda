@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { StudySessionWithSubject } from '@/types/progress';
 
 export interface ProgressStats {
   totalStudyTime: number;
@@ -61,23 +60,43 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchProgressData = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      fetchProgressData();
+    }
+  }, [user, groupId, timeRange]);
+
+  // Atualização em tempo real
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('study_sessions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Ouve INSERT, UPDATE e DELETE
+          schema: 'public',
+          table: 'study_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('📡 Atualização em tempo real detectada:', payload);
+          fetchProgressData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, groupId, timeRange]);
+
+  const fetchProgressData = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
-
-      // Fetch subject IDs for the given group if groupId is provided
-      let subjectIds: string[] = [];
-      if (groupId) {
-        const { data: subjectsData, error: subjectsError } = await supabase
-          .from('subjects')
-          .select('id')
-          .eq('group_id', groupId);
-
-        if (subjectsError) throw subjectsError;
-        subjectIds = subjectsData.map(s => s.id);
-      }
 
       // Fetch study sessions based on selected time range
       const startDate = new Date();
@@ -96,7 +115,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           break;
       }
       
-      let sessionsQuery = supabase
+      const { data: sessions } = await supabase
         .from('study_sessions')
         .select(`
           *,
@@ -109,205 +128,44 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         .gte('started_at', startDate.toISOString())
         .not('completed_at', 'is', null);
 
-      if (groupId && subjectIds.length > 0) {
-        sessionsQuery = sessionsQuery.in('subject_id', subjectIds);
-      } else if (groupId && subjectIds.length === 0) {
-        // If group has no subjects, no sessions will be found for this group
-        sessionsQuery = sessionsQuery.in('subject_id', ['']); // Return empty result
-      }
-
-      const { data: sessions, error: sessionsError } = await sessionsQuery;
-      if (sessionsError) throw sessionsError;
-
       // Calculate weekly data
       const weeklyData = generateWeeklyData(sessions || []);
       
       // Calculate totals
       const totalStudyTime = (sessions || []).reduce((sum, session) => sum + session.duration_minutes, 0);
-      
-      // Fetch goals progress (for pages and exercises)
-      let totalPages = Math.floor(totalStudyTime / 5) * 2;
-      let totalExercises = Math.floor(totalStudyTime / 10);
-      let goalsProgress: GoalProgressData[] = [];
-
-      if (groupId) {
-        const { data: goalsData, error: goalsError } = await supabase
-          .from('goals')
-          .select(`
-            id,
-            type,
-            current,
-            target,
-            subjects:subject_id (
-              name
-            )
-          `)
-          .eq('group_id', groupId);
-        
-        if (goalsError) throw goalsError;
-
-        const normalizedGoals = goalsData || [];
-
-        goalsProgress = normalizedGoals.map(goal => ({
-          id: goal.id,
-          type: goal.type,
-          subject: goal.subjects?.name || 'Geral',
-          current: goal.current,
-          target: goal.target,
-          progress: goal.target > 0 ? Math.round((goal.current / goal.target) * 100) : 0
-        }));
-
-        totalPages = normalizedGoals
-          .filter(goal => goal.type === 'pages')
-          .reduce((sum, goal) => sum + goal.current, 0);
-        
-        totalExercises = normalizedGoals
-          .filter(goal => goal.type === 'exercises')
-          .reduce((sum, goal) => sum + goal.current, 0);
-      } else {
-        const { data: memberGroups, error: memberGroupsError } = await supabase
-          .from('group_members')
-          .select('group_id')
-          .eq('user_id', user.id);
-
-        if (memberGroupsError) throw memberGroupsError;
-
-        const groupIds = (memberGroups || []).map(member => member.group_id);
-
-        if (groupIds.length > 0) {
-          const { data: goalsData, error: goalsError } = await supabase
-            .from('goals')
-            .select('type, current')
-            .in('group_id', groupIds);
-
-          if (goalsError) throw goalsError;
-
-          const normalizedGoals = goalsData || [];
-
-          totalPages = normalizedGoals
-            .filter(goal => goal.type === 'pages')
-            .reduce((sum, goal) => sum + goal.current, 0);
-          
-          totalExercises = normalizedGoals
-            .filter(goal => goal.type === 'exercises')
-            .reduce((sum, goal) => sum + goal.current, 0);
-        }
-      }
+      const totalPages = Math.floor(totalStudyTime / 5) * 2; // Estimate 2 pages per 5 minutes
+      const totalExercises = Math.floor(totalStudyTime / 10); // Estimate 1 exercise per 10 minutes
 
       // Calculate study streak
-      const studyStreak = await calculateStudyStreak(user.id);
+      const studyStreak = await calculateStudyStreak();
 
       // Fetch subject progress
       const subjectData = await fetchSubjectProgress(sessions || []);
+
+      // Fetch goals progress (only for group view)
+      const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
+
+      // Fetch daily sessions (only for day view)
+      const dailySessions = timeRange === 'day' ? await fetchDailySessions() : [];
 
       setStats({
         totalStudyTime,
         totalPages,
         totalExercises,
         studyStreak,
-        weeklyData: [...weeklyData],
-        subjectData: [...subjectData],
-        goalsProgress: [...goalsProgress],
-        dailySessions: timeRange === 'day' ? await fetchDailySessions(user.id) : undefined
+        weeklyData,
+        subjectData,
+        goalsProgress,
+        dailySessions
       });
     } catch (error) {
       console.error('Error fetching progress data:', error);
     } finally {
       setLoading(false);
     }
-  }, [user, groupId, timeRange]);
+  };
 
-  useEffect(() => {
-    if (user) {
-      fetchProgressData();
-    }
-  }, [fetchProgressData, user]);
-
-  // Atualização em tempo real
-  useEffect(() => {
-    if (!user) return;
-
-    console.log('🔌 Configurando Realtime para Progresso (study_sessions)...');
-
-    const sessionsChannel = supabase
-      .channel(`study_sessions_progress_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_sessions',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('📡 Realtime: Mudança em study_sessions detectada', payload);
-          fetchProgressData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('🔌 Removendo canal Realtime (study_sessions)...');
-      supabase.removeChannel(sessionsChannel);
-    };
-  }, [user, fetchProgressData]);
-
-  useEffect(() => {
-    if (!groupId) return;
-
-    console.log('🔌 Configurando Realtime para Progresso (goals)...');
-
-    const handleGoalsChange = (payload: { new?: { group_id?: string }; old?: { group_id?: string } }) => {
-      const groupIdFromPayload = payload.new?.group_id ?? payload.old?.group_id;
-
-      if (groupIdFromPayload !== groupId) return;
-
-      console.log('📡 Realtime: Mudança em goals detectada', payload);
-      fetchProgressData();
-    };
-
-    const goalsChannel = supabase
-      .channel(`goals_progress_${groupId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'goals',
-          filter: `group_id=eq.${groupId}`
-        },
-        handleGoalsChange
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'goals',
-          filter: `group_id=eq.${groupId}`
-        },
-        handleGoalsChange
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'goals',
-          filter: `group_id=eq.${groupId}`
-        },
-        handleGoalsChange
-      )
-      .subscribe();
-
-    return () => {
-      console.log('🔌 Removendo canal Realtime (goals)...');
-      goalsChannel.unsubscribe();
-      supabase.removeChannel(goalsChannel);
-    };
-  }, [groupId, fetchProgressData]);
-
-  const generateWeeklyData = (sessions: StudySessionWithSubject[]): WeeklyStudyData[] => {
+  const generateWeeklyData = (sessions: any[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     const data: WeeklyStudyData[] = [];
 
@@ -338,7 +196,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     return data;
   };
 
-  const fetchSubjectProgress = async (sessions: StudySessionWithSubject[]): Promise<SubjectProgressData[]> => {
+  const fetchSubjectProgress = async (sessions: any[]): Promise<SubjectProgressData[]> => {
     const subjectStats: { [key: string]: number } = {};
     
     sessions.forEach(session => {
@@ -357,7 +215,33 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       .sort((a, b) => b.value - a.value);
   };
 
-  const fetchDailySessions = async (userId: string): Promise<DailySessionData[]> => {
+  const fetchGoalsProgress = async (groupId: string): Promise<GoalProgressData[]> => {
+    const { data: goals } = await supabase
+      .from('goals')
+      .select(`
+        id,
+        type,
+        current,
+        target,
+        subjects:subject_id (
+          name
+        )
+      `)
+      .eq('group_id', groupId);
+
+    return (goals || []).map(goal => ({
+      id: goal.id,
+      type: goal.type,
+      subject: goal.subjects?.name || 'Geral',
+      current: goal.current,
+      target: goal.target,
+      progress: Math.round((goal.current / goal.target) * 100)
+    }));
+  };
+
+  const fetchDailySessions = async (): Promise<DailySessionData[]> => {
+    if (!user) return [];
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -375,7 +259,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           name
         )
       `)
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .gte('started_at', today.toISOString())
       .lt('started_at', tomorrow.toISOString())
       .not('completed_at', 'is', null)
@@ -399,18 +283,20 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     }));
   };
 
-  const calculateStudyStreak = async (userId: string): Promise<number> => {
+  const calculateStudyStreak = async (): Promise<number> => {
+    if (!user) return 0;
+
     const { data: sessions } = await supabase
       .from('study_sessions')
       .select('started_at')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false });
 
     if (!sessions || sessions.length === 0) return 0;
 
     let streak = 0;
-    const currentDate = new Date();
+    let currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
     const studyDates = new Set(

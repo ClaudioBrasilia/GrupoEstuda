@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { PLAN_LIMITS, getPlanLimits, PlanType } from '@/config/planLimits';
@@ -16,7 +16,13 @@ export const usePlanLimits = () => {
   const currentPlan: PlanType = (user?.plan as PlanType) || 'free';
   const limits = getPlanLimits(currentPlan);
 
-  const fetchUsage = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      fetchUsage();
+    }
+  }, [user]);
+
+  const fetchUsage = async () => {
     if (!user) return;
 
     try {
@@ -44,13 +50,7 @@ export const usePlanLimits = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      fetchUsage();
-    }
-  }, [user, fetchUsage]);
+  };
 
   const canCreateGroup = (): boolean => {
     if (limits.maxGroups === null) return true;

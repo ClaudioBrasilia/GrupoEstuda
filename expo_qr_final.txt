@@ -1,7 +1,0 @@
-Starting project at /home/ubuntu/grupo_estuda_app
-› Port 8081 is running this app in another window
-  /home/ubuntu/grupo_estuda_app (pid 4880)
-Input is required, but 'npx expo' is in non-interactive mode.
-Required input:
-> Use port 8082 instead?
-› Skipping dev server

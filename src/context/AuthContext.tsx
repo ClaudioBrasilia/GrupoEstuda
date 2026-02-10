@@ -1,8 +1,7 @@
 
-/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { AuthError, Session } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 import { withTimeout } from '@/lib/authUtils';
 
 export type PlanType = 'free' | 'basic' | 'premium';
@@ -19,8 +18,8 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthActionLoading: boolean;
-  login: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  register: (name: string, email: string, password: string) => Promise<{ error: AuthError | null }>;
+  login: (email: string, password: string) => Promise<{ error: any }>;
+  register: (name: string, email: string, password: string) => Promise<{ error: any }>;
   logout: () => Promise<void>;
   updateUserPlan: (plan: PlanType) => Promise<void>;
 }
@@ -48,32 +47,16 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   useEffect(() => {
     let isMounted = true;
+    let authResolved = false;
 
-    const initializeAuth = async () => {
-      try {
-        // 1. Get initial session
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        
-        if (!isMounted) return;
-
-        if (initialSession) {
-          setSession(initialSession);
-          if (initialSession.user) {
-            await fetchUserProfile(initialSession.user.id, initialSession.user.email!);
-          }
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+    const resolveAuth = () => {
+      if (isMounted && !authResolved) {
+        authResolved = true;
+        setIsLoading(false);
       }
     };
 
-    initializeAuth();
-
-    // 2. Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!isMounted) return;
@@ -86,12 +69,40 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
           setUser(null);
         }
         
-        setIsLoading(false);
+        resolveAuth();
       }
     );
 
+    // Fallback: Verificar sessão manualmente após 2 segundos
+    const fallbackTimeout = setTimeout(async () => {
+      if (!authResolved && isMounted) {
+        try {
+          const { data: { session: existingSession } } = await supabase.auth.getSession();
+          if (!isMounted) return;
+          
+          setSession(existingSession);
+          if (existingSession?.user) {
+            await fetchUserProfile(existingSession.user.id, existingSession.user.email!);
+          }
+        } catch (error) {
+          console.warn('Failed to get session:', error);
+        }
+        resolveAuth();
+      }
+    }, 2000);
+
+    // Timeout máximo de segurança: 5 segundos
+    const maxTimeout = setTimeout(() => {
+      if (!authResolved) {
+        console.warn('Auth timeout reached, forcing loading to complete');
+        resolveAuth();
+      }
+    }, 5000);
+
     return () => {
       isMounted = false;
+      clearTimeout(fallbackTimeout);
+      clearTimeout(maxTimeout);
       subscription.unsubscribe();
     };
   }, []);

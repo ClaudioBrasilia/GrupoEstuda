@@ -42,14 +42,14 @@ const GroupSubjectsTab: React.FC<GroupSubjectsTabProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-center">
         <h3 className="font-semibold">Matérias Disponíveis</h3>
         
         {currentUserIsAdmin && (
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="flex gap-2">
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="sm" className="bg-study-primary w-full sm:w-auto">
+                <Button size="sm" className="bg-study-primary">
                   <Plus size={16} className="mr-1" />
                   {t('groups.addSubjects')}
                 </Button>
@@ -75,7 +75,7 @@ const GroupSubjectsTab: React.FC<GroupSubjectsTabProps> = ({
             
             <Dialog open={addVestibularDialogOpen} onOpenChange={setAddVestibularDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                <Button size="sm" variant="outline">
                   <Plus size={16} className="mr-1" />
                   {t('groups.addVestibular')}
                 </Button>
