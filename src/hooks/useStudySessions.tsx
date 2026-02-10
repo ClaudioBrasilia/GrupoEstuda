@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -31,7 +31,13 @@ export const useStudySessions = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const fetchData = async () => {
     try {
       setLoading(true);
 
@@ -56,7 +62,6 @@ export const useStudySessions = () => {
 
       // Fetch subjects from user's groups
       const groupIds = formattedGroups.map(g => g.id);
-      let formattedSubjects: Subject[] = [];
       if (groupIds.length > 0) {
         const { data: subjectsData } = await supabase
           .from('subjects')
@@ -64,7 +69,7 @@ export const useStudySessions = () => {
           .in('group_id', groupIds)
           .order('name');
 
-        formattedSubjects = subjectsData?.map(subj => ({
+        const formattedSubjects = subjectsData?.map(subj => ({
           id: subj.id,
           name: subj.name,
           group_id: subj.group_id
@@ -80,11 +85,10 @@ export const useStudySessions = () => {
         .eq('user_id', user?.id)
         .order('started_at', { ascending: false });
 
-      const subjectNameById = new Map(formattedSubjects.map(subject => [subject.id, subject.name]));
       const formattedSessions = sessionsData?.map(session => ({
         id: session.id,
         subject_id: session.subject_id,
-        subject_name: subjectNameById.get(session.subject_id) || 'Matéria Geral',
+        subject_name: subjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
         duration_minutes: session.duration_minutes,
         points: Math.floor(session.duration_minutes), // 1 point per minute
         started_at: new Date(session.started_at),
@@ -99,13 +103,7 @@ export const useStudySessions = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user, fetchData]);
+  };
 
   const createStudySession = async (subjectId: string, durationSeconds: number) => {
     if (!user) return { success: false, error: 'Usuário não autenticado' };

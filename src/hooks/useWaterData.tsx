@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
@@ -18,7 +18,13 @@ export function useWaterData() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchWaterData = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      fetchWaterData();
+    }
+  }, [user]);
+
+  const fetchWaterData = async () => {
     if (!user) return;
 
     try {
@@ -79,13 +85,7 @@ export function useWaterData() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      fetchWaterData();
-    }
-  }, [user, fetchWaterData]);
+  };
 
   const addWaterIntake = async (amount: number) => {
     if (!user) return;

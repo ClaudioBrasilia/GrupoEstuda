@@ -1,62 +1,47 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
-  console.log("HANDLER STARTED");
-  
-  // Tratamento do método OPTIONS para CORS
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verificação da OPENAI_API_KEY
-    const openAiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAiKey) {
-      console.error("OPENAI_API_KEY missing");
-      throw new Error("OPENAI_API_KEY missing");
-    }
-
-    // Log do BODY RAW
-    const rawBody = await req.text();
-    console.log("BODY RAW:", rawBody);
-
-    // JSON.parse manual e log do payload
-    let payload;
-    try {
-      payload = JSON.parse(rawBody);
-      console.log("Parsed payload:", payload);
-    } catch (e) {
-      throw new Error(`Invalid JSON: ${e.message}`);
-    }
-
-    const { questionCount, difficulty, subject, fileContent } = payload;
-    
-    if (!subject && !fileContent) {
+    if (!lovableApiKey) {
+      console.error('LOVABLE_API_KEY not configured');
       return new Response(
-        JSON.stringify({ error: 'Erro: É necessário fornecer um assunto ou o conteúdo de um arquivo.' }), 
+        JSON.stringify({ error: 'Lovable AI key not configured' }), 
         { 
-          status: 400, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
 
-    let contextSource = "";
-    if (fileContent && fileContent.trim() !== "") {
-      contextSource = `BASEADO NO SEGUINTE CONTEÚDO DE ARQUIVO:\n\n${fileContent}`;
-    } else {
-      contextSource = `SOBRE O SEGUINTE ASSUNTO: ${subject}`;
+    const { numQuestions, difficulty, subjects } = await req.json();
+    
+    if (!subjects || subjects.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Selecione pelo menos uma matéria' }), 
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
-    const prompt = `Crie ${questionCount || 10} questões de múltipla escolha ${contextSource}.
+    const subjectNames = subjects.join(", ");
+    const prompt = `Crie ${numQuestions} questões de múltipla escolha sobre ${subjectNames}.
 
 ESPECIFICAÇÕES:
-- Dificuldade: ${difficulty || 'medium'}
+- Dificuldade: ${difficulty}
 - Estilo: ENEM/Vestibulares (FUVEST, UNICAMP, UFRJ)/Concursos brasileiros recentes
 - Ano base: 2020-2024 (use temas e formatos de provas recentes)
 - Cada questão deve ter:
@@ -83,11 +68,11 @@ Formato JSON:
   }
 ]`;
 
-    console.log('Calling AI Gateway...');
+    console.log('Calling Lovable AI Gateway...');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAiKey}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -98,14 +83,14 @@ Formato JSON:
             content: `Você é um professor especialista em criar questões de múltipla escolha no estilo ENEM, vestibulares (FUVEST, UNICAMP, UFRJ, etc.) e concursos públicos brasileiros.
 
 DIRETRIZES OBRIGATÓRIAS:
-- Se houver um conteúdo de arquivo fornecido, gere as questões EXCLUSIVAMENTE baseadas nele.
-- Se houver apenas um assunto, gere questões aprofundadas sobre esse tema específico.
-- Use contextualização: textos literários, jornalísticos, charges, gráficos descritos, dados estatísticos.
-- Evite questões puramente decorativas; priorize raciocínio, interpretação e análise crítica.
-- Use linguagem clara, formal e acadêmica típica do ENEM.
-- Todas as 5 alternativas devem ser plausíveis e bem elaboradas.
-- A resposta correta deve ser única e indiscutível.
-- Inclua sempre uma breve explicação da resposta.
+- Base suas questões em provas REAIS recentes (2020-2024) desses exames
+- Use contextualização: textos literários, jornalísticos, charges, gráficos descritos, dados estatísticos
+- Inclua interdisciplinaridade quando apropriado (ex: História + Geografia, Química + Biologia)
+- Evite questões puramente decorativas; priorize raciocínio, interpretação e análise crítica
+- Use linguagem clara, formal e acadêmica típica do ENEM
+- Todas as 5 alternativas devem ser plausíveis e bem elaboradas
+- A resposta correta deve ser única e indiscutível
+- Inclua sempre uma breve explicação da resposta
 
 Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
           },
@@ -120,13 +105,35 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('AI error:', errorData);
+      console.error('Lovable AI error:', errorData);
+      
+      // Rate limit excedido
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Limite de requisições excedido. Aguarde alguns segundos e tente novamente.' }), 
+          { 
+            status: 429, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      // Créditos esgotados
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Créditos Lovable AI esgotados. Adicione créditos em Settings -> Workspace -> Usage.' }), 
+          { 
+            status: 402, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
       
       return new Response(
-        JSON.stringify({ error: `AI error: ${errorData.error?.message || 'Unknown error'}` }), 
+        JSON.stringify({ error: `Lovable AI error: ${errorData.error?.message || 'Unknown error'}` }), 
         { 
           status: response.status, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
@@ -135,9 +142,10 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
     const content = data.choices[0]?.message?.content;
     
     if (!content) {
-      throw new Error('No content in AI response');
+      throw new Error('No content in OpenAI response');
     }
 
+    // Extract JSON from response
     let parsedQuestions;
     try {
       const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || 
@@ -147,9 +155,16 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
       parsedQuestions = JSON.parse(jsonString);
     } catch (e) {
       console.error('JSON parsing error:', e, 'Raw content:', content);
-      throw new Error('Erro ao processar resposta da IA');
+      return new Response(
+        JSON.stringify({ error: 'Erro ao processar resposta da IA' }), 
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
     
+    // Format questions
     const formattedQuestions = Array.isArray(parsedQuestions) 
       ? parsedQuestions.map((q, index) => ({
           id: q.id || index + 1,
@@ -161,19 +176,21 @@ Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
         })) 
       : [];
 
+    console.log(`Successfully generated ${formattedQuestions.length} questions`);
+    
     return new Response(
       JSON.stringify({ questions: formattedQuestions }), 
       { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
-  } catch (err) {
-    console.error('Global error in Edge Function:', err);
+  } catch (error) {
+    console.error('Error in generate-test-questions function:', error);
     return new Response(
-      JSON.stringify({ error: err.message }), 
+      JSON.stringify({ error: error.message || 'Internal server error' }), 
       { 
         status: 500, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }

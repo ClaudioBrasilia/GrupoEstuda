@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -31,7 +31,7 @@ export const useGroupInvitations = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
-  const fetchPendingInvitations = useCallback(async () => {
+  const fetchPendingInvitations = async () => {
     if (!user) return;
 
     try {
@@ -50,13 +50,12 @@ export const useGroupInvitations = () => {
 
       if (error) throw error;
 
-      const invitationsData = (data || []) as Invitation[];
-      setInvitations(invitationsData);
+      setInvitations((data as any) || []);
       setPendingCount(data?.length || 0);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error fetching invitations:', error);
     }
-  }, [user]);
+  };
 
   useEffect(() => {
     fetchPendingInvitations();
@@ -80,9 +79,9 @@ export const useGroupInvitations = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchPendingInvitations]);
+  }, [user]);
 
-  const searchUsersByName = useCallback(async (searchTerm: string): Promise<SearchedUser[]> => {
+  const searchUsersByName = async (searchTerm: string): Promise<SearchedUser[]> => {
     if (!searchTerm || searchTerm.length < 2) {
       return [];
     }
@@ -116,13 +115,13 @@ export const useGroupInvitations = () => {
       );
 
       return usersWithEmails.filter((u) => u.email);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error searching users:', error);
       return [];
     } finally {
       setSearchLoading(false);
     }
-  }, []);
+  };
 
   const sendInvitation = async (
     groupId: string,
@@ -185,7 +184,7 @@ export const useGroupInvitations = () => {
 
       toast.success('Convite enviado com sucesso!');
       return { error: null };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error sending invitation:', error);
       toast.error('Erro ao enviar convite');
       return { error };
@@ -207,7 +206,7 @@ export const useGroupInvitations = () => {
       if (error) throw error;
 
       return { data: data || [], error: null };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error fetching group invitations:', error);
       return { data: [], error };
     }
@@ -250,7 +249,7 @@ export const useGroupInvitations = () => {
 
       await fetchPendingInvitations();
       return { error: null };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error accepting invitation:', error);
       toast.error('Erro ao aceitar convite');
       return { error };
@@ -277,7 +276,7 @@ export const useGroupInvitations = () => {
       toast.success('Convite rejeitado');
       await fetchPendingInvitations();
       return { error: null };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error rejecting invitation:', error);
       toast.error('Erro ao rejeitar convite');
       return { error };

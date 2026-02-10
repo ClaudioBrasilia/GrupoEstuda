@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -21,7 +21,13 @@ export const useGroupFiles = (groupId: string | undefined) => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  const fetchFiles = useCallback(async () => {
+  useEffect(() => {
+    if (groupId && user) {
+      fetchFiles();
+    }
+  }, [groupId, user]);
+
+  const fetchFiles = async () => {
     if (!groupId || !user) return;
 
     try {
@@ -69,13 +75,7 @@ export const useGroupFiles = (groupId: string | undefined) => {
     } finally {
       setLoading(false);
     }
-  }, [groupId, user]);
-
-  useEffect(() => {
-    if (groupId && user) {
-      fetchFiles();
-    }
-  }, [groupId, user, fetchFiles]);
+  };
 
   const uploadFile = async (file: File) => {
     if (!groupId || !user) return { success: false, error: 'Dados insuficientes' };

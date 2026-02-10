@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -37,7 +37,13 @@ export function useProfileData() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchProfileData = useCallback(async () => {
+  useEffect(() => {
+    if (user) {
+      fetchProfileData();
+    }
+  }, [user]);
+
+  const fetchProfileData = async () => {
     if (!user) return;
 
     try {
@@ -121,13 +127,7 @@ export function useProfileData() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      fetchProfileData();
-    }
-  }, [user, fetchProfileData]);
+  };
 
   return {
     profileStats,

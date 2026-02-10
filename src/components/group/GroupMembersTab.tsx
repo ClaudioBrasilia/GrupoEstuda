@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,11 @@ const GroupMembersTab: React.FC<GroupMembersTabProps> = ({ members, groupId, isA
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [memberPlans, setMemberPlans] = useState<Record<string, string>>({});
 
-  const fetchMemberPlans = useCallback(async () => {
+  useEffect(() => {
+    fetchMemberPlans();
+  }, [members]);
+
+  const fetchMemberPlans = async () => {
     const memberIds = members.map(m => m.id);
     if (memberIds.length === 0) return;
 
@@ -36,11 +40,7 @@ const GroupMembersTab: React.FC<GroupMembersTabProps> = ({ members, groupId, isA
       });
       setMemberPlans(plans);
     }
-  }, [members]);
-
-  useEffect(() => {
-    fetchMemberPlans();
-  }, [fetchMemberPlans]);
+  };
   
   return (
     <div className="space-y-4">
