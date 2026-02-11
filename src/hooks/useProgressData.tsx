@@ -70,27 +70,48 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    // Canal para sessões de estudo
+    const sessionsChannel = supabase
       .channel('study_sessions_changes')
       .on(
         'postgres_changes',
         {
-          event: '*', // Ouve INSERT, UPDATE e DELETE
+          event: '*',
           schema: 'public',
           table: 'study_sessions',
           filter: `user_id=eq.${user.id}`
         },
-        (payload) => {
-          console.log('📡 Atualização em tempo real detectada:', payload);
+        () => {
           fetchProgressData();
         }
       )
       .subscribe();
 
+    // Canal para metas do grupo (se houver groupId)
+    let goalsChannel: any = null;
+    if (groupId) {
+      goalsChannel = supabase
+        .channel(`group_goals_${groupId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'goals',
+            filter: `group_id=eq.${groupId}`
+          },
+          () => {
+            fetchProgressData();
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(sessionsChannel);
+      if (goalsChannel) supabase.removeChannel(goalsChannel);
     };
-  }, [user, groupId, timeRange]);
+  }, [user, groupId]);
 
   const fetchProgressData = async () => {
     if (!user) return;
