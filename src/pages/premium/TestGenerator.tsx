@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/sonner';
@@ -47,6 +49,13 @@ const TestGenerator: React.FC = () => {
   const navigate = useNavigate();
   const [numQuestions, setNumQuestions] = useState<number>(10);
   const [difficulty, setDifficulty] = useState<string>('medium');
+  const [generationMode, setGenerationMode] = useState<'random' | 'custom'>('random');
+  const [customTopic, setCustomTopic] = useState<string>('');
+  const [customFileName, setCustomFileName] = useState<string>('');
+  const [customFileUrl, setCustomFileUrl] = useState<string>('');
+  const [customFileIsPdf, setCustomFileIsPdf] = useState<boolean>(false);
+  const [isUploadingFile, setIsUploadingFile] = useState<boolean>(false);
+  const [isProcessingPdf, setIsProcessingPdf] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatedTest, setGeneratedTest] = useState<GeneratedQuestion[] | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
@@ -71,7 +80,56 @@ const TestGenerator: React.FC = () => {
       subject.id === id ? { ...subject, selected: !subject.selected } : subject
     ));
   };
-  
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setCustomFileName(file.name);
+    setCustomFileUrl('');
+
+    const isPdfFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    setCustomFileIsPdf(isPdfFile);
+    setIsUploadingFile(true);
+    setIsProcessingPdf(isPdfFile);
+
+    try {
+      const fileExt = file.name.split('.').pop() || 'txt';
+      const userFolder = user?.id || 'anon';
+      const filePath = `${userFolder}/test-generator/${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('group-files')
+        .upload(filePath, file, {
+          upsert: false,
+          contentType: file.type || undefined,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from('group-files')
+        .createSignedUrl(filePath, 60 * 60);
+
+      if (signedError || !signedData?.signedUrl) {
+        throw signedError || new Error('Falha ao obter URL do arquivo.');
+      }
+
+      setCustomFileUrl(signedData.signedUrl);
+      toast.success('Arquivo enviado com sucesso.');
+    } catch (error) {
+      console.error('Failed to upload file:', error);
+      setCustomFileUrl('');
+      setCustomFileIsPdf(false);
+      toast.error('Não foi possível enviar o arquivo selecionado.');
+    } finally {
+      setIsUploadingFile(false);
+      setIsProcessingPdf(false);
+    }
+  };
+
   const handleAnswerChange = (questionId: number, selectedOption: string) => {
     setUserAnswers(prev => ({
       ...prev,
@@ -169,17 +227,36 @@ const TestGenerator: React.FC = () => {
       toast.error(t('aiTests.selectAtLeastOne'));
       return;
     }
+
+    const trimmedTopic = customTopic.trim();
+    if (generationMode === 'custom' && !trimmedTopic && !customFileUrl) {
+      toast.error('No modo personalizado, informe um assunto específico ou envie um arquivo.');
+      return;
+    }
     
     setIsGenerating(true);
     
     try {
       const selectedSubjectNames = selectedSubjects.map(s => s.name);
+      const baseTopic = selectedSubjectNames.join(', ');
+      const topic = generationMode === 'custom'
+        ? (trimmedTopic || baseTopic)
+        : baseTopic;
       
       const { data, error } = await supabase.functions.invoke('generate-test-questions', {
         body: {
+          mode: generationMode,
+          subject: topic,
+          topic,
+          questionCount: numQuestions,
           numQuestions,
           difficulty,
-          subjects: selectedSubjectNames
+          types: ['multiple_choice'],
+          formats: ['multiple_choice'],
+          subjects: selectedSubjectNames,
+          fileContent: null,
+          text: null,
+          fileUrl: generationMode === 'custom' ? (customFileUrl || null) : null
         }
       });
 
@@ -192,7 +269,7 @@ const TestGenerator: React.FC = () => {
         if (error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
           errorMessage = '⏳ Limite de requisições atingido. Aguarde alguns segundos e tente novamente.';
         } else if (error.message?.includes('402') || error.message?.toLowerCase().includes('créditos')) {
-          errorMessage = '💳 Créditos Lovable AI esgotados. Adicione créditos em Settings -> Workspace -> Usage.';
+          errorMessage = '💳 Créditos da OpenAI indisponíveis/insuficientes para gerar questões.';
         } else if (error.message) {
           errorMessage = error.message;
         }
@@ -200,8 +277,8 @@ const TestGenerator: React.FC = () => {
         throw new Error(errorMessage);
       }
 
-      if (!data || !data.questions) {
-        throw new Error('Resposta inválida do servidor');
+      if (!data || !Array.isArray(data.questions)) {
+        throw new Error('Resposta inválida do servidor: questions ausente ou inválido.');
       }
 
       setGeneratedTest(data.questions);
@@ -222,6 +299,64 @@ const TestGenerator: React.FC = () => {
             <h1 className="text-2xl font-bold text-study-primary text-center">{t('aiTests.title')}</h1>
             
             <div className="space-y-4">
+              <div>
+                <Label className="mb-2 block">1. Modo de Geração</Label>
+                <RadioGroup
+                  value={generationMode}
+                  onValueChange={(value) => setGenerationMode(value as 'random' | 'custom')}
+                  className="grid grid-cols-1 gap-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="random" id="mode-random" />
+                    <Label htmlFor="mode-random">Modo Aleatório (Matérias Base)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="custom" id="mode-custom" />
+                    <Label htmlFor="mode-custom">Modo Personalizado</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {generationMode === 'custom' && (
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <Label className="font-semibold">Conteúdo do Simulado</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="custom-topic">Assunto Específico</Label>
+                      <Textarea
+                        id="custom-topic"
+                        placeholder="Ex: Equações do 2º grau, fotossíntese, Revolução Francesa..."
+                        value={customTopic}
+                        onChange={(event) => setCustomTopic(event.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="custom-file">Arquivo (texto/pdf/etc)</Label>
+                      <Input
+                        id="custom-file"
+                        type="file"
+                        accept=".pdf,.txt,application/pdf,text/plain"
+                        onChange={handleFileUpload}
+                      />
+                      {customFileName && (
+                        <p className="text-xs text-muted-foreground">Arquivo selecionado: {customFileName}</p>
+                      )}
+                      {isUploadingFile && (
+                        <p className="text-xs text-muted-foreground">Enviando arquivo...</p>
+                      )}
+                      {isProcessingPdf && (
+                        <p className="text-xs text-muted-foreground">Processando PDF...</p>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      No modo personalizado, preencha o assunto específico ou envie um arquivo para gerar o simulado.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               <div>
                 <Label>{t('aiTests.questionsNumber')}: {numQuestions}</Label>
                 <Slider
@@ -268,10 +403,18 @@ const TestGenerator: React.FC = () => {
                 </RadioGroup>
               </div>
               
+              {isGenerating && generationMode === 'custom' && customFileIsPdf && (
+                <p className="text-xs text-muted-foreground">Processando PDF...</p>
+              )}
               <Button
                 onClick={handleGenerateTest}
                 className="w-full bg-study-primary"
-                disabled={isGenerating || subjects.filter(s => s.selected).length === 0}
+                disabled={
+                  isGenerating ||
+                  subjects.filter(s => s.selected).length === 0 ||
+                  (generationMode === 'custom' && !customTopic.trim() && !customFileUrl) ||
+                  isUploadingFile
+                }
               >
                 {isGenerating ? t('aiTests.generating') : t('aiTests.generate')}
               </Button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -60,39 +60,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchProgressData();
-    }
-  }, [user, groupId, timeRange]);
-
-  // Atualização em tempo real
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('study_sessions_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Ouve INSERT, UPDATE e DELETE
-          schema: 'public',
-          table: 'study_sessions',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('📡 Atualização em tempo real detectada:', payload);
-          fetchProgressData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, groupId, timeRange]);
-
-  const fetchProgressData = async () => {
+  const fetchProgressData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -163,7 +131,63 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, timeRange, groupId]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProgressData();
+    }
+  }, [user, fetchProgressData]);
+
+  // Atualização em tempo real
+  useEffect(() => {
+    if (!user) return;
+
+    const studySessionsChannel = supabase
+      .channel('study_sessions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Ouve INSERT, UPDATE e DELETE
+          schema: 'public',
+          table: 'study_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('📡 Atualização em tempo real detectada:', payload);
+          fetchProgressData();
+        }
+      )
+      .subscribe();
+
+    let goalsChannel: ReturnType<typeof supabase.channel> | null = null;
+
+    if (groupId) {
+      goalsChannel = supabase
+        .channel(`goals_changes_${groupId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'goals',
+            filter: `group_id=eq.${groupId}`,
+          },
+          (payload) => {
+            console.log('🎯 Atualização de metas detectada:', payload);
+            fetchProgressData();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      supabase.removeChannel(studySessionsChannel);
+      if (goalsChannel) {
+        supabase.removeChannel(goalsChannel);
+      }
+    };
+  }, [user, groupId, timeRange, fetchProgressData]);
 
   const generateWeeklyData = (sessions: any[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
