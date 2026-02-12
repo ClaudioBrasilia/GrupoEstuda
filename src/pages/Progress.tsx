@@ -3,26 +3,107 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Calendar, Target, TrendingUp, Award, Clock, BookOpen, Users, RefreshCw } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 import { useProgressData } from '@/hooks/useProgressData';
 import { useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+
+interface UserGroupOption {
+  id: string;
+  name: string;
+}
+
+const LAST_PROGRESS_GROUP_KEY = 'lastProgressGroupId';
 
 const ProgressPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [view, setView] = useState<'individual' | 'group'>('individual');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [groups, setGroups] = useState<UserGroupOption[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(true);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const { t } = useTranslation();
-  const { groupId } = useParams();
+  const { groupId: routeGroupId } = useParams();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchUserGroups = async () => {
+      if (!user) {
+        setGroups([]);
+        setSelectedGroupId(null);
+        setGroupsLoading(false);
+        return;
+      }
+
+      try {
+        setGroupsLoading(true);
+
+        const { data, error } = await supabase
+          .from('group_members')
+          .select(`
+            group_id,
+            groups:group_id (
+              id,
+              name
+            )
+          `)
+          .eq('user_id', user.id);
+
+        if (error) {
+          throw error;
+        }
+
+        const availableGroups = (data || [])
+          .map((membership) => membership.groups)
+          .filter((group): group is { id: string; name: string } => Boolean(group?.id && group?.name));
+
+        setGroups(availableGroups);
+
+        if (availableGroups.length === 0) {
+          setSelectedGroupId(null);
+          return;
+        }
+
+        const routeGroupIsValid = routeGroupId && availableGroups.some((group) => group.id === routeGroupId);
+        const storedGroupId = localStorage.getItem(LAST_PROGRESS_GROUP_KEY);
+        const storedGroupIsValid = storedGroupId && availableGroups.some((group) => group.id === storedGroupId);
+
+        const defaultGroupId = routeGroupIsValid
+          ? routeGroupId
+          : storedGroupIsValid
+            ? storedGroupId
+            : availableGroups[0].id;
+
+        setSelectedGroupId(defaultGroupId);
+      } catch (error) {
+        console.error('Error fetching user groups for progress:', error);
+        setGroups([]);
+        setSelectedGroupId(null);
+      } finally {
+        setGroupsLoading(false);
+      }
+    };
+
+    fetchUserGroups();
+  }, [routeGroupId, user]);
+
+  useEffect(() => {
+    if (selectedGroupId) {
+      localStorage.setItem(LAST_PROGRESS_GROUP_KEY, selectedGroupId);
+    }
+  }, [selectedGroupId]);
   
   const { stats, loading, refreshData } = useProgressData(
-    view === 'group' ? groupId : undefined,
+    selectedGroupId ?? undefined,
     timeRange as 'day' | 'week' | 'month' | 'year'
   );
 
@@ -54,6 +135,37 @@ const ProgressPage: React.FC = () => {
       setIsRefreshing(false);
     }
   };
+
+  if (groupsLoading || (groups.length > 0 && !selectedGroupId)) {
+    return (
+      <PageLayout>
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-48"></div>
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-3">
+                  <div className="h-16 bg-muted rounded"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (groups.length === 0) {
+    return (
+      <PageLayout>
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Você precisa entrar em um grupo para ver o progresso.
+          </CardContent>
+        </Card>
+      </PageLayout>
+    );
+  }
   
   if (loading) {
     return (
@@ -86,7 +198,19 @@ const ProgressPage: React.FC = () => {
             </h2>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <div className="w-48">
+              <Select value={selectedGroupId ?? ''} onValueChange={setSelectedGroupId}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione um grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               variant="outline"
               size="icon"
@@ -102,12 +226,10 @@ const ProgressPage: React.FC = () => {
                   <Users className="h-3 w-3" />
                   {t('progress.individual')}
                 </TabsTrigger>
-                {groupId && (
-                  <TabsTrigger value="group" className="text-xs flex items-center gap-1">
-                    <Target className="h-3 w-3" />
-                    {t('progress.group')}
-                  </TabsTrigger>
-                )}
+                <TabsTrigger value="group" className="text-xs flex items-center gap-1">
+                  <Target className="h-3 w-3" />
+                  {t('progress.group')}
+                </TabsTrigger>
               </TabsList>
             </Tabs>
             
@@ -402,7 +524,7 @@ const ProgressPage: React.FC = () => {
                 </div>
                 
                 <div className="space-y-3">
-                  {stats.subjectData.map((subject, index) => (
+                  {stats.subjectData.map((subject) => (
                     <div key={subject.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                       <div className="flex items-center gap-2">
                         <div 
