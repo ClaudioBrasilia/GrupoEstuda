@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -59,61 +59,75 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   });
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const goalsHasUserIdColumnRef = useRef<boolean | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchProgressData();
+  const clearScheduledRefetch = useCallback(() => {
+    if (refetchTimeoutRef.current) {
+      clearTimeout(refetchTimeoutRef.current);
+      refetchTimeoutRef.current = null;
     }
-  }, [user, groupId, timeRange]);
+  }, []);
 
-  // Atualização em tempo real
-  useEffect(() => {
-    if (!user) return;
+  const detectGoalsUserIdColumn = useCallback(async (): Promise<boolean> => {
+    if (goalsHasUserIdColumnRef.current !== null) {
+      return goalsHasUserIdColumnRef.current;
+    }
 
-    // Canal para sessões de estudo
-    const sessionsChannel = supabase
-      .channel('study_sessions_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_sessions',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          fetchProgressData();
-        }
-      )
-      .subscribe();
+    const { error } = await supabase
+      .from('goals')
+      .select('user_id', { head: true, count: 'exact' })
+      .limit(1);
 
-    // Canal para metas do grupo (se houver groupId)
-    let goalsChannel: any = null;
-    if (groupId) {
-      goalsChannel = supabase
-        .channel(`group_goals_${groupId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'goals',
-            filter: `group_id=eq.${groupId}`
-          },
-          () => {
-            fetchProgressData();
-          }
+    if (error) {
+      goalsHasUserIdColumnRef.current = false;
+      console.warn('[useProgressData] Coluna goals.user_id indisponível; usando fallback seguro sem metas globais.', error.message);
+      return false;
+    }
+
+    goalsHasUserIdColumnRef.current = true;
+    return true;
+  }, []);
+
+  const fetchGoalsProgress = useCallback(async (targetGroupId?: string): Promise<GoalProgressData[]> => {
+    let query = supabase
+      .from('goals')
+      .select(`
+        id,
+        type,
+        current,
+        target,
+        subjects:subject_id (
+          name
         )
-        .subscribe();
+      `);
+
+    if (targetGroupId) {
+      query = query.eq('group_id', targetGroupId);
+    } else {
+      const hasUserIdColumn = await detectGoalsUserIdColumn();
+
+      if (!hasUserIdColumn || !user) {
+        // Fallback seguro: sem groupId e sem coluna user_id não há filtro confiável para metas globais.
+        return [];
+      }
+
+      query = query.filter('user_id', 'eq', user.id);
     }
 
-    return () => {
-      supabase.removeChannel(sessionsChannel);
-      if (goalsChannel) supabase.removeChannel(goalsChannel);
-    };
-  }, [user, groupId]);
+    const { data: goals } = await query;
 
-  const fetchProgressData = async () => {
+    return (goals || []).map(goal => ({
+      id: goal.id,
+      type: goal.type,
+      subject: goal.subjects?.name || 'Geral',
+      current: goal.current,
+      target: goal.target,
+      progress: Math.round((goal.current / goal.target) * 100)
+    }));
+  }, [detectGoalsUserIdColumn, user]);
+
+  const fetchProgressData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -147,7 +161,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         `)
         .eq('user_id', user.id)
         .gte('started_at', startDate.toISOString())
-        .not('completed_at', 'is', null);
+        .not('completed_at', 'is', null)
+        .limit(5000);
 
       // Calculate weekly data
       const weeklyData = generateWeeklyData(sessions || []);
@@ -163,8 +178,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       // Fetch subject progress
       const subjectData = await fetchSubjectProgress(sessions || []);
 
-      // Fetch goals progress (only for group view)
-      const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
+      // Fetch goals progress (group or global, when safely supported)
+      const goalsProgress = await fetchGoalsProgress(groupId);
 
       // Fetch daily sessions (only for day view)
       const dailySessions = timeRange === 'day' ? await fetchDailySessions() : [];
@@ -184,7 +199,91 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchGoalsProgress, groupId, timeRange, user]);
+
+  const scheduleRefetch = useCallback(() => {
+    clearScheduledRefetch();
+    refetchTimeoutRef.current = setTimeout(() => {
+      fetchProgressData();
+    }, 1000);
+  }, [clearScheduledRefetch, fetchProgressData]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProgressData();
+    }
+  }, [fetchProgressData, user]);
+
+  // Atualização em tempo real
+  useEffect(() => {
+    if (!user) return;
+
+    let active = true;
+
+    // Canal para sessões de estudo
+    const sessionsChannel = supabase
+      .channel('study_sessions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          scheduleRefetch();
+        }
+      )
+      .subscribe();
+
+    // Canal para metas do grupo ou metas globais com filtro seguro
+    let goalsChannel: any = null;
+
+    const setupGoalsChannel = async () => {
+      let goalsFilter = '';
+      let channelName = 'goals_changes';
+
+      if (groupId) {
+        goalsFilter = `group_id=eq.${groupId}`;
+        channelName = `group_goals_${groupId}`;
+      } else {
+        const hasUserIdColumn = await detectGoalsUserIdColumn();
+
+        if (!active || !hasUserIdColumn) {
+          return;
+        }
+
+        goalsFilter = `user_id=eq.${user.id}`;
+        channelName = `user_goals_${user.id}`;
+      }
+
+      goalsChannel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'goals',
+            filter: goalsFilter
+          },
+          () => {
+            scheduleRefetch();
+          }
+        )
+        .subscribe();
+    };
+
+    setupGoalsChannel();
+
+    return () => {
+      active = false;
+      clearScheduledRefetch();
+      supabase.removeChannel(sessionsChannel);
+      if (goalsChannel) supabase.removeChannel(goalsChannel);
+    };
+  }, [clearScheduledRefetch, detectGoalsUserIdColumn, groupId, scheduleRefetch, user]);
 
   const generateWeeklyData = (sessions: any[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -234,30 +333,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         color: COLORS[index % COLORS.length]
       }))
       .sort((a, b) => b.value - a.value);
-  };
-
-  const fetchGoalsProgress = async (groupId: string): Promise<GoalProgressData[]> => {
-    const { data: goals } = await supabase
-      .from('goals')
-      .select(`
-        id,
-        type,
-        current,
-        target,
-        subjects:subject_id (
-          name
-        )
-      `)
-      .eq('group_id', groupId);
-
-    return (goals || []).map(goal => ({
-      id: goal.id,
-      type: goal.type,
-      subject: goal.subjects?.name || 'Geral',
-      current: goal.current,
-      target: goal.target,
-      progress: Math.round((goal.current / goal.target) * 100)
-    }));
   };
 
   const fetchDailySessions = async (): Promise<DailySessionData[]> => {
@@ -312,7 +387,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       .select('started_at')
       .eq('user_id', user.id)
       .not('completed_at', 'is', null)
-      .order('started_at', { ascending: false });
+      .order('started_at', { ascending: false })
+      .limit(3650);
 
     if (!sessions || sessions.length === 0) return 0;
 
