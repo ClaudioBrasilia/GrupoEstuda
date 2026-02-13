@@ -17,7 +17,7 @@ interface TimerContextType extends TimerState {
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
-const TIMER_STATE_KEY = 'studyBoostTimerState';
+const TIMER_STATE_KEY = 'grupoEstudaTimerState';
 
 export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [seconds, setSeconds] = useState(0);
@@ -29,6 +29,12 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Load timer state from localStorage on mount
   useEffect(() => {
+    // Migrate old data if exists
+    const oldData = localStorage.getItem('studyBoostTimerState');
+    if (oldData && !localStorage.getItem(TIMER_STATE_KEY)) {
+      localStorage.setItem(TIMER_STATE_KEY, oldData);
+    }
+    
     const savedTimerState = localStorage.getItem(TIMER_STATE_KEY);
     if (savedTimerState) {
       const parsed = JSON.parse(savedTimerState);

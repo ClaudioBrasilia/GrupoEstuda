@@ -16,6 +16,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { GlobalActivityFeed } from '@/components/group/GlobalActivityFeed';
+import { FloatingActionButton } from '@/components/group/FloatingActionButton';
+import { CreateActivityDialog } from '@/components/group/CreateActivityDialog';
 
 // Fixed group ID for Vestibular Brasil
 const VESTIBULAR_GROUP_ID = 'b47ac10b-58cc-4372-a567-0e02b2c3d479';
@@ -124,6 +127,7 @@ const Groups: React.FC = () => {
   const { groups, loading, createGroup, joinGroup } = useGroups();
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
+  const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
 
   const handleCreateGroup = async (name: string, description: string) => {
     const result = await createGroup(name, description);
@@ -258,6 +262,17 @@ const Groups: React.FC = () => {
           </Dialog>
         </div>
       </div>
+
+      {/* Atividades Recentes */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-4">🔥 Atividades Recentes</h2>
+        <GlobalActivityFeed />
+      </div>
+
+      {/* Lista de Grupos */}
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold mb-4">📚 Grupos Disponíveis</h2>
+      </div>
       
       <div className="space-y-3">
         {filteredGroups.length > 0 ? (
@@ -296,6 +311,18 @@ const Groups: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton onClick={() => setIsActivityDialogOpen(true)} />
+
+      {/* Create Activity Dialog */}
+      <CreateActivityDialog
+        open={isActivityDialogOpen}
+        onOpenChange={setIsActivityDialogOpen}
+        userGroups={groups
+          .filter(g => g.isMember)
+          .map(g => ({ id: g.id, name: g.name }))}
+      />
     </PageLayout>
   );
 };

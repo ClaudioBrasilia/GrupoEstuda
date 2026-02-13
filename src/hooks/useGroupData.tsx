@@ -77,9 +77,9 @@ export const useGroupData = (groupId: string | undefined) => {
     
     fetchGroupData();
     
-    // Set up real-time subscription for messages
+    // Set up real-time subscription for messages and goals
     const channel = supabase
-      .channel(`group-${groupId}-messages`)
+      .channel(`group-${groupId}-realtime`)
       .on(
         'postgres_changes',
         {
@@ -105,6 +105,52 @@ export const useGroupData = (groupId: string | undefined) => {
           };
 
           setMessages(prev => [...prev, newMessage]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'goals',
+          filter: `group_id=eq.${groupId}`
+        },
+        () => {
+          console.log('📡 Metas do grupo atualizadas em tempo real');
+          // Re-fetch only goals to avoid full reload
+          const fetchGoals = async () => {
+            const { data: goalsData } = await supabase
+              .from('goals')
+              .select('*')
+              .eq('group_id', groupId)
+              .order('created_at');
+            
+            const formattedGoals = goalsData?.map(goal => ({
+              id: goal.id,
+              subject: goal.subject_id || '',
+              type: goal.type as 'exercises' | 'pages' | 'time',
+              target: goal.target,
+              current: goal.current
+            })) || [];
+            
+            setGoals(formattedGoals);
+          };
+          fetchGoals();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_points',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.group_id === groupId) {
+            console.log('📡 Pontos do usuário atualizados');
+            setUserPoints(payload.new.points);
+          }
         }
       )
       .subscribe();
@@ -478,6 +524,76 @@ export const useGroupData = (groupId: string | undefined) => {
     }
   };
 
+  const handleDeleteGoal = async (goalId: string) => {
+    if (!currentUserIsAdmin || !groupId) {
+      toast.error('Apenas administradores podem excluir metas');
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('goals')
+        .delete()
+        .eq('id', goalId);
+      
+      if (error) throw error;
+      
+      const updatedGoals = goals.filter(goal => goal.id !== goalId);
+      setGoals(updatedGoals);
+      
+      toast.success('Meta excluída com sucesso');
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      toast.error('Erro ao excluir meta');
+    }
+  };
+
+  const handleIncreaseGoalTarget = async (goalId: string, additionalTarget: number) => {
+    if (!currentUserIsAdmin || !groupId) {
+      toast.error('Apenas administradores podem modificar metas');
+      return;
+    }
+    
+    const goalToUpdate = goals.find(g => g.id === goalId);
+    if (!goalToUpdate) return;
+    
+    if (additionalTarget <= 0) {
+      toast.error('O valor adicional deve ser maior que zero');
+      return;
+    }
+    
+    const newTarget = goalToUpdate.target + additionalTarget;
+    
+    try {
+      const { error } = await supabase
+        .from('goals')
+        .update({ 
+          target: newTarget,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', goalId);
+      
+      if (error) throw error;
+      
+      const updatedGoals = goals.map(goal => {
+        if (goal.id === goalId) {
+          return { ...goal, target: newTarget };
+        }
+        return goal;
+      });
+      
+      setGoals(updatedGoals);
+      
+      const goalType = goalToUpdate.type === 'exercises' ? 'exercícios' : 
+                        goalToUpdate.type === 'pages' ? 'páginas' : 'minutos';
+      
+      toast.success(`Meta aumentada! Novo alvo: ${newTarget} ${goalType}`);
+    } catch (error) {
+      console.error('Error increasing goal target:', error);
+      toast.error('Erro ao aumentar meta');
+    }
+  };
+
   const handleFileUpload = () => {
     if (!newFile) return;
     
@@ -585,6 +701,8 @@ export const useGroupData = (groupId: string | undefined) => {
     handleAddVestibularModule,
     handleAddGoal,
     updateGoalProgress,
+    handleDeleteGoal,
+    handleIncreaseGoalTarget,
     handleFileUpload,
     handleFileChange,
     handleSendMessage,

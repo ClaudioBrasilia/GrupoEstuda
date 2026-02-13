@@ -12,7 +12,7 @@ const PrivacyPolicy: React.FC = () => {
           <section>
             <p className="mb-4">
               A sua privacidade é importante para nós. Esta Política de Privacidade explica como o 
-              StudyBoost coleta, usa e protege suas informações quando você utiliza nosso aplicativo.
+              Grupo Estuda coleta, usa e protege suas informações quando você utiliza nosso aplicativo.
             </p>
           </section>
           
@@ -113,7 +113,7 @@ const PrivacyPolicy: React.FC = () => {
             <h2 className="text-xl font-semibold mb-2">8. Contato</h2>
             <p>
               Se você tiver dúvidas ou preocupações sobre esta Política de Privacidade ou sobre nossas 
-              práticas de dados, entre em contato conosco pelo e-mail: privacidade@studyboost.com.br
+              práticas de dados, entre em contato conosco pelo e-mail: privacidade@grupoestuda.com.br
             </p>
           </section>
           

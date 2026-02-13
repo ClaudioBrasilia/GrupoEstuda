@@ -18,8 +18,9 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/layout/PageLayout';
-import { Droplet } from 'lucide-react';
+import { Droplet, Palette } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { ThemeSelector } from '@/components/ui/theme-toggle';
 
 const ProfileSettings: React.FC = () => {
   const { user, updateUserPlan } = useAuth();
@@ -138,8 +139,9 @@ const ProfileSettings: React.FC = () => {
         </div>
         
         <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile">{t('profile.settings.profile')}</TabsTrigger>
+          <TabsTrigger value="appearance">{t('profile.settings.appearance', 'Aparência')}</TabsTrigger>
           <TabsTrigger value="security">{t('profile.settings.security')}</TabsTrigger>
           <TabsTrigger value="subscription">{t('profile.settings.subscription')}</TabsTrigger>
         </TabsList>
@@ -201,6 +203,22 @@ const ProfileSettings: React.FC = () => {
             </Button>
           </form>
         </TabsContent>
+
+        <TabsContent value="appearance" className="space-y-4 pt-4">
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-medium flex items-center gap-2">
+                <Palette className="w-4 h-4" />
+                {t('profile.settings.theme', 'Tema')}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {t('profile.settings.themeDescription', 'Escolha o tema da interface')}
+              </p>
+            </div>
+            
+            <ThemeSelector />
+          </div>
+        </TabsContent>
         
         <TabsContent value="security" className="space-y-4 pt-4">
           <div className="space-y-4">
@@ -247,7 +265,7 @@ const ProfileSettings: React.FC = () => {
               )}
             </div>
             
-            <Link to="/plans">
+            <Link to="/my-plan">
               <Button className="w-full bg-study-primary">
                 {user?.plan === 'premium' ? t('profile.settings.manageSubscription') : t('profile.settings.managePlans')}
               </Button>

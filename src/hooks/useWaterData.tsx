@@ -19,9 +19,49 @@ export function useWaterData() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      fetchWaterData();
-    }
+    if (!user) return;
+    
+    fetchWaterData();
+
+    // Set up real-time subscription for water intake
+    const channel = supabase
+      .channel('water_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'water_intake',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('📡 Consumo de água atualizado');
+          fetchWaterData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.water_goal_ml) {
+            console.log('📡 Meta de água atualizada');
+            setWaterStats(prev => ({
+              ...prev,
+              dailyGoal: payload.new.water_goal_ml
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchWaterData = async () => {

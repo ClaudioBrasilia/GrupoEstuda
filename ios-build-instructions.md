@@ -1,4 +1,4 @@
-# 🍎 Build iOS - StudyBoost
+# 🍎 Build iOS - Grupo Estuda
 
 ## Instruções Detalhadas para App Store
 
@@ -35,8 +35,8 @@ npx cap open ios
 ```
 
 5. **Configurações do Projeto:**
-   - **Bundle Identifier**: `com.studyboost.app`
-   - **Display Name**: `StudyBoost`
+   - **Bundle Identifier**: `com.grupoestuda.app`
+   - **Display Name**: `Grupo Estuda`
    - **Version**: `1.0.0`
    - **Build**: `1`
    - **Deployment Target**: iOS 13.0+
@@ -69,7 +69,7 @@ npx cap open ios
 ### 🔐 Certificados e Provisioning
 
 1. **No Apple Developer Portal:**
-   - Crie App ID: `com.studyboost.app`
+   - Crie App ID: `com.grupoestuda.app`
    - Configure certificados de desenvolvimento/distribuição
    - Crie provisioning profiles
 
@@ -91,7 +91,7 @@ npx cap open ios
 ### 📊 App Store Connect
 
 **Informações necessárias:**
-- **Nome**: StudyBoost
+- **Nome**: Grupo Estuda
 - **Subtítulo**: Estude em grupo
 - **Categoria**: Educação
 - **Classificação**: 4+ (Adequado para todas as idades)
@@ -99,18 +99,9 @@ npx cap open ios
 
 **Descrição:**
 ```
-StudyBoost é o aplicativo perfeito para estudantes que querem manter o foco e alcançar suas metas acadêmicas.
-
-RECURSOS PRINCIPAIS:
-• Grupos de estudo colaborativos
-• Sistema de metas e conquistas
-• Timer Pomodoro integrado
-• Controle de hidratação
-• Rankings motivacionais
-• Gerador de testes (Premium)
-• Sincronização em nuvem
-
-Junte-se a milhares de estudantes que já usam o StudyBoost para organizar seus estudos e manter a motivação sempre alta!
+Grupo Estuda é o aplicativo perfeito para estudantes que querem manter o foco e alcançar suas metas acadêmicas.
+...
+Junte-se a milhares de estudantes que já usam o Grupo Estuda para organizar seus estudos e manter a motivação sempre alta!
 ```
 
 ### 🖼️ Screenshots Necessários

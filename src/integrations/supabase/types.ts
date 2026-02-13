@@ -335,6 +335,86 @@ export type Database = {
         }
         Relationships: []
       }
+      study_activities: {
+        Row: {
+          created_at: string
+          description: string
+          group_id: string
+          id: string
+          photo_path: string
+          points_earned: number
+          subject_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          group_id: string
+          id?: string
+          photo_path: string
+          points_earned?: number
+          subject_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          group_id?: string
+          id?: string
+          photo_path?: string
+          points_earned?: number
+          subject_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_activities_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_activities_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_activity_likes: {
+        Row: {
+          activity_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_activity_likes_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "study_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_sessions: {
         Row: {
           completed_at: string | null
@@ -522,6 +602,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_user_points: {
+        Args: { p_group_id: string; p_points: number; p_user_id: string }
+        Returns: undefined
+      }
       get_user_admin_groups: { Args: { user_uuid: string }; Returns: string[] }
       get_user_email: { Args: { user_uuid: string }; Returns: string }
       get_user_groups: { Args: { user_uuid: string }; Returns: string[] }

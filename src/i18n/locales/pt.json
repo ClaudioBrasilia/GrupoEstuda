@@ -1,7 +1,9 @@
 {
   "app": {
-    "name": "StudyBoost",
-    "slogan": "Alcance suas metas de estudo junto com seus amigos"
+    "name": "Grupo Estuda",
+    "slogan": "Alcance suas metas de estudo junto com seus amigos",
+    "share": "Compartilhar",
+    "shareMessage": "Junte-se a mim no Grupo Estuda! Vamos alcançar nossas metas de estudo juntos."
   },
   "loading": "Carregando...",
   "navigation": {
@@ -303,7 +305,7 @@
     "you": "Você",
     "points": "pontos"
   },
-  "progress": {
+"progress": {
     "title": "Progresso",
     "pagesRead": "Páginas Lidas",
     "studyTime": "Tempo de Estudo",
@@ -313,7 +315,25 @@
     "days": "dias",
     "studyTimeByDay": "Tempo de Estudo por Dia",
     "pagesReadByDay": "Páginas Lidas por Dia",
-    "studyBySubject": "Estudo por Matéria"
+    "studyBySubject": "Estudo por Matéria",
+    "day": "Dia",
+    "week": "Semana",
+    "month": "Mês",
+    "year": "Ano",
+    "individual": "Individual",
+    "group": "Grupo",
+    "updated": "Atualizado",
+    "updateSuccess": "Progresso atualizado com sucesso",
+    "updateError": "Não foi possível atualizar os dados",
+    "groupGoalsProgress": "Progresso das Metas do Grupo",
+    "todaySessions": "Sessões de Estudo de Hoje",
+    "todayTotal": "Total de Hoje",
+    "session": "sessão",
+    "sessions": "sessões",
+    "noSessionsToday": "Nenhuma sessão de estudo registrada hoje",
+    "startSessionHint": "Inicie uma sessão no Timer para começar!",
+    "complete": "completo",
+    "percentage": "Percentagem"
   },
   "group": {
     "members": "Membros do Grupo",

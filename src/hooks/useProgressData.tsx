@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -60,13 +60,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchProgressData();
-    }
-  }, [user, groupId, timeRange]);
-
-  const fetchProgressData = async () => {
+  const fetchProgressData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -74,19 +68,15 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
       // Fetch study sessions based on selected time range
       const startDate = new Date();
-      switch (timeRange) {
-        case 'day':
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        case 'week':
-          startDate.setDate(startDate.getDate() - 7);
-          break;
-        case 'month':
-          startDate.setMonth(startDate.getMonth() - 1);
-          break;
-        case 'year':
-          startDate.setFullYear(startDate.getFullYear() - 1);
-          break;
+      // Garantir o início do dia local para 'day'
+      if (timeRange === 'day') {
+        startDate.setHours(0, 0, 0, 0);
+      } else if (timeRange === 'week') {
+        startDate.setDate(startDate.getDate() - 7);
+      } else if (timeRange === 'month') {
+        startDate.setMonth(startDate.getMonth() - 1);
+      } else if (timeRange === 'year') {
+        startDate.setFullYear(startDate.getFullYear() - 1);
       }
       
       const { data: sessions } = await supabase
@@ -137,7 +127,52 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, groupId, timeRange]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProgressData();
+    }
+  }, [fetchProgressData]);
+
+  // Atualização em tempo real unificada
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('progress_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('📡 Sessão de estudo atualizada');
+          fetchProgressData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'goals',
+          ...(groupId ? { filter: `group_id=eq.${groupId}` } : {})
+        },
+        () => {
+          console.log('📡 Metas atualizadas');
+          fetchProgressData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, groupId, fetchProgressData]);
 
   const generateWeeklyData = (sessions: any[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -148,11 +183,13 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       date.setDate(date.getDate() - i);
       
       const dayName = weekDays[date.getDay()];
-      const dateStr = date.toISOString().split('T')[0];
+      // Usar data local para comparação
+      const dateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD
       
-      const daySessions = sessions.filter(session => 
-        session.started_at.startsWith(dateStr)
-      );
+      const daySessions = sessions.filter(session => {
+        const sessionDate = new Date(session.started_at).toLocaleDateString('en-CA');
+        return sessionDate === dateStr;
+      });
       
       const time = daySessions.reduce((sum, session) => sum + session.duration_minutes, 0);
       const pages = Math.floor(time / 5) * 2;
@@ -275,11 +312,17 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
     const studyDates = new Set(
       sessions.map(session => 
-        new Date(session.started_at).toISOString().split('T')[0]
+        new Date(session.started_at).toLocaleDateString('en-CA')
       )
     );
 
-    while (studyDates.has(currentDate.toISOString().split('T')[0])) {
+    // Permitir que a sequência continue se hoje ainda não houve estudo mas ontem sim
+    const todayStr = currentDate.toLocaleDateString('en-CA');
+    if (!studyDates.has(todayStr)) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    while (studyDates.has(currentDate.toLocaleDateString('en-CA'))) {
       streak++;
       currentDate.setDate(currentDate.getDate() - 1);
     }

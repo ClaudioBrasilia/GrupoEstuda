@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
 
@@ -9,15 +8,27 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
   const [show, setShow] = useState(true);
+  const onFinishedRef = useRef(onFinished);
+
+  // Keep ref updated
+  useEffect(() => {
+    onFinishedRef.current = onFinished;
+  }, [onFinished]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setShow(false);
-      setTimeout(onFinished, 500); // Allow exit animation to complete
-    }, 2000);
+    }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [onFinished]);
+    const finishTimer = setTimeout(() => {
+      onFinishedRef.current();
+    }, 1300); // 1000ms display + 300ms exit animation
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(finishTimer);
+    };
+  }, []); // Empty deps - run once
 
   return (
     <AnimatePresence>
@@ -42,7 +53,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="text-3xl font-bold text-white mb-2"
           >
-            StudyBoost
+            Grupo Estuda
           </motion.h1>
           <motion.p
             initial={{ y: 20, opacity: 0 }}

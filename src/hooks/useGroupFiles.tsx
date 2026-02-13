@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { PLAN_LIMITS, PlanType } from '@/config/planLimits';
 
 export interface GroupFile {
   id: string;
@@ -89,29 +90,22 @@ export const useGroupFiles = (groupId: string | undefined) => {
         .eq('id', user.id)
         .single();
 
-      // Check if free user is trying to upload (blocked)
-      if (profile?.plan === 'free') {
-        toast.error('Upload de arquivos disponível apenas para usuários Premium');
-        return { success: false, error: 'Upload restrito ao plano Premium' };
+      const userPlan = (profile?.plan as PlanType) || 'free';
+      const planLimits = PLAN_LIMITS[userPlan];
+
+      // Check if user can upload files
+      if (!planLimits.canUploadFiles) {
+        toast.error('Upload de arquivos disponível apenas para planos Basic e Premium');
+        return { success: false, error: 'Upload restrito a planos pagos' };
       }
 
-      // Check file count limits for Premium users
-      const { count: fileCount } = await supabase
-        .from('group_files')
-        .select('*', { count: 'exact', head: true })
-        .eq('group_id', groupId);
-
-      const maxFiles = 999; // Practically unlimited for Premium
-
-      if (fileCount !== null && fileCount >= maxFiles) {
-        toast.error(`Limite de ${maxFiles} arquivos atingido.`);
-        return { success: false, error: 'Limite de arquivos atingido' };
-      }
-
-      // Validate file size (max 10MB)
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxSize) {
-        return { success: false, error: 'Arquivo muito grande. Máximo 10MB.' };
+      // Validate file size based on plan
+      const maxSizeBytes = planLimits.maxUploadSizeMB * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        const maxSizeText = planLimits.maxUploadSizeMB >= 1024 
+          ? '1 GB' 
+          : `${planLimits.maxUploadSizeMB} MB`;
+        return { success: false, error: `Arquivo muito grande. Máximo ${maxSizeText} para seu plano.` };
       }
 
       // Create unique file path

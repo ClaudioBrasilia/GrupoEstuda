@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.studyboost.app',
-  appName: 'StudyBoost',
+  appId: 'com.grupoestuda.app',
+  appName: 'Grupo Estuda',
   webDir: 'dist',
   plugins: {
     SplashScreen: {

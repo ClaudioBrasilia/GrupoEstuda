@@ -1,8 +1,11 @@
 import React from 'react';
-import { Clock, BookOpen, TrendingUp } from 'lucide-react';
+import { Clock, BookOpen, TrendingUp, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoalType } from '@/types/groupTypes';
 import { useNavigate } from 'react-router-dom';
+import { useStudyActivities } from '@/hooks/useStudyActivities';
+import { ActivityCard } from './ActivityCard';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface GroupOverviewTabProps {
   goals: GoalType[];
@@ -18,9 +21,41 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
   groupId 
 }) => {
   const navigate = useNavigate();
+  const { activities, loading, toggleLike, deleteActivity } = useStudyActivities(groupId);
   
   return (
     <div className="space-y-6">
+      {/* Atividades Recentes do Grupo */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold">🔥 Atividades Recentes</h3>
+        </div>
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-48 w-full" />
+          </div>
+        ) : activities.length === 0 ? (
+          <div className="text-center py-8">
+            <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground text-sm">
+              Nenhuma atividade ainda. Seja o primeiro a postar!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {activities.slice(0, 3).map((activity) => (
+              <ActivityCard
+                key={activity.id}
+                activity={activity}
+                onLike={toggleLike}
+                onDelete={deleteActivity}
+                compact
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold">Atividade Recente</h3>

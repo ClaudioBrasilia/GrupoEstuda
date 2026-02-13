@@ -57,7 +57,9 @@ const GroupDetail: React.FC = () => {
     handleFileChange,
     handleSendMessage,
     handleDownloadFile,
-    getSubjectNameById
+    getSubjectNameById,
+    handleDeleteGoal,
+    handleIncreaseGoalTarget
   } = useGroupData(groupId);
 
   return (
@@ -133,22 +135,24 @@ const GroupDetail: React.FC = () => {
           <GroupFilesTab groupId={groupId} />
         </TabsContent>
 
-            <TabsContent value="goals">
-              <GroupGoalsTab
-                goals={goals}
-                subjects={subjects}
-                isAdmin={currentUserIsAdmin}
-                newGoalSubject={newGoalSubject}
-                setNewGoalSubject={setNewGoalSubject}
-                newGoalType={newGoalType}
-                setNewGoalType={setNewGoalType}
-                newGoalTarget={newGoalTarget}
-                setNewGoalTarget={setNewGoalTarget}
-                handleAddGoal={handleAddGoal}
-                getSubjectNameById={getSubjectNameById}
-                updateGoalProgress={updateGoalProgress}
-              />
-            </TabsContent>
+        <TabsContent value="goals">
+          <GroupGoalsTab
+            goals={goals}
+            subjects={subjects}
+            isAdmin={currentUserIsAdmin}
+            newGoalSubject={newGoalSubject}
+            setNewGoalSubject={setNewGoalSubject}
+            newGoalType={newGoalType}
+            setNewGoalType={setNewGoalType}
+            newGoalTarget={newGoalTarget}
+            setNewGoalTarget={setNewGoalTarget}
+            handleAddGoal={handleAddGoal}
+            getSubjectNameById={getSubjectNameById}
+            updateGoalProgress={updateGoalProgress}
+            handleDeleteGoal={handleDeleteGoal}
+            handleIncreaseGoalTarget={handleIncreaseGoalTarget}
+          />
+        </TabsContent>
       </Tabs>
     </PageLayout>
   );

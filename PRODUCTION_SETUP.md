@@ -1,4 +1,4 @@
-# StudyBoost - Configuração para Produção
+# Grupo Estuda - Configuração para Produção
 
 ## 📱 Preparação para App Stores
 
@@ -50,8 +50,8 @@ npx cap run ios --target production
 
 ### 📋 Informações para Stores
 
-**Nome do App**: StudyBoost  
-**Bundle ID**: com.studyboost.app  
+**Nome do App**: Grupo Estuda  
+**Bundle ID**: com.grupoestuda.app
 **Versão**: 1.0.0  
 **Categoria**: Educação  
 **Idade Mínima**: 13+  
@@ -60,7 +60,7 @@ npx cap run ios --target production
 "Estude em grupo e alcance suas metas acadêmicas"
 
 **Descrição Longa:**
-"StudyBoost é o aplicativo perfeito para quem quer estudar em grupo e manter a motivação. Crie grupos de estudo, defina metas, acompanhe seu progresso e mantenha-se hidratado com lembretes personalizados."
+"Grupo Estuda é o aplicativo perfeito para quem quer estudar em grupo e manter a motivação. Crie grupos de estudo, defina metas, acompanhe seu progresso e mantenha-se hidratado com lembretes personalizados."
 
 ### 🔐 Configurações de Segurança
 
@@ -108,8 +108,8 @@ npx cap run ios --target production
 ### 📞 Suporte
 
 Para dúvidas sobre a publicação:
-- **Email**: contato@studyboost.com.br
-- **Privacidade**: privacidade@studyboost.com.br
+- **Email**: contato@grupoestuda.com.br
+- **Privacidade**: privacidade@grupoestuda.com.br
 
 ---
 

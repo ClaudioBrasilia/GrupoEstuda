@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { PLAN_LIMITS, PlanType } from '@/config/planLimits';
 
 export interface Group {
   id: string;
@@ -87,12 +88,14 @@ export const useGroups = () => {
         .select('*', { count: 'exact', head: true })
         .eq('creator_id', user.id);
 
-      const maxGroups = user.plan === 'free' ? 1 : 50;
+      const userPlan = (user.plan as PlanType) || 'free';
+      const maxGroups = PLAN_LIMITS[userPlan].maxGroups;
       
-      if (groupCount !== null && groupCount >= maxGroups) {
+      if (maxGroups !== null && groupCount !== null && groupCount >= maxGroups) {
+        const upgradeText = userPlan === 'free' ? ' Faça upgrade para Basic ou Premium.' : userPlan === 'basic' ? ' Faça upgrade para Premium.' : '';
         return { 
           success: false, 
-          error: `Limite de ${maxGroups} grupo(s) atingido. ${user.plan === 'free' ? 'Assine Premium para criar até 50 grupos.' : ''}` 
+          error: `Limite de ${maxGroups} grupo(s) atingido.${upgradeText}` 
         };
       }
       // Check for duplicate group name
@@ -180,9 +183,10 @@ export const useGroups = () => {
         .select('*', { count: 'exact', head: true })
         .eq('group_id', groupId);
 
-      const maxMembers = creatorProfile?.plan === 'free' ? 5 : 20;
+      const creatorPlan = (creatorProfile?.plan as PlanType) || 'free';
+      const maxMembers = PLAN_LIMITS[creatorPlan].maxMembersPerGroup;
       
-      if (memberCount !== null && memberCount >= maxMembers) {
+      if (maxMembers !== null && memberCount !== null && memberCount >= maxMembers) {
         return { 
           success: false, 
           error: `Este grupo atingiu o limite de ${maxMembers} membros.` 

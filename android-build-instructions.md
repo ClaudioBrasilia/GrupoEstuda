@@ -1,4 +1,4 @@
-# 🤖 Build Android - StudyBoost
+# 🤖 Build Android - Grupo Estuda
 
 ## Instruções Detalhadas para Google Play Store
 
@@ -40,7 +40,7 @@ npx cap open android
    - Ou escolha `APK` para instalação direta
 
 6. **Configurações de Release:**
-   - **Application ID**: `com.studyboost.app`
+   - **Application ID**: `com.grupoestuda.app`
    - **Version Name**: `1.0.0`
    - **Version Code**: `1`
    - **Target SDK**: 34 (Android 14)
@@ -71,7 +71,7 @@ npx cap open android
 2. **Upload do AAB:**
    - Arquivo gerado em: `android/app/build/outputs/bundle/release/`
 3. **Preencha as informações:**
-   - **Título**: StudyBoost
+   - **Título**: Grupo Estuda
    - **Descrição curta**: "Estude em grupo e alcance suas metas"
    - **Categoria**: Educação
    - **Classificação**: Livre para todos (com supervisão parental para <13)

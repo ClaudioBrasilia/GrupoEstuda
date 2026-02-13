@@ -12,7 +12,7 @@ const TermsOfUse: React.FC = () => {
           <section>
             <h2 className="text-xl font-semibold mb-2">1. Aceitação dos Termos</h2>
             <p>
-              Ao acessar e usar o aplicativo StudyBoost, você concorda em cumprir e ficar vinculado 
+              Ao acessar e usar o aplicativo Grupo Estuda, você concorda em cumprir e ficar vinculado 
               aos seguintes termos e condições de uso. Se você não concordar com qualquer parte destes 
               termos, não poderá acessar ou usar nosso aplicativo.
             </p>
@@ -30,7 +30,7 @@ const TermsOfUse: React.FC = () => {
           <section>
             <h2 className="text-xl font-semibold mb-2">3. Uso do Aplicativo</h2>
             <p>
-              O StudyBoost é uma plataforma de estudo em grupo que permite aos usuários criar grupos, 
+              O Grupo Estuda é uma plataforma de estudo em grupo que permite aos usuários criar grupos, 
               definir metas de estudo e acompanhar seu progresso. O uso do aplicativo está sujeito às 
               seguintes condições:
             </p>
@@ -54,7 +54,7 @@ const TermsOfUse: React.FC = () => {
           <section>
             <h2 className="text-xl font-semibold mb-2">5. Assinaturas Premium</h2>
             <p>
-              O StudyBoost oferece planos de assinatura premium que fornecem acesso a recursos adicionais. 
+              O Grupo Estuda oferece planos de assinatura premium que fornecem acesso a recursos adicionais. 
               As assinaturas são renovadas automaticamente, a menos que você cancele antes do próximo período 
               de faturamento. Reembolsos são processados de acordo com as políticas da App Store e Google Play.
             </p>
@@ -63,7 +63,7 @@ const TermsOfUse: React.FC = () => {
           <section>
             <h2 className="text-xl font-semibold mb-2">6. Conteúdo do Usuário</h2>
             <p>
-              Ao enviar conteúdo para o aplicativo (fotos, mensagens, etc.), você concede ao StudyBoost 
+              Ao enviar conteúdo para o aplicativo (fotos, mensagens, etc.), você concede ao Grupo Estuda 
               uma licença mundial, não exclusiva e isenta de royalties para usar, reproduzir e distribuir 
               esse conteúdo em conexão com o serviço.
             </p>
@@ -72,7 +72,7 @@ const TermsOfUse: React.FC = () => {
           <section>
             <h2 className="text-xl font-semibold mb-2">7. Limitação de Responsabilidade</h2>
             <p>
-              O StudyBoost não será responsável por quaisquer danos diretos, indiretos, incidentais ou 
+              O Grupo Estuda não será responsável por quaisquer danos diretos, indiretos, incidentais ou 
               consequentes resultantes do uso ou da incapacidade de usar o aplicativo.
             </p>
           </section>
@@ -89,7 +89,7 @@ const TermsOfUse: React.FC = () => {
             <h2 className="text-xl font-semibold mb-2">9. Contato</h2>
             <p>
               Se você tiver alguma dúvida sobre estes Termos de Uso, entre em contato conosco pelo e-mail: 
-              contato@studyboost.com.br
+              contato@grupoestuda.com.br
             </p>
           </section>
           

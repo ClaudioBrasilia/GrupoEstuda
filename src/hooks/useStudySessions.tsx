@@ -32,9 +32,31 @@ export const useStudySessions = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchData();
-    }
+    if (!user) return;
+    
+    fetchData();
+
+    // Set up real-time subscription for study sessions
+    const channel = supabase
+      .channel('sessions_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('📡 Sessões de estudo atualizadas');
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchData = async () => {
