@@ -58,13 +58,16 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
+      (event, currentSession) => {
         if (!isMounted) return;
         
         setSession(currentSession);
         
         if (currentSession?.user) {
-          await fetchUserProfile(currentSession.user.id, currentSession.user.email!);
+          setTimeout(() => {
+            if (!isMounted) return;
+            fetchUserProfile(currentSession.user.id, currentSession.user.email!);
+          }, 0);
         } else {
           setUser(null);
         }
@@ -139,7 +142,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     try {
       const result = await withTimeout(
         supabase.auth.signInWithPassword({ email, password }),
-        15000,
+        30000,
         'Sem resposta do servidor. Verifique sua conexão e tente novamente.'
       );
       
