@@ -11,17 +11,71 @@ import { useTranslation } from 'react-i18next';
 import { useProgressData } from '@/hooks/useProgressData';
 import { useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const ProgressPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [view, setView] = useState<'individual' | 'group'>('individual');
+  const [userChangedView, setUserChangedView] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeGroupId, setActiveGroupId] = useState<string | undefined>(undefined);
   const { t } = useTranslation();
-  const { groupId } = useParams();
+  const { groupId: routeGroupId } = useParams();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const effectiveGroupId = routeGroupId || activeGroupId;
+
+  useEffect(() => {
+    setUserChangedView(false);
+  }, [routeGroupId]);
+
+  useEffect(() => {
+    if (routeGroupId) {
+      setActiveGroupId(routeGroupId);
+      localStorage.setItem('progressActiveGroupId', routeGroupId);
+      return;
+    }
+
+    const resolveActiveGroup = async () => {
+      if (!user) return;
+
+      const storedGroupId = localStorage.getItem('progressActiveGroupId');
+
+      const { data: memberships } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id)
+        .order('joined_at', { ascending: true });
+
+      if (!memberships || memberships.length === 0) {
+        setActiveGroupId(undefined);
+        return;
+      }
+
+      const validStoredGroup = memberships.find((membership) => membership.group_id === storedGroupId);
+      const nextGroupId = validStoredGroup?.group_id || memberships[0].group_id;
+
+      setActiveGroupId(nextGroupId);
+      localStorage.setItem('progressActiveGroupId', nextGroupId);
+    };
+
+    resolveActiveGroup();
+  }, [routeGroupId, user]);
+
+  useEffect(() => {
+    if (userChangedView) return;
+
+    if (effectiveGroupId) {
+      setView('group');
+    } else {
+      setView('individual');
+    }
+  }, [effectiveGroupId, userChangedView]);
   
   const { stats, loading, refreshData } = useProgressData(
-    view === 'group' ? groupId : undefined,
+    view === 'group' ? effectiveGroupId : undefined,
     timeRange as 'day' | 'week' | 'month' | 'year'
   );
 
@@ -37,7 +91,7 @@ const ProgressPage: React.FC = () => {
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [refreshData, view, groupId]); // Adicionamos view e groupId para garantir a atualização ao trocar abas
+  }, [refreshData, view, effectiveGroupId]); // Adicionamos view e groupId efetivo para garantir atualização correta
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -99,13 +153,20 @@ const ProgressPage: React.FC = () => {
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
-            <Tabs value={view} onValueChange={(value) => setView(value as 'individual' | 'group')} className="w-auto">
+            <Tabs
+              value={view}
+              onValueChange={(value) => {
+                setUserChangedView(true);
+                setView(value as 'individual' | 'group');
+              }}
+              className="w-auto"
+            >
               <TabsList className="grid grid-cols-2 h-9">
                 <TabsTrigger value="individual" className="text-xs flex items-center gap-1">
                   <Users className="h-3 w-3" />
                   Individual
                 </TabsTrigger>
-                {groupId && (
+                {effectiveGroupId && (
                   <TabsTrigger value="group" className="text-xs flex items-center gap-1">
                     <Target className="h-3 w-3" />
                     Grupo
