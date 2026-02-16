@@ -11,17 +11,74 @@ import { useTranslation } from 'react-i18next';
 import { useProgressData } from '@/hooks/useProgressData';
 import { useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 const ProgressPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [view, setView] = useState<'individual' | 'group'>('individual');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [resolvedGroupId, setResolvedGroupId] = useState<string | undefined>(undefined);
   const { t } = useTranslation();
+  const { user } = useAuth();
   const params = useParams();
   const routeGroupId = params?.groupId;
-  const storedGroupId = localStorage.getItem("activeGroupId");
-  const groupId = routeGroupId || storedGroupId || undefined;
   const { toast } = useToast();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const resolveGroupId = async () => {
+      if (routeGroupId) {
+        if (isMounted) {
+          setResolvedGroupId(routeGroupId);
+        }
+        localStorage.setItem('activeGroupId', routeGroupId);
+        return;
+      }
+
+      const storedGroupId = localStorage.getItem('activeGroupId');
+      if (storedGroupId) {
+        if (isMounted) {
+          setResolvedGroupId(storedGroupId);
+        }
+        return;
+      }
+
+      if (!user) {
+        if (isMounted) {
+          setResolvedGroupId(undefined);
+        }
+        return;
+      }
+
+      const { data: membership } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id)
+        .order('joined_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      const fallbackGroupId = membership?.group_id;
+
+      if (fallbackGroupId) {
+        localStorage.setItem('activeGroupId', fallbackGroupId);
+      }
+
+      if (isMounted) {
+        setResolvedGroupId(fallbackGroupId || undefined);
+      }
+    };
+
+    void resolveGroupId();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [routeGroupId, user]);
+
+  const groupId = resolvedGroupId;
   
   const { stats, loading, refreshData } = useProgressData(
     view === 'group' ? groupId : undefined,
