@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -59,7 +59,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   });
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const realtimeDebounceRef = useRef<number | null>(null);
 
   const fetchProgressData = useCallback(async () => {
     if (!user) return;
@@ -80,40 +79,18 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         startDate.setFullYear(startDate.getFullYear() - 1);
       }
       
-      let subjectIdsForGroup: string[] = [];
-
-      if (groupId) {
-        const { data: groupSubjects } = await supabase
-          .from('subjects')
-          .select('id')
-          .eq('group_id', groupId);
-
-        subjectIdsForGroup = (groupSubjects || []).map((subject) => subject.id);
-      }
-
-      let sessionsQuery = supabase
+      const { data: sessions } = await supabase
         .from('study_sessions')
         .select(`
           *,
           subjects:subject_id (
             id,
-            name,
-            group_id
+            name
           )
         `)
         .eq('user_id', user.id)
         .gte('started_at', startDate.toISOString())
         .not('completed_at', 'is', null);
-
-      if (groupId) {
-        if (subjectIdsForGroup.length === 0) {
-          sessionsQuery = sessionsQuery.in('subject_id', ['00000000-0000-0000-0000-000000000000']);
-        } else {
-          sessionsQuery = sessionsQuery.in('subject_id', subjectIdsForGroup);
-        }
-      }
-
-      const { data: sessions } = await sessionsQuery;
 
       // Calculate weekly data
       const weeklyData = generateWeeklyData(sessions || []);
@@ -129,8 +106,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       // Fetch subject progress
       const subjectData = await fetchSubjectProgress(sessions || []);
 
-      // Fetch goals progress (group or fallback by user groups)
-      const goalsProgress = await fetchGoalsProgress(groupId);
+      // Fetch goals progress (only for group view)
+      const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
 
       // Fetch daily sessions (only for day view)
       const dailySessions = timeRange === 'day' ? await fetchDailySessions() : [];
@@ -144,13 +121,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         subjectData,
         goalsProgress,
         dailySessions
-      });
-
-      console.debug('📊 [Progress] Dados atualizados', {
-        groupId: groupId || null,
-        timeRange,
-        sessions: sessions?.length || 0,
-        goals: goalsProgress.length,
       });
     } catch (error) {
       console.error('Error fetching progress data:', error);
@@ -169,20 +139,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   useEffect(() => {
     if (!user) return;
 
-    const triggerRefetchWithDebounce = (source: string) => {
-      if (realtimeDebounceRef.current) {
-        window.clearTimeout(realtimeDebounceRef.current);
-      }
-
-      console.debug('📡 [Progress] Evento realtime recebido', { source, groupId: groupId || null });
-
-      realtimeDebounceRef.current = window.setTimeout(() => {
-        fetchProgressData();
-      }, 1000);
-    };
-
     const channel = supabase
-      .channel(`progress_realtime_${user.id}_${groupId || 'all'}`)
+      .channel('progress_realtime')
       .on(
         'postgres_changes',
         {
@@ -192,7 +150,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          triggerRefetchWithDebounce('study_sessions');
+          console.log('📡 Sessão de estudo atualizada');
+          fetchProgressData();
         }
       )
       .on(
@@ -201,32 +160,16 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           event: '*',
           schema: 'public',
           table: 'goals',
-          ...(groupId
-            ? { filter: `group_id=eq.${groupId}` }
-            : { filter: `created_by=eq.${user.id}` })
-        },
-        () => {
-          triggerRefetchWithDebounce('goals');
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'subjects',
           ...(groupId ? { filter: `group_id=eq.${groupId}` } : {})
         },
         () => {
-          triggerRefetchWithDebounce('subjects');
+          console.log('📡 Metas atualizadas');
+          fetchProgressData();
         }
       )
       .subscribe();
 
     return () => {
-      if (realtimeDebounceRef.current) {
-        window.clearTimeout(realtimeDebounceRef.current);
-      }
       supabase.removeChannel(channel);
     };
   }, [user, groupId, fetchProgressData]);
@@ -283,24 +226,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       .sort((a, b) => b.value - a.value);
   };
 
-  const fetchGoalsProgress = async (activeGroupId?: string): Promise<GoalProgressData[]> => {
-    let targetGroupId = activeGroupId;
-
-    if (!targetGroupId && user) {
-      const { data: memberships } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
-        .limit(1);
-
-      targetGroupId = memberships?.[0]?.group_id;
-    }
-
-    if (!targetGroupId) {
-      return stats.goalsProgress;
-    }
-
+  const fetchGoalsProgress = async (groupId: string): Promise<GoalProgressData[]> => {
     const { data: goals } = await supabase
       .from('goals')
       .select(`
@@ -312,7 +238,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           name
         )
       `)
-      .eq('group_id', targetGroupId);
+      .eq('group_id', groupId);
 
     return (goals || []).map(goal => ({
       id: goal.id,

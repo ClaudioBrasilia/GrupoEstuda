@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/layout/PageLayout';
@@ -20,11 +20,6 @@ const GroupDetail: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
-
-  useEffect(() => {
-    if (!groupId) return;
-    localStorage.setItem('grupoEstuda:lastGroupId', groupId);
-  }, [groupId]);
   
   const {
     subjects,
