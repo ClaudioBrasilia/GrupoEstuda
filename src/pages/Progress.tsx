@@ -17,7 +17,10 @@ const ProgressPage: React.FC = () => {
   const [view, setView] = useState<'individual' | 'group'>('individual');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { t } = useTranslation();
-  const { groupId } = useParams();
+  const params = useParams();
+  const routeGroupId = params?.groupId;
+  const storedGroupId = localStorage.getItem("activeGroupId");
+  const groupId = routeGroupId || storedGroupId || undefined;
   const { toast } = useToast();
   
   const { stats, loading, refreshData } = useProgressData(
