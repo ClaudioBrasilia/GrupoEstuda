@@ -7,21 +7,48 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 import { useProgressData } from '@/hooks/useProgressData';
 import { useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useGroups } from '@/hooks/useGroups';
 
 const ProgressPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [view, setView] = useState<'individual' | 'group'>('individual');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { t } = useTranslation();
-  const { groupId } = useParams();
+  const params = useParams();
+  const routeGroupId = params?.groupId;
+  const storedGroupId = localStorage.getItem('activeGroupId');
+  const groupId = routeGroupId || storedGroupId || undefined;
+  const { groups } = useGroups();
   const { toast } = useToast();
+  const [selectedGroupId, setSelectedGroupId] = useState<string>(() => {
+    return groupId || '';
+  });
+
+  useEffect(() => {
+    if (groupId) {
+      setSelectedGroupId(groupId);
+      setView('group');
+      return;
+    }
+
+    if (!selectedGroupId && groups.length > 0) {
+      setSelectedGroupId(groups[0].id);
+    }
+  }, [groupId, groups, selectedGroupId]);
+
+  useEffect(() => {
+    if (selectedGroupId) {
+      localStorage.setItem('activeGroupId', selectedGroupId);
+    }
+  }, [selectedGroupId]);
   
   const { stats, loading, refreshData } = useProgressData(
-    view === 'group' ? groupId : undefined,
+    view === 'group' ? selectedGroupId || undefined : undefined,
     timeRange as 'day' | 'week' | 'month' | 'year'
   );
 
@@ -37,7 +64,7 @@ const ProgressPage: React.FC = () => {
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [refreshData, view, groupId]); // Adicionamos view e groupId para garantir a atualização ao trocar abas
+  }, [refreshData, view, groupId, selectedGroupId]); // Adicionamos view e groupId para garantir a atualização ao trocar abas
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -105,7 +132,7 @@ const ProgressPage: React.FC = () => {
                   <Users className="h-3 w-3" />
                   Individual
                 </TabsTrigger>
-                {groupId && (
+                {(groupId || selectedGroupId) && (
                   <TabsTrigger value="group" className="text-xs flex items-center gap-1">
                     <Target className="h-3 w-3" />
                     Grupo
@@ -113,6 +140,21 @@ const ProgressPage: React.FC = () => {
                 )}
               </TabsList>
             </Tabs>
+
+            {view === 'group' && groups.length > 0 && (
+              <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                <SelectTrigger className="w-[180px] h-9">
+                  <SelectValue placeholder="Selecione o grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             
             <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
               <TabsList className="grid grid-cols-4 h-9">
