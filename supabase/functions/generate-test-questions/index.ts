@@ -1,197 +1,214 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+type Difficulty = "easy" | "medium" | "hard";
+
+interface RequestBody {
+  numQuestions?: number;
+  difficulty?: Difficulty;
+  subjects?: string[];
+  topic?: string;
+  fileContent?: string;
+}
+
+interface AiQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
+  subject: string;
+}
+
+interface AiResponse {
+  questions: AiQuestion[];
+}
+
+const sanitizeJsonResponse = (content: string): string => {
+  const trimmed = content.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fenced ? fenced[1].trim() : trimmed;
+};
+
+const isValidQuestion = (question: AiQuestion): boolean => {
+  const hasValidQuestion = typeof question.question === "string" && question.question.trim().length > 0;
+  const hasValidExplanation = typeof question.explanation === "string";
+  const hasValidSubject = typeof question.subject === "string" && question.subject.trim().length > 0;
+  const hasValidOptions = Array.isArray(question.options)
+    && question.options.length === 4
+    && question.options.every((option) => typeof option === "string" && option.trim().length > 0);
+  const hasValidCorrectAnswer = Number.isInteger(question.correctAnswer)
+    && question.correctAnswer >= 0
+    && question.correctAnswer <= 3;
+
+  return hasValidQuestion && hasValidExplanation && hasValidSubject && hasValidOptions && hasValidCorrectAnswer;
+};
+
+const normalizeQuestion = (question: AiQuestion): AiQuestion => ({
+  question: question.question.trim(),
+  options: question.options.map((option) => option.trim()),
+  correctAnswer: question.correctAnswer,
+  explanation: question.explanation.trim(),
+  subject: question.subject.trim(),
+});
+
+const buildPrompt = (params: {
+  numQuestions: number;
+  difficulty: Difficulty;
+  topic?: string;
+  fileContent?: string;
+  subjects: string[];
+}): string => {
+  const { numQuestions, difficulty, topic, fileContent, subjects } = params;
+  const topicContext = topic?.trim() ? `Tópico informado: ${topic.trim()}.` : "";
+  const subjectsContext = subjects.length > 0 ? `Matérias selecionadas: ${subjects.join(", ")}.` : "";
+
+  const sourceInstruction = fileContent?.trim()
+    ? `Fonte primária para criar as questões (PRIORITÁRIA):\n${fileContent.trim()}\nUse o tópico apenas como contexto complementar.`
+    : `Use como base o tema informado e as matérias selecionadas. ${topicContext} ${subjectsContext}`;
+
+  return `Crie ${numQuestions} questões de múltipla escolha em português brasileiro.
+
+Dificuldade: ${difficulty}.
+${topicContext}
+${subjectsContext}
+
+${sourceInstruction}
+
+Regras obrigatórias:
+- Retorne EXATAMENTE um objeto JSON com esta estrutura:
+{
+  "questions": [
+    {
+      "question": "texto",
+      "options": ["A", "B", "C", "D"],
+      "correctAnswer": 0,
+      "explanation": "texto",
+      "subject": "texto"
+    }
+  ]
+}
+- Cada questão deve ter exatamente 4 alternativas.
+- correctAnswer deve ser um número inteiro entre 0 e 3.
+- Não inclua markdown, comentários ou texto fora do JSON.`;
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    if (!lovableApiKey) {
-      console.error('LOVABLE_API_KEY not configured');
+    if (!openAiApiKey) {
       return new Response(
-        JSON.stringify({ error: 'Lovable AI key not configured' }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: "OPENAI_API_KEY não configurada no Supabase" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const { numQuestions, difficulty, subjects } = await req.json();
-    
-    if (!subjects || subjects.length === 0) {
+    const body = (await req.json()) as RequestBody;
+    const numQuestions = Number.isFinite(body.numQuestions) ? Number(body.numQuestions) : 10;
+    const difficulty: Difficulty = body.difficulty ?? "medium";
+    const subjects = Array.isArray(body.subjects) ? body.subjects.map((subject) => String(subject)) : [];
+    const topic = body.topic?.trim();
+    const fileContent = body.fileContent?.trim();
+
+    if (!topic && !fileContent) {
       return new Response(
-        JSON.stringify({ error: 'Selecione pelo menos uma matéria' }), 
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: "Informe um assunto ou envie um arquivo .txt/.md para gerar as questões." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const subjectNames = subjects.join(", ");
-    const prompt = `Crie ${numQuestions} questões de múltipla escolha sobre ${subjectNames}.
+    if (fileContent) {
+      console.log(`Gerando questões com arquivo (tamanho: ${fileContent.length} caracteres)`);
+    }
 
-ESPECIFICAÇÕES:
-- Dificuldade: ${difficulty}
-- Estilo: ENEM/Vestibulares (FUVEST, UNICAMP, UFRJ)/Concursos brasileiros recentes
-- Ano base: 2020-2024 (use temas e formatos de provas recentes)
-- Cada questão deve ter:
-  * Texto contextualizador quando aplicável (trecho de notícia, texto literário, gráfico descrito, etc.)
-  * Enunciado claro e direto
-  * 5 alternativas (A, B, C, D, E)
-  * Apenas UMA resposta correta
-  
-TEMAS PRIORITÁRIOS (quando aplicável):
-- Atualidades e acontecimentos recentes no Brasil e mundo (2020-2024)
-- Interdisciplinaridade (conectar diferentes áreas do conhecimento)
-- Problemas reais, contextualizados e aplicáveis
-- Interpretação de textos, gráficos, dados, charges
+    const prompt = buildPrompt({
+      numQuestions,
+      difficulty,
+      topic,
+      fileContent,
+      subjects,
+    });
 
-Formato JSON:
-[
-  {
-    "id": 1,
-    "context": "Texto contextualizador aqui (opcional mas recomendado, 2-4 linhas)",
-    "question": "Enunciado da questão",
-    "options": ["Alternativa A", "Alternativa B", "Alternativa C", "Alternativa D", "Alternativa E"],
-    "answer": "Alternativa correta (texto completo da alternativa)",
-    "explanation": "Breve explicação da resposta correta (1-2 frases)"
-  }
-]`;
-
-    console.log('Calling Lovable AI Gateway...');
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${openAiApiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: "gpt-4o-mini",
         messages: [
           {
-            role: 'system',
-            content: `Você é um professor especialista em criar questões de múltipla escolha no estilo ENEM, vestibulares (FUVEST, UNICAMP, UFRJ, etc.) e concursos públicos brasileiros.
-
-DIRETRIZES OBRIGATÓRIAS:
-- Base suas questões em provas REAIS recentes (2020-2024) desses exames
-- Use contextualização: textos literários, jornalísticos, charges, gráficos descritos, dados estatísticos
-- Inclua interdisciplinaridade quando apropriado (ex: História + Geografia, Química + Biologia)
-- Evite questões puramente decorativas; priorize raciocínio, interpretação e análise crítica
-- Use linguagem clara, formal e acadêmica típica do ENEM
-- Todas as 5 alternativas devem ser plausíveis e bem elaboradas
-- A resposta correta deve ser única e indiscutível
-- Inclua sempre uma breve explicação da resposta
-
-Retorne APENAS o array JSON, sem texto adicional, markdown ou comentários.`
+            role: "system",
+            content: "Você é um gerador de testes educacionais. Responda APENAS com JSON válido, sem markdown.",
           },
           {
-            role: 'user',
-            content: prompt
-          }
+            role: "user",
+            content: prompt,
+          },
         ],
-        temperature: 0.7
-      })
+        temperature: 0.3,
+      }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Lovable AI error:', errorData);
-      
-      // Rate limit excedido
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Limite de requisições excedido. Aguarde alguns segundos e tente novamente.' }), 
-          { 
-            status: 429, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      
-      // Créditos esgotados
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Créditos Lovable AI esgotados. Adicione créditos em Settings -> Workspace -> Usage.' }), 
-          { 
-            status: 402, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      
+      await response.text();
+      console.error(`OpenAI error status ${response.status}`);
       return new Response(
-        JSON.stringify({ error: `Lovable AI error: ${errorData.error?.message || 'Unknown error'}` }), 
-        { 
-          status: response.status, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: "Não foi possível gerar as questões agora. Tente novamente em instantes." }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
-    
+    const completion = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const content = completion.choices?.[0]?.message?.content;
+
     if (!content) {
-      throw new Error('No content in OpenAI response');
-    }
-
-    // Extract JSON from response
-    let parsedQuestions;
-    try {
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || 
-                       content.match(/\[([\s\S]*)\]/);
-                       
-      const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
-      parsedQuestions = JSON.parse(jsonString);
-    } catch (e) {
-      console.error('JSON parsing error:', e, 'Raw content:', content);
       return new Response(
-        JSON.stringify({ error: 'Erro ao processar resposta da IA' }), 
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: "Resposta inválida da IA" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-    
-    // Format questions
-    const formattedQuestions = Array.isArray(parsedQuestions) 
-      ? parsedQuestions.map((q, index) => ({
-          id: q.id || index + 1,
-          context: q.context || null,
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : ['A', 'B', 'C', 'D', 'E'],
-          answer: q.answer || '',
-          explanation: q.explanation || null
-        })) 
-      : [];
 
-    console.log(`Successfully generated ${formattedQuestions.length} questions`);
-    
-    return new Response(
-      JSON.stringify({ questions: formattedQuestions }), 
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    try {
+      const cleanContent = sanitizeJsonResponse(content);
+      const parsed = JSON.parse(cleanContent) as AiResponse;
+
+      if (!parsed.questions || !Array.isArray(parsed.questions)) {
+        throw new Error("Formato inválido");
       }
-    );
-  } catch (error) {
-    console.error('Error in generate-test-questions function:', error);
-    return new Response(
-      JSON.stringify({ error: (error as Error).message || 'Internal server error' }), 
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+
+      const hasInvalidQuestion = parsed.questions.some((question) => !isValidQuestion(question));
+
+      if (hasInvalidQuestion) {
+        throw new Error("Questões inválidas");
       }
+
+      const normalizedQuestions = parsed.questions.map(normalizeQuestion);
+
+      return new Response(
+        JSON.stringify({ questions: normalizedQuestions }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    } catch (_parseError) {
+      return new Response(
+        JSON.stringify({ error: "Resposta inválida da IA" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+  } catch (_error) {
+    return new Response(
+      JSON.stringify({ error: "Erro interno ao gerar as questões." }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
