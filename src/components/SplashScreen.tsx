@@ -1,34 +1,38 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
 
 interface SplashScreenProps {
-  onFinished: () => void;
+  onFinish: () => void;
 }
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
+const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const [show, setShow] = useState(true);
-  const onFinishedRef = useRef(onFinished);
-
-  // Keep ref updated
-  useEffect(() => {
-    onFinishedRef.current = onFinished;
-  }, [onFinished]);
+  const finishRef = useRef(onFinish);
+  const hasFinishedRef = useRef(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    finishRef.current = onFinish;
+  }, [onFinish]);
+
+  useEffect(() => {
+    const hideTimer = setTimeout(() => {
       setShow(false);
     }, 1000);
 
     const finishTimer = setTimeout(() => {
-      onFinishedRef.current();
-    }, 1300); // 1000ms display + 300ms exit animation
+      if (hasFinishedRef.current) {
+        return;
+      }
+      hasFinishedRef.current = true;
+      finishRef.current();
+    }, 1300);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(hideTimer);
       clearTimeout(finishTimer);
     };
-  }, []); // Empty deps - run once
+  }, []);
 
   return (
     <AnimatePresence>
@@ -37,13 +41,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-gradient-to-b from-study-primary to-blue-700 flex flex-col items-center justify-center z-50"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-study-primary to-blue-700"
         >
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="rounded-full bg-white p-5 mb-4"
+            className="mb-4 rounded-full bg-white p-5"
           >
             <BookOpen size={48} className="text-study-primary" />
           </motion.div>
@@ -51,7 +55,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.5 }}
-            className="text-3xl font-bold text-white mb-2"
+            className="mb-2 text-3xl font-bold text-white"
           >
             Grupo Estuda
           </motion.h1>

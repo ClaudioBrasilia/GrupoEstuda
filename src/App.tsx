@@ -50,7 +50,7 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 {showingSplash ? (
-                  <SplashScreen onFinished={handleSplashFinished} />
+                  <SplashScreen onFinish={handleSplashFinished} />
                 ) : (
                   <BrowserRouter>
                     <Routes>
