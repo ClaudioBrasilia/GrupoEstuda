@@ -78,7 +78,7 @@ const Timer: React.FC = () => {
     
     setIsRunning(false);
     
-    const result = await createStudySession(selectedSubject, seconds);
+    const result = await createStudySession(selectedSubject, seconds, selectedGroup);
     
     if (result.success) {
       toast.success(`Sessão de estudo concluída! Você ganhou ${result.points} pontos!`);
