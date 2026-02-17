@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
+const OPENAI_MODEL = "gpt-4o-mini";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,20 +67,19 @@ const buildPrompt = (params: {
   subjects: string[];
 }): string => {
   const { numQuestions, difficulty, topic, fileContent, subjects } = params;
-  const topicContext = topic?.trim() ? `Tópico informado: ${topic.trim()}.` : "";
-  const subjectsContext = subjects.length > 0 ? `Matérias selecionadas: ${subjects.join(", ")}.` : "";
+  const trimmedTopic = topic?.trim();
+  const trimmedFileContent = fileContent?.trim();
+  const subjectsContext = subjects.length > 0 ? `Matérias selecionadas (contexto adicional): ${subjects.join(", ")}.` : "";
 
-  const sourceInstruction = fileContent?.trim()
-    ? `Fonte primária para criar as questões (PRIORITÁRIA):\n${fileContent.trim()}\nUse o tópico apenas como contexto complementar.`
-    : `Use como base o tema informado e as matérias selecionadas. ${topicContext} ${subjectsContext}`;
-
-  return `Crie ${numQuestions} questões de múltipla escolha em português brasileiro.
+  if (trimmedFileContent) {
+    return `Crie ${numQuestions} questões de múltipla escolha em português brasileiro.
 
 Dificuldade: ${difficulty}.
-${topicContext}
+${trimmedTopic ? `Tópico complementar opcional: ${trimmedTopic}.` : ""}
 ${subjectsContext}
 
-${sourceInstruction}
+Base obrigatória para TODAS as questões (use EXCLUSIVAMENTE este texto como fonte):
+${trimmedFileContent}
 
 Regras obrigatórias:
 - Retorne EXATAMENTE um objeto JSON com esta estrutura:
@@ -97,6 +97,34 @@ Regras obrigatórias:
 - Cada questão deve ter exatamente 4 alternativas.
 - correctAnswer deve ser um número inteiro entre 0 e 3.
 - Não inclua markdown, comentários ou texto fora do JSON.`;
+  }
+
+  if (trimmedTopic) {
+    return `Crie ${numQuestions} questões de múltipla escolha em português brasileiro.
+
+Dificuldade: ${difficulty}.
+Assunto obrigatório (todas as questões devem focar nesse assunto): ${trimmedTopic}.
+${subjectsContext}
+
+Regras obrigatórias:
+- Retorne EXATAMENTE um objeto JSON com esta estrutura:
+{
+  "questions": [
+    {
+      "question": "texto",
+      "options": ["A", "B", "C", "D"],
+      "correctAnswer": 0,
+      "explanation": "texto",
+      "subject": "texto"
+    }
+  ]
+}
+- Cada questão deve ter exatamente 4 alternativas.
+- correctAnswer deve ser um número inteiro entre 0 e 3.
+- Não inclua markdown, comentários ou texto fora do JSON.`;
+  }
+
+  throw new Error("MISSING_INPUT");
 };
 
 serve(async (req) => {
@@ -126,17 +154,9 @@ serve(async (req) => {
       );
     }
 
-    if (fileContent) {
-      console.log(`Gerando questões com arquivo (tamanho: ${fileContent.length} caracteres)`);
-    }
+    console.log(`[generate-test-questions] request received (topic=${Boolean(topic)}, file=${Boolean(fileContent)}, subjects=${subjects.length}, numQuestions=${numQuestions}, difficulty=${difficulty})`);
 
-    const prompt = buildPrompt({
-      numQuestions,
-      difficulty,
-      topic,
-      fileContent,
-      subjects,
-    });
+    const prompt = buildPrompt({ numQuestions, difficulty, topic, fileContent, subjects });
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -145,7 +165,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: OPENAI_MODEL,
         messages: [
           {
             role: "system",
@@ -161,8 +181,17 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      await response.text();
-      console.error(`OpenAI error status ${response.status}`);
+      const errorBody = await response.text();
+      const errorSummary = errorBody.replace(/\s+/g, " ").slice(0, 180);
+      console.error(`[generate-test-questions] OpenAI non-2xx: status=${response.status}, summary=${errorSummary}`);
+
+      if ([401, 403, 429].includes(response.status)) {
+        return new Response(
+          JSON.stringify({ error: `Falha ao gerar questões (OpenAI ${response.status}). Tente novamente em instantes.` }),
+          { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       return new Response(
         JSON.stringify({ error: "Não foi possível gerar as questões agora. Tente novamente em instantes." }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -199,13 +228,15 @@ serve(async (req) => {
         JSON.stringify({ questions: normalizedQuestions }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
-    } catch (_parseError) {
+    } catch (parseError) {
+      console.error(`[generate-test-questions] invalid JSON from OpenAI (model=${OPENAI_MODEL}): ${parseError instanceof Error ? parseError.message : "unknown"}`);
       return new Response(
         JSON.stringify({ error: "Resposta inválida da IA" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-  } catch (_error) {
+  } catch (error) {
+    console.error(`[generate-test-questions] internal error: ${error instanceof Error ? error.message : "unknown"}`);
     return new Response(
       JSON.stringify({ error: "Erro interno ao gerar as questões." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
