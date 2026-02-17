@@ -4,6 +4,7 @@ import { Plus, Search, User, Users, Crown, AlertCircle, FileText } from 'lucide-
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useGroups } from '@/hooks/useGroups';
+import type { Group } from '@/hooks/useGroups';
 import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,8 +56,8 @@ const CreateGroupForm: React.FC<{ onCreateGroup: (name: string, description: str
     try {
       await onCreateGroup(data.name, data.description || '');
       form.reset();
-    } catch (error: any) {
-      setErrorMessage(error.message || 'Erro ao criar grupo. Tente novamente.');
+    } catch (error: unknown) {
+      setErrorMessage(error instanceof Error ? error.message : 'Erro ao criar grupo. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -147,7 +148,7 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleGroupClick = async (group: any) => {
+  const handleGroupClick = async (group: Group) => {
     // Premium gating for premium groups
     if (group.isPremium && user?.plan !== 'premium') {
       toast.error('Este é um grupo exclusivo para usuários Premium');

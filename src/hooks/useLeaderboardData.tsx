@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
@@ -7,6 +7,7 @@ export interface LeaderboardUser {
   name: string;
   points: number;
   rank: number;
+  plan?: string;
   isCurrentUser?: boolean;
 }
 
@@ -22,13 +23,7 @@ export function useLeaderboardData(timeRange: string = 'week') {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchLeaderboardData();
-    }
-  }, [user, timeRange]);
-
-  const fetchLeaderboardData = async () => {
+  const fetchLeaderboardData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -61,7 +56,7 @@ export function useLeaderboardData(timeRange: string = 'week') {
         
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, name')
+          .select('id, name, plan')
           .in('id', userIds);
 
         globalUsers = globalData.map((item, index) => {
@@ -71,6 +66,7 @@ export function useLeaderboardData(timeRange: string = 'week') {
             name: profile?.name || 'Usuário',
             points: item.points,
             rank: index + 1,
+            plan: profile?.plan || undefined,
             isCurrentUser: item.user_id === user.id
           };
         });
@@ -97,7 +93,7 @@ export function useLeaderboardData(timeRange: string = 'week') {
             
             const { data: profiles } = await supabase
               .from('profiles')
-              .select('id, name')
+              .select('id, name, plan')
               .in('id', userIds);
 
             members = groupPoints.map((item, index) => {
@@ -107,6 +103,7 @@ export function useLeaderboardData(timeRange: string = 'week') {
                 name: profile?.name || 'Usuário',
                 points: item.points,
                 rank: index + 1,
+                plan: profile?.plan || undefined,
                 isCurrentUser: item.user_id === user.id
               };
             });
@@ -128,7 +125,13 @@ export function useLeaderboardData(timeRange: string = 'week') {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      void fetchLeaderboardData();
+    }
+  }, [user, timeRange, fetchLeaderboardData]);
 
   return {
     globalLeaderboard,

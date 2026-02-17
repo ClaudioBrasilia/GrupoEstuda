@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session } from '@supabase/supabase-js';
+import { AuthError, Session } from '@supabase/supabase-js';
 import { withTimeout } from '@/lib/authUtils';
 
 export type PlanType = 'free' | 'basic' | 'premium';
@@ -18,8 +18,8 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthActionLoading: boolean;
-  login: (email: string, password: string) => Promise<{ error: any }>;
-  register: (name: string, email: string, password: string) => Promise<{ error: any }>;
+  login: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  register: (name: string, email: string, password: string) => Promise<{ error: AuthError | null }>;
   logout: () => Promise<void>;
   updateUserPlan: (plan: PlanType) => Promise<void>;
 }
@@ -148,10 +148,9 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       
       return { error: result.error };
     } catch (error) {
+      const fallbackError = new AuthError(error instanceof Error ? error.message : 'Erro ao fazer login');
       return { 
-        error: { 
-          message: error instanceof Error ? error.message : 'Erro ao fazer login' 
-        } 
+        error: fallbackError
       };
     } finally {
       setIsAuthActionLoading(false);
@@ -179,10 +178,9 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       
       return { error: result.error };
     } catch (error) {
+      const fallbackError = new AuthError(error instanceof Error ? error.message : 'Erro ao registrar');
       return { 
-        error: { 
-          message: error instanceof Error ? error.message : 'Erro ao registrar' 
-        } 
+        error: fallbackError
       };
     } finally {
       setIsAuthActionLoading(false);

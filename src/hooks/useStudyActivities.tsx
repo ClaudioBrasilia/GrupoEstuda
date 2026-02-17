@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -27,59 +27,7 @@ export const useStudyActivities = (groupId?: string) => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-
-    if (groupId) {
-      fetchGroupActivities();
-    } else {
-      fetchGlobalActivities();
-    }
-
-    // Set up real-time subscription for study activities
-    const channel = supabase
-      .channel('activities_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_activities',
-          ...(groupId ? { filter: `group_id=eq.${groupId}` } : {})
-        },
-        () => {
-          console.log('📡 Atividades de estudo atualizadas');
-          if (groupId) {
-            fetchGroupActivities();
-          } else {
-            fetchGlobalActivities();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_activity_likes'
-        },
-        () => {
-          console.log('📡 Likes de atividades atualizados');
-          if (groupId) {
-            fetchGroupActivities();
-          } else {
-            fetchGlobalActivities();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, groupId]);
-
-  const fetchGlobalActivities = async () => {
+  const fetchGlobalActivities = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -110,7 +58,7 @@ export const useStudyActivities = (groupId?: string) => {
             .getPublicUrl(activity.photo_path);
 
           const userLiked = activity.study_activity_likes.some(
-            (like: any) => like.user_id === user?.id
+            (like: { user_id: string }) => like.user_id === user?.id
           );
 
           return {
@@ -139,9 +87,9 @@ export const useStudyActivities = (groupId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const fetchGroupActivities = async () => {
+  const fetchGroupActivities = useCallback(async () => {
     if (!groupId) return;
 
     try {
@@ -174,7 +122,7 @@ export const useStudyActivities = (groupId?: string) => {
             .getPublicUrl(activity.photo_path);
 
           const userLiked = activity.study_activity_likes.some(
-            (like: any) => like.user_id === user?.id
+            (like: { user_id: string }) => like.user_id === user?.id
           );
 
           return {
@@ -202,7 +150,58 @@ export const useStudyActivities = (groupId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (groupId) {
+      void fetchGroupActivities();
+    } else {
+      void fetchGlobalActivities();
+    }
+
+    const channel = supabase
+      .channel('activities_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_activities',
+          ...(groupId ? { filter: `group_id=eq.${groupId}` } : {})
+        },
+        () => {
+          console.log('📡 Atividades de estudo atualizadas');
+          if (groupId) {
+            void fetchGroupActivities();
+          } else {
+            void fetchGlobalActivities();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_activity_likes'
+        },
+        () => {
+          console.log('📡 Likes de atividades atualizados');
+          if (groupId) {
+            void fetchGroupActivities();
+          } else {
+            void fetchGlobalActivities();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchGlobalActivities, fetchGroupActivities, groupId, user]);
 
   const compressImage = async (file: File): Promise<File> => {
     const options = {
@@ -334,9 +333,9 @@ export const useStudyActivities = (groupId?: string) => {
       }
 
       return { success: true, data };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Erro completo ao criar atividade:', error);
-      const errorMessage = error.message || 'Erro desconhecido ao criar atividade';
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao criar atividade';
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {

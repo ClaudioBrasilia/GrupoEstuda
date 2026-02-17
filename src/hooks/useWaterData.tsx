@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export interface WaterStats {
   todayIntake: number;
@@ -18,53 +19,7 @@ export function useWaterData() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (!user) return;
-    
-    fetchWaterData();
-
-    // Set up real-time subscription for water intake
-    const channel = supabase
-      .channel('water_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'water_intake',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          console.log('📡 Consumo de água atualizado');
-          fetchWaterData();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`
-        },
-        (payload: any) => {
-          if (payload.new && payload.new.water_goal_ml) {
-            console.log('📡 Meta de água atualizada');
-            setWaterStats(prev => ({
-              ...prev,
-              dailyGoal: payload.new.water_goal_ml
-            }));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  const fetchWaterData = async () => {
+  const fetchWaterData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -125,7 +80,53 @@ export function useWaterData() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    void fetchWaterData();
+
+    // Set up real-time subscription for water intake
+    const channel = supabase
+      .channel('water_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'water_intake',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('📡 Consumo de água atualizado');
+          fetchWaterData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`
+        },
+        (payload: RealtimePostgresChangesPayload<{ water_goal_ml: number }>) => {
+          if (payload.new && payload.new.water_goal_ml) {
+            console.log('📡 Meta de água atualizada');
+            setWaterStats(prev => ({
+              ...prev,
+              dailyGoal: payload.new.water_goal_ml
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchWaterData, user]);
 
   const addWaterIntake = async (amount: number) => {
     if (!user) return;
