@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
-import { Subject, GoalType, FileType, Message } from '@/types/groupTypes';
+import { Subject, GoalType, FileType, Message, Member } from '@/types/groupTypes';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // Mock data
 const MOCK_SUBJECTS = [
@@ -68,99 +69,11 @@ export const useGroupData = (groupId: string | undefined) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [userPoints, setUserPoints] = useState<number>(0);
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupName, setGroupName] = useState<string>('');
 
-  useEffect(() => {
-    if (!groupId || !user) return;
-    
-    fetchGroupData();
-    
-    // Set up real-time subscription for messages and goals
-    const channel = supabase
-      .channel(`group-${groupId}-realtime`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `group_id=eq.${groupId}`
-        },
-        async (payload) => {
-          // Fetch the author's profile name
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('id', payload.new.user_id)
-            .single();
-
-          const newMessage = {
-            id: payload.new.id,
-            userId: payload.new.user_id,
-            userName: profile?.name || 'Unknown User',
-            text: payload.new.content,
-            timestamp: new Date(payload.new.created_at)
-          };
-
-          setMessages(prev => [...prev, newMessage]);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'goals',
-          filter: `group_id=eq.${groupId}`
-        },
-        () => {
-          console.log('📡 Metas do grupo atualizadas em tempo real');
-          // Re-fetch only goals to avoid full reload
-          const fetchGoals = async () => {
-            const { data: goalsData } = await supabase
-              .from('goals')
-              .select('*')
-              .eq('group_id', groupId)
-              .order('created_at');
-            
-            const formattedGoals = goalsData?.map(goal => ({
-              id: goal.id,
-              subject: goal.subject_id || '',
-              type: goal.type as 'exercises' | 'pages' | 'time',
-              target: goal.target,
-              current: goal.current
-            })) || [];
-            
-            setGoals(formattedGoals);
-          };
-          fetchGoals();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_points',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload: any) => {
-          if (payload.new && payload.new.group_id === groupId) {
-            console.log('📡 Pontos do usuário atualizados');
-            setUserPoints(payload.new.points);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [groupId, user]);
-
-  const fetchGroupData = async () => {
+  const fetchGroupData = useCallback(async () => {
     if (!groupId || !user) return;
     
     setLoading(true);
@@ -284,7 +197,95 @@ export const useGroupData = (groupId: string | undefined) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId, user]);
+
+  useEffect(() => {
+    if (!groupId || !user) return;
+    
+    void fetchGroupData();
+    
+    // Set up real-time subscription for messages and goals
+    const channel = supabase
+      .channel(`group-${groupId}-realtime`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `group_id=eq.${groupId}`
+        },
+        async (payload) => {
+          // Fetch the author's profile name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', payload.new.user_id)
+            .single();
+
+          const newMessage = {
+            id: payload.new.id,
+            userId: payload.new.user_id,
+            userName: profile?.name || 'Unknown User',
+            text: payload.new.content,
+            timestamp: new Date(payload.new.created_at)
+          };
+
+          setMessages(prev => [...prev, newMessage]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'goals',
+          filter: `group_id=eq.${groupId}`
+        },
+        () => {
+          console.log('📡 Metas do grupo atualizadas em tempo real');
+          // Re-fetch only goals to avoid full reload
+          const fetchGoals = async () => {
+            const { data: goalsData } = await supabase
+              .from('goals')
+              .select('*')
+              .eq('group_id', groupId)
+              .order('created_at');
+            
+            const formattedGoals = goalsData?.map(goal => ({
+              id: goal.id,
+              subject: goal.subject_id || '',
+              type: goal.type as 'exercises' | 'pages' | 'time',
+              target: goal.target,
+              current: goal.current
+            })) || [];
+            
+            setGoals(formattedGoals);
+          };
+          fetchGoals();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_points',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: RealtimePostgresChangesPayload<{ group_id: string; points: number }>) => {
+          if (payload.new && payload.new.group_id === groupId) {
+            console.log('📡 Pontos do usuário atualizados');
+            setUserPoints(payload.new.points);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchGroupData, groupId, user]);
 
   const handleAddSubject = async (e: React.FormEvent) => {
     e.preventDefault();

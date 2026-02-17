@@ -2,6 +2,18 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
+interface SessionSubject {
+  name: string;
+}
+
+interface StudySessionWithSubject {
+  id: string;
+  started_at: string;
+  completed_at: string | null;
+  duration_minutes: number;
+  subjects?: SessionSubject | null;
+}
+
 export interface ProgressStats {
   totalStudyTime: number;
   totalPages: number;
@@ -61,6 +73,160 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   const { user } = useAuth();
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const generateWeeklyData = useCallback((sessions: StudySessionWithSubject[]): WeeklyStudyData[] => {
+    const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+    const data: WeeklyStudyData[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      
+      const dayName = weekDays[date.getDay()];
+      const dateStr = date.toLocaleDateString('en-CA');
+      
+      const daySessions = sessions.filter(session => {
+        const sessionDate = new Date(session.started_at).toLocaleDateString('en-CA');
+        return sessionDate === dateStr;
+      });
+      
+      const time = daySessions.reduce((sum, session) => sum + session.duration_minutes, 0);
+      const pages = Math.floor(time / 5) * 2;
+      const exercises = Math.floor(time / 10);
+
+      data.push({ name: dayName, time, pages, exercises, date: dateStr });
+    }
+
+    return data;
+  }, []);
+
+  const fetchSubjectProgress = useCallback(async (sessions: StudySessionWithSubject[]): Promise<SubjectProgressData[]> => {
+    const subjectStats: Record<string, number> = {};
+    
+    sessions.forEach(session => {
+      const subjectName = session.subjects?.name || 'Outros';
+      subjectStats[subjectName] = (subjectStats[subjectName] || 0) + session.duration_minutes;
+    });
+
+    const total = Object.values(subjectStats).reduce((sum, value) => sum + value, 0);
+    
+    return Object.entries(subjectStats)
+      .map(([name, value], index) => ({
+        name,
+        value: total > 0 ? Math.round((value / total) * 100) : 0,
+        color: COLORS[index % COLORS.length]
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, []);
+
+  const fetchGoalsProgress = useCallback(async (scopeGroupId: string): Promise<GoalProgressData[]> => {
+    const { data: goals } = await supabase
+      .from('goals')
+      .select(`
+        id,
+        type,
+        current,
+        target,
+        subjects:subject_id (
+          name
+        )
+      `)
+      .eq('group_id', scopeGroupId);
+
+    return (goals || []).map(goal => ({
+      id: goal.id,
+      type: goal.type,
+      subject: goal.subjects?.name || 'Geral',
+      current: goal.current,
+      target: goal.target,
+      progress: Math.round((goal.current / goal.target) * 100)
+    }));
+  }, []);
+
+  const fetchDailySessions = useCallback(async (scopeGroupId?: string): Promise<DailySessionData[]> => {
+    if (!user) return [];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    let dailySessionsQuery = supabase
+      .from('study_sessions')
+      .select(`
+        id,
+        started_at,
+        completed_at,
+        duration_minutes,
+        subjects:subject_id (
+          id,
+          name
+        )
+      `)
+      .eq('user_id', user.id)
+      .gte('started_at', today.toISOString())
+      .lt('started_at', tomorrow.toISOString())
+      .not('completed_at', 'is', null)
+      .order('started_at', { ascending: true });
+
+    if (scopeGroupId) {
+      dailySessionsQuery = dailySessionsQuery.eq('group_id', scopeGroupId);
+    }
+
+    const { data: sessions } = await dailySessionsQuery;
+
+    return ((sessions || []) as StudySessionWithSubject[]).map((session, index) => ({
+      id: session.id,
+      startTime: new Date(session.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      endTime: session.completed_at
+        ? new Date(session.completed_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : '-',
+      duration: session.duration_minutes,
+      subject: session.subjects?.name || 'Sem matéria',
+      subjectColor: COLORS[index % COLORS.length]
+    }));
+  }, [user]);
+
+  const calculateStudyStreak = useCallback(async (scopeGroupId?: string): Promise<number> => {
+    if (!user) return 0;
+
+    let streakQuery = supabase
+      .from('study_sessions')
+      .select('started_at')
+      .eq('user_id', user.id)
+      .not('completed_at', 'is', null)
+      .order('started_at', { ascending: false });
+
+    if (scopeGroupId) {
+      streakQuery = streakQuery.eq('group_id', scopeGroupId);
+    }
+
+    const { data: sessions } = await streakQuery;
+
+    if (!sessions || sessions.length === 0) return 0;
+
+    let streak = 0;
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    const studyDates = new Set(
+      sessions.map(session => 
+        new Date(session.started_at).toLocaleDateString('en-CA')
+      )
+    );
+
+    const todayStr = currentDate.toLocaleDateString('en-CA');
+    if (!studyDates.has(todayStr)) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    while (studyDates.has(currentDate.toLocaleDateString('en-CA'))) {
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    return streak;
+  }, [user]);
+
   const fetchProgressData = useCallback(async () => {
     if (!user) return;
 
@@ -98,12 +264,13 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       }
 
       const { data: sessions } = await sessionsQuery;
+      const sessionRows = (sessions || []) as StudySessionWithSubject[];
 
       // Calculate weekly data
-      const weeklyData = generateWeeklyData(sessions || []);
+      const weeklyData = generateWeeklyData(sessionRows);
       
       // Calculate totals
-      const totalStudyTime = (sessions || []).reduce((sum, session) => sum + session.duration_minutes, 0);
+      const totalStudyTime = sessionRows.reduce((sum, session) => sum + session.duration_minutes, 0);
       const totalPages = Math.floor(totalStudyTime / 5) * 2; // Estimate 2 pages per 5 minutes
       const totalExercises = Math.floor(totalStudyTime / 10); // Estimate 1 exercise per 10 minutes
 
@@ -111,7 +278,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       const studyStreak = await calculateStudyStreak(groupId);
 
       // Fetch subject progress
-      const subjectData = await fetchSubjectProgress(sessions || []);
+      const subjectData = await fetchSubjectProgress(sessionRows);
 
       // Fetch goals progress (only for group view)
       const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
@@ -134,7 +301,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     } finally {
       setLoading(false);
     }
-  }, [user, groupId, timeRange]);
+  }, [user, groupId, timeRange, generateWeeklyData, calculateStudyStreak, fetchSubjectProgress, fetchGoalsProgress, fetchDailySessions]);
 
   const scheduleRefresh = useCallback(() => {
     if (refreshTimeoutRef.current) {
@@ -144,7 +311,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     refreshTimeoutRef.current = setTimeout(() => {
       void fetchProgressData();
     }, 300);
-  }, [fetchProgressData]);
+  }, [fetchProgressData, user]);
 
   useEffect(() => {
     if (user) {
@@ -201,173 +368,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     };
   }, [user, groupId, scheduleRefresh]);
 
-  const generateWeeklyData = (sessions: any[]): WeeklyStudyData[] => {
-    const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
-    const data: WeeklyStudyData[] = [];
-
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      
-      const dayName = weekDays[date.getDay()];
-      // Usar data local para comparação
-      const dateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD
-      
-      const daySessions = sessions.filter(session => {
-        const sessionDate = new Date(session.started_at).toLocaleDateString('en-CA');
-        return sessionDate === dateStr;
-      });
-      
-      const time = daySessions.reduce((sum, session) => sum + session.duration_minutes, 0);
-      const pages = Math.floor(time / 5) * 2;
-      const exercises = Math.floor(time / 10);
-
-      data.push({
-        name: dayName,
-        time,
-        pages,
-        exercises,
-        date: dateStr
-      });
-    }
-
-    return data;
-  };
-
-  const fetchSubjectProgress = async (sessions: any[]): Promise<SubjectProgressData[]> => {
-    const subjectStats: { [key: string]: number } = {};
-    
-    sessions.forEach(session => {
-      const subjectName = session.subjects?.name || 'Outros';
-      subjectStats[subjectName] = (subjectStats[subjectName] || 0) + session.duration_minutes;
-    });
-
-    const total = Object.values(subjectStats).reduce((sum, value) => sum + value, 0);
-    
-    return Object.entries(subjectStats)
-      .map(([name, value], index) => ({
-        name,
-        value: total > 0 ? Math.round((value / total) * 100) : 0,
-        color: COLORS[index % COLORS.length]
-      }))
-      .sort((a, b) => b.value - a.value);
-  };
-
-  const fetchGoalsProgress = async (groupId: string): Promise<GoalProgressData[]> => {
-    const { data: goals } = await supabase
-      .from('goals')
-      .select(`
-        id,
-        type,
-        current,
-        target,
-        subjects:subject_id (
-          name
-        )
-      `)
-      .eq('group_id', groupId);
-
-    return (goals || []).map(goal => ({
-      id: goal.id,
-      type: goal.type,
-      subject: goal.subjects?.name || 'Geral',
-      current: goal.current,
-      target: goal.target,
-      progress: Math.round((goal.current / goal.target) * 100)
-    }));
-  };
-
-  const fetchDailySessions = async (scopeGroupId?: string): Promise<DailySessionData[]> => {
-    if (!user) return [];
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    let dailySessionsQuery = supabase
-      .from('study_sessions')
-      .select(`
-        id,
-        started_at,
-        completed_at,
-        duration_minutes,
-        subjects:subject_id (
-          id,
-          name
-        )
-      `)
-      .eq('user_id', user.id)
-      .gte('started_at', today.toISOString())
-      .lt('started_at', tomorrow.toISOString())
-      .not('completed_at', 'is', null)
-      .order('started_at', { ascending: true });
-
-    if (scopeGroupId) {
-      dailySessionsQuery = dailySessionsQuery.eq('group_id', scopeGroupId);
-    }
-
-    const { data: sessions } = await dailySessionsQuery;
-
-    return (sessions || []).map((session, index) => ({
-      id: session.id,
-      startTime: new Date(session.started_at).toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      endTime: session.completed_at 
-        ? new Date(session.completed_at).toLocaleTimeString('pt-BR', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
-        : '-',
-      duration: session.duration_minutes,
-      subject: session.subjects?.name || 'Sem matéria',
-      subjectColor: COLORS[index % COLORS.length]
-    }));
-  };
-
-  const calculateStudyStreak = async (scopeGroupId?: string): Promise<number> => {
-    if (!user) return 0;
-
-    let streakQuery = supabase
-      .from('study_sessions')
-      .select('started_at')
-      .eq('user_id', user.id)
-      .not('completed_at', 'is', null)
-      .order('started_at', { ascending: false });
-
-    if (scopeGroupId) {
-      streakQuery = streakQuery.eq('group_id', scopeGroupId);
-    }
-
-    const { data: sessions } = await streakQuery;
-
-    if (!sessions || sessions.length === 0) return 0;
-
-    let streak = 0;
-    let currentDate = new Date();
-    currentDate.setHours(0, 0, 0, 0);
-
-    const studyDates = new Set(
-      sessions.map(session => 
-        new Date(session.started_at).toLocaleDateString('en-CA')
-      )
-    );
-
-    // Permitir que a sequência continue se hoje ainda não houve estudo mas ontem sim
-    const todayStr = currentDate.toLocaleDateString('en-CA');
-    if (!studyDates.has(todayStr)) {
-      currentDate.setDate(currentDate.getDate() - 1);
-    }
-
-    while (studyDates.has(currentDate.toLocaleDateString('en-CA'))) {
-      streak++;
-      currentDate.setDate(currentDate.getDate() - 1);
-    }
-
-    return streak;
-  };
 
   return {
     stats,
