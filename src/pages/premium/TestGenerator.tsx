@@ -24,9 +24,10 @@ interface GeneratedQuestion {
   id: number;
   context?: string;
   question: string;
-  options?: string[];
-  answer?: string;
+  options: string[];
+  correctAnswer: number;
   explanation?: string;
+  subject?: string;
 }
 
 interface TestResult {
@@ -36,8 +37,8 @@ interface TestResult {
   details: Array<{
     questionId: number;
     isCorrect: boolean;
-    userAnswer: string;
-    correctAnswer: string;
+    userAnswer: number | null;
+    correctAnswer: number;
   }>;
 }
 
@@ -49,9 +50,12 @@ const TestGenerator: React.FC = () => {
   const [difficulty, setDifficulty] = useState<string>('medium');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatedTest, setGeneratedTest] = useState<GeneratedQuestion[] | null>(null);
-  const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
+  const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
   const [isCorrected, setIsCorrected] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [topic, setTopic] = useState<string>('');
+  const [fileContent, setFileContent] = useState<string>('');
+  const [fileName, setFileName] = useState<string>('');
   
   const [subjects, setSubjects] = useState<Subject[]>([
     { id: 'portuguese', name: t('groups.subjects.portuguese'), selected: true },
@@ -73,12 +77,53 @@ const TestGenerator: React.FC = () => {
   };
   
   const handleAnswerChange = (questionId: number, selectedOption: string) => {
+    const answerIndex = Number.parseInt(selectedOption, 10);
+
+    if (Number.isNaN(answerIndex)) {
+      return;
+    }
+
     setUserAnswers(prev => ({
       ...prev,
-      [questionId]: selectedOption
+      [questionId]: answerIndex
     }));
   };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      setFileContent('');
+      setFileName('');
+      return;
+    }
+
+    const validExtensions = ['text/plain', 'text/markdown'];
+    const hasValidExtension = file.name.endsWith('.txt') || file.name.endsWith('.md');
+
+    if (!validExtensions.includes(file.type) && !hasValidExtension) {
+      toast.error('Envie apenas arquivos .txt ou .md');
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const content = await file.text();
+      setFileContent(content);
+      setFileName(file.name);
+      toast.success('Arquivo carregado com sucesso.');
+    } catch (error) {
+      console.error('Erro ao ler arquivo:', error);
+      toast.error('Não foi possível ler o arquivo enviado.');
+    }
+  };
   
+
+  const handleRemoveFile = () => {
+    setFileContent('');
+    setFileName('');
+  };
+
   const handleSubmitTest = () => {
     if (!generatedTest) return;
     
@@ -93,15 +138,15 @@ const TestGenerator: React.FC = () => {
     let correctCount = 0;
     const details = generatedTest.map(question => {
       const userAnswer = userAnswers[question.id];
-      const isCorrect = userAnswer === question.answer;
+      const isCorrect = userAnswer === question.correctAnswer;
       
       if (isCorrect) correctCount++;
       
       return {
         questionId: question.id,
         isCorrect,
-        userAnswer: userAnswer || '',
-        correctAnswer: question.answer || ''
+        userAnswer: typeof userAnswer === 'number' ? userAnswer : null,
+        correctAnswer: question.correctAnswer
       };
     });
     
@@ -140,7 +185,9 @@ const TestGenerator: React.FC = () => {
   
   useEffect(() => {
     if (generatedTest) {
-      const invalidQuestions = generatedTest.filter(q => !q.answer || !q.options);
+      const invalidQuestions = generatedTest.filter(
+        (q) => q.options.length !== 4 || q.correctAnswer < 0 || q.correctAnswer > 3,
+      );
       if (invalidQuestions.length > 0) {
         console.error('Questões inválidas:', invalidQuestions);
         toast.error(t('aiTests.invalidQuestions'));
@@ -174,25 +221,38 @@ const TestGenerator: React.FC = () => {
     
     try {
       const selectedSubjectNames = selectedSubjects.map(s => s.name);
+      const trimmedTopic = topic.trim();
+      const trimmedFileContent = fileContent.trim();
+
+      if (!trimmedTopic && !trimmedFileContent) {
+        throw new Error('Informe um assunto ou envie um arquivo .txt/.md para gerar as questões.');
+      }
       
+      if (import.meta.env.DEV && trimmedFileContent) {
+        console.info('[DEV][Teste IA] Caso B: geração com upload .txt/.md');
+      }
+
+      if (import.meta.env.DEV && !trimmedFileContent && trimmedTopic === 'Equações do 2º grau') {
+        console.info('[DEV][Teste IA] Caso A: topic "Equações do 2º grau"');
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-test-questions', {
         body: {
           numQuestions,
           difficulty,
-          subjects: selectedSubjectNames
+          subjects: selectedSubjectNames,
+          topic: trimmedTopic || undefined,
+          fileContent: trimmedFileContent || undefined,
         }
       });
 
       if (error) {
         console.error('Edge function error:', error);
         
-        // Detectar erros específicos do Lovable AI
         let errorMessage = 'Erro ao gerar questões. Tente novamente.';
-        
-        if (error.message?.includes('429') || error.message?.toLowerCase().includes('rate limit')) {
+
+        if (error.message?.includes('429')) {
           errorMessage = '⏳ Limite de requisições atingido. Aguarde alguns segundos e tente novamente.';
-        } else if (error.message?.includes('402') || error.message?.toLowerCase().includes('créditos')) {
-          errorMessage = '💳 Créditos Lovable AI esgotados. Adicione créditos em Settings -> Workspace -> Usage.';
         } else if (error.message) {
           errorMessage = error.message;
         }
@@ -204,7 +264,8 @@ const TestGenerator: React.FC = () => {
         throw new Error('Resposta inválida do servidor');
       }
 
-      setGeneratedTest(data.questions);
+      const receivedQuestions = data.questions as GeneratedQuestion[];
+      setGeneratedTest(receivedQuestions);
       toast.success(t('aiTests.generatingSuccess'));
     } catch (error) {
       console.error('Failed to generate test:', error);
@@ -249,6 +310,37 @@ const TestGenerator: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              <div>
+                <Label htmlFor="topic" className="mb-2 block">Assunto (opcional)</Label>
+                <input
+                  id="topic"
+                  type="text"
+                  value={topic}
+                  onChange={(event) => setTopic(event.target.value)}
+                  placeholder="Ex.: Revolução Francesa, Funções de 2º grau..."
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="source-file" className="mb-2 block">Arquivo de base (.txt/.md) (opcional)</Label>
+                <input
+                  id="source-file"
+                  type="file"
+                  accept=".txt,.md,text/plain,text/markdown"
+                  onChange={handleFileUpload}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+                {fileName && (
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="text-sm text-muted-foreground">Arquivo selecionado: {fileName}</p>
+                    <Button type="button" variant="outline" size="sm" onClick={handleRemoveFile}>
+                      Remover arquivo
+                    </Button>
+                  </div>
+                )}
+              </div>
               
               <div>
                 <Label className="mb-2 block">{t('aiTests.difficulty')}</Label>
@@ -271,7 +363,7 @@ const TestGenerator: React.FC = () => {
               <Button
                 onClick={handleGenerateTest}
                 className="w-full bg-study-primary"
-                disabled={isGenerating || subjects.filter(s => s.selected).length === 0}
+                disabled={isGenerating || subjects.filter(s => s.selected).length === 0 || (!topic.trim() && !fileContent.trim())}
               >
                 {isGenerating ? t('aiTests.generating') : t('aiTests.generate')}
               </Button>
@@ -392,14 +484,14 @@ const TestGenerator: React.FC = () => {
                         
                         {question.options && (
                           <RadioGroup
-                            value={userAnswers[question.id] || ''}
+                            value={userAnswers[question.id]?.toString() || ''}
                             onValueChange={(value) => handleAnswerChange(question.id, value)}
                             disabled={isCorrected}
                           >
                             <div className="space-y-2">
                               {question.options.map((option, index) => {
-                                const isUserAnswer = userAnswer === option;
-                                const isCorrectAnswer = question.answer === option;
+                                const isUserAnswer = userAnswer === index;
+                                const isCorrectAnswer = question.correctAnswer === index;
                                 
                                 return (
                                   <div 
@@ -415,7 +507,7 @@ const TestGenerator: React.FC = () => {
                                     }`}
                                   >
                                     <RadioGroupItem 
-                                      value={option} 
+                                      value={index.toString()} 
                                       id={`q${question.id}_opt${index}`}
                                     />
                                     <Label 
