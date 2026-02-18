@@ -36,7 +36,6 @@ export const useStudySessions = () => {
     
     fetchData();
 
-    // Set up real-time subscription for study sessions
     const channel = supabase
       .channel('sessions_realtime')
       .on(
@@ -48,7 +47,6 @@ export const useStudySessions = () => {
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          console.log('📡 Sessões de estudo atualizadas');
           fetchData();
         }
       )
@@ -63,7 +61,6 @@ export const useStudySessions = () => {
     try {
       setLoading(true);
 
-      // Fetch user's groups
       const { data: userGroups } = await supabase
         .from('group_members')
         .select(`
@@ -82,7 +79,6 @@ export const useStudySessions = () => {
 
       setGroups(formattedGroups);
 
-      // Fetch subjects from user's groups
       const groupIds = formattedGroups.map(g => g.id);
       if (groupIds.length > 0) {
         const { data: subjectsData } = await supabase
@@ -100,7 +96,6 @@ export const useStudySessions = () => {
         setSubjects(formattedSubjects);
       }
 
-      // Fetch user's study sessions
       const { data: sessionsData } = await supabase
         .from('study_sessions')
         .select('*')
@@ -112,7 +107,7 @@ export const useStudySessions = () => {
         subject_id: session.subject_id,
         subject_name: subjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
         duration_minutes: session.duration_minutes,
-        points: Math.floor(session.duration_minutes), // 1 point per minute
+        points: Math.floor(session.duration_minutes),
         started_at: new Date(session.started_at),
         completed_at: session.completed_at ? new Date(session.completed_at) : null
       })) || [];
@@ -121,7 +116,6 @@ export const useStudySessions = () => {
 
     } catch (error) {
       console.error('Error fetching study data:', error);
-      toast.error('Erro ao carregar dados de estudo');
     } finally {
       setLoading(false);
     }
@@ -131,12 +125,8 @@ export const useStudySessions = () => {
     if (!subjectId || subjectId === 'general') {
       return null;
     }
-
     return subjectId;
   };
-
-
-
 
   const createStudySession = async (subjectId: string, durationSeconds: number, selectedGroupId?: string) => {
     if (!user) return { success: false, error: 'Usuário não autenticado' };
@@ -164,33 +154,28 @@ export const useStudySessions = () => {
 
       if (error) throw error;
 
-      // CORREÇÃO: Atualizar metas do tipo "time" para a matéria OU metas gerais do grupo
-      if (groupId) {
-        // Busca metas de tempo que sejam da matéria específica OU que não tenham matéria (gerais do grupo)
+      // CORREÇÃO: Atualizar metas do tipo "time" para a matéria
+      if (normalizedSubjectId) {
         const { data: timeGoals } = await supabase
           .from('goals')
           .select('*')
-          .eq('group_id', groupId)
+          .eq('subject_id', normalizedSubjectId)
           .eq('type', 'time');
 
         if (timeGoals && timeGoals.length > 0) {
           for (const goal of timeGoals) {
-            // Atualiza se for a matéria correta OU se a meta for geral (subject_id nulo)
-            if (goal.subject_id === normalizedSubjectId || goal.subject_id === null) {
-              const newCurrent = Math.min(goal.current + durationMinutes, goal.target);
-              await supabase
-                .from('goals')
-                .update({
-                  current: newCurrent,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', goal.id);
-            }
+            const newCurrent = goal.current + durationMinutes;
+            await supabase
+              .from('goals')
+              .update({
+                current: newCurrent,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', goal.id);
           }
         }
       }
 
-      // CORREÇÃO: Atualizar user_points
       if (groupId) {
         const { data: currentPointsData } = await supabase
           .from('user_points')
@@ -213,7 +198,6 @@ export const useStudySessions = () => {
           });
       }
 
-      // Update local state
       const subjectName = subjects.find(s => s.id === normalizedSubjectId)?.name || 'Matéria Geral';
       const newSession: StudySession = {
         id: data.id,
