@@ -433,13 +433,11 @@ export const useGroupData = (groupId: string | undefined) => {
     const goalToUpdate = goals.find(g => g.id === goalId);
     if (!goalToUpdate || !groupId || !user) return;
     
-    // Validate progress input
     if (progress <= 0) {
       toast.error('O progresso deve ser maior que zero');
       return;
     }
     
-    // Calculate points based on the goal type and progress
     let pointsEarned = 0;
     if (goalToUpdate.type === 'exercises') {
       pointsEarned = progress * POINTS_CONFIG.exercises;
@@ -449,12 +447,12 @@ export const useGroupData = (groupId: string | undefined) => {
       pointsEarned = progress * POINTS_CONFIG.time;
     }
     
-    const newCurrent = Math.min(goalToUpdate.current + progress, goalToUpdate.target);
-    const actualProgress = newCurrent - goalToUpdate.current;
-    const actualPoints = Math.floor((actualProgress / progress) * pointsEarned);
+    // CORREÇÃO: Permitir progresso além da meta
+    const newCurrent = goalToUpdate.current + progress;
+    const actualProgress = progress;
+    const actualPoints = pointsEarned;
     
     try {
-      // Update goal progress with timestamp
       const { error: goalError } = await supabase
         .from('goals')
         .update({ 
@@ -465,7 +463,6 @@ export const useGroupData = (groupId: string | undefined) => {
       
       if (goalError) throw goalError;
       
-      // Get current points and add new points
       const { data: currentPointsData } = await supabase
         .from('user_points')
         .select('points')
@@ -476,7 +473,6 @@ export const useGroupData = (groupId: string | undefined) => {
       const currentPoints = currentPointsData?.points || 0;
       const newTotalPoints = currentPoints + actualPoints;
       
-      // Update user points
       const { error: pointsError } = await supabase
         .from('user_points')
         .upsert({
@@ -490,7 +486,6 @@ export const useGroupData = (groupId: string | undefined) => {
       
       if (pointsError) throw pointsError;
       
-      // Update local state
       const updatedGoals = goals.map(goal => {
         if (goal.id === goalId) {
           return { ...goal, current: newCurrent };
@@ -506,14 +501,8 @@ export const useGroupData = (groupId: string | undefined) => {
       
       toast.success(`Progresso atualizado! +${actualPoints} pontos por ${actualProgress} ${goalType}.`);
       
-      // Check if goal is completed
-      if (newCurrent >= goalToUpdate.target) {
+      if (newCurrent >= goalToUpdate.target && goalToUpdate.current < goalToUpdate.target) {
         toast.success(`🎉 Meta concluída! Parabéns!`, { duration: 5000 });
-      }
-      
-      // Call automatic update function to sync with study sessions
-      if (goalToUpdate.type === 'time') {
-        await supabase.functions.invoke('auto-update-goals');
       }
       
     } catch (error) {
