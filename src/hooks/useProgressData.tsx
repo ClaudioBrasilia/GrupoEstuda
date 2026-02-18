@@ -59,7 +59,11 @@ export interface GoalProgressData {
 
 const COLORS = ['hsl(265, 85%, 75%)', 'hsl(265, 53%, 64%)', 'hsl(195, 85%, 60%)', 'hsl(122, 39%, 49%)', 'hsl(45, 100%, 51%)'];
 
-export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'month' | 'year' = 'week') {
+export function useProgressData(
+  groupId?: string,
+  timeRange: 'day' | 'week' | 'month' | 'year' = 'week',
+  goalsGroupIdFallback?: string
+) {
   const [stats, setStats] = useState<ProgressStats>({
     totalStudyTime: 0,
     totalPages: 0,
@@ -72,6 +76,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const goalsScopeGroupId = groupId ?? goalsGroupIdFallback;
 
   const generateWeeklyData = useCallback((sessions: StudySessionWithSubject[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -280,7 +285,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       const studyStreak = await calculateStudyStreak(groupId);
       const subjectData = await fetchSubjectProgress(sessionRows);
 
-      const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
+      const goalsProgress = goalsScopeGroupId ? await fetchGoalsProgress(goalsScopeGroupId) : [];
       const dailySessions = timeRange === 'day' ? await fetchDailySessions(groupId) : [];
 
       setStats({
@@ -298,7 +303,17 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     } finally {
       setLoading(false);
     }
-  }, [user, groupId, timeRange, generateWeeklyData, calculateStudyStreak, fetchSubjectProgress, fetchGoalsProgress, fetchDailySessions]);
+  }, [
+    user,
+    groupId,
+    goalsScopeGroupId,
+    timeRange,
+    generateWeeklyData,
+    calculateStudyStreak,
+    fetchSubjectProgress,
+    fetchGoalsProgress,
+    fetchDailySessions
+  ]);
 
   const scheduleRefresh = useCallback(() => {
     if (refreshTimeoutRef.current) {
@@ -319,7 +334,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
   useEffect(() => {
     if (!user) return;
 
-    const channelName = `progress_realtime:${user.id}:${groupId || 'all'}`;
+    const channelName = `progress_realtime:${user.id}:${groupId || goalsScopeGroupId || 'all'}`;
     const channel = supabase.channel(channelName);
 
     channel.on(
@@ -335,14 +350,14 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       }
     );
 
-    if (groupId) {
+    if (goalsScopeGroupId) {
       channel.on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'goals',
-          filter: `group_id=eq.${groupId}`
+          filter: `group_id=eq.${goalsScopeGroupId}`
         },
         () => {
           scheduleRefresh();
@@ -355,7 +370,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           event: '*',
           schema: 'public',
           table: 'user_points',
-          filter: `group_id=eq.${groupId}`
+          filter: `group_id=eq.${goalsScopeGroupId}`
         },
         () => {
           scheduleRefresh();
@@ -372,7 +387,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       }
       supabase.removeChannel(channel);
     };
-  }, [user, groupId, scheduleRefresh]);
+  }, [user, groupId, goalsScopeGroupId, scheduleRefresh]);
 
   return {
     stats,
