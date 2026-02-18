@@ -261,7 +261,7 @@
     "logout": "Sair",
     "settings": {
       "profile": "Perfil",
-      "security": "Segurança", 
+      "security": "Segurança",
       "subscription": "Assinatura",
       "name": "Nome",
       "email": "Email",
@@ -305,7 +305,7 @@
     "you": "Você",
     "points": "pontos"
   },
-"progress": {
+  "progress": {
     "title": "Progresso",
     "pagesRead": "Páginas Lidas",
     "studyTime": "Tempo de Estudo",
@@ -343,7 +343,7 @@
   },
   "days": {
     "mon": "Seg",
-    "tue": "Ter", 
+    "tue": "Ter",
     "wed": "Qua",
     "thu": "Qui",
     "fri": "Sex",
