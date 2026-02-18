@@ -52,7 +52,7 @@ serve(async (req) => {
         continue;
       }
 
-      const totalMinutes = (sessions || []).reduce((sum, session) => sum + session.duration_minutes, 0);
+      const totalMinutes = (sessions || []).reduce((sum, session) => sum + (session.duration_minutes ?? 0), 0);
       const nextCurrent = Math.min(Math.max(goal.current, totalMinutes), goal.target);
 
       if (nextCurrent === goal.current) {
