@@ -1,10 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { BookOpen, Users, Target, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
+
+const HERO_ANIMATION = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55 },
+};
+
+const CARD_ANIMATION = {
+  initial: { opacity: 0, scale: 0.96 },
+  animate: { opacity: 1, scale: 1 },
+  transition: { duration: 0.65, delay: 0.1 },
+};
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
@@ -28,13 +40,15 @@ const Index: React.FC = () => {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  const handleGetStarted = () => {
+  const handleGetStarted = useCallback(() => {
     navigate('/register');
-  };
+  }, [navigate]);
 
-  const handleLogin = () => {
+  const handleLogin = useCallback(() => {
     navigate('/login');
-  };
+  }, [navigate]);
+
+  const showActionButtons = !isLoading || forceShowButtons;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
@@ -43,12 +57,7 @@ const Index: React.FC = () => {
 
       <main className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-16 md:px-10">
         <div className="grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55 }}
-            className="space-y-7"
-          >
+          <motion.div {...HERO_ANIMATION} className="space-y-7">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
               <Sparkles className="h-3.5 w-3.5" />
               Plataforma colaborativa de estudos
@@ -63,7 +72,7 @@ const Index: React.FC = () => {
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              {isLoading && !forceShowButtons ? (
+              {!showActionButtons ? (
                 <Button size="lg" className="h-12 px-8" disabled>
                   {t('loading')}
                 </Button>
@@ -90,9 +99,7 @@ const Index: React.FC = () => {
           </motion.div>
 
           <motion.section
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.65, delay: 0.1 }}
+            {...CARD_ANIMATION}
             className="rounded-3xl border border-border/60 bg-card/70 p-6 shadow-lg backdrop-blur-sm"
           >
             <div className="space-y-4">
