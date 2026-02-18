@@ -1,8 +1,7 @@
-
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LanguagesIcon, UserIcon, Share2Icon } from 'lucide-react';
+import { LanguagesIcon, Share2Icon, UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -14,45 +13,46 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const getPageTitle = (pathname: string, t: (key: string) => string): string => {
-  switch (pathname) {
-    case '/':
-      return t('app.name');
-    case '/groups':
-      return t('navigation.groups');
-    case '/progress':
-      return t('navigation.progress');
-    case '/water':
-      return t('navigation.water');
-    case '/leaderboard':
-      return t('navigation.leaders');
-    case '/profile':
-      return t('navigation.profile');
-    case '/login':
-      return t('login.title');
-    case '/register':
-      return t('register.title');
-    case '/plans':
-      return t('plans.title');
-    case '/generate-test':
-      return t('aiTests.title');
-    default:
-      if (pathname.startsWith('/group/')) {
-        return t('groups.title');
-      }
-      return t('app.name');
+type TranslateFn = (key: string) => string;
+
+const PAGE_TITLE_KEYS: Record<string, string> = {
+  '/': 'app.name',
+  '/groups': 'navigation.groups',
+  '/progress': 'navigation.progress',
+  '/water': 'navigation.water',
+  '/leaderboard': 'navigation.leaders',
+  '/profile': 'navigation.profile',
+  '/login': 'login.title',
+  '/register': 'register.title',
+  '/plans': 'plans.title',
+  '/generate-test': 'aiTests.title',
+};
+
+const getPageTitle = (pathname: string, t: TranslateFn): string => {
+  if (pathname.startsWith('/group/')) {
+    return t('groups.title');
   }
+
+  return t(PAGE_TITLE_KEYS[pathname] ?? 'app.name');
+};
+
+const getPlanName = (plan: string, t: TranslateFn): string => {
+  if (plan === 'free') return t('plans.free.name');
+  if (plan === 'basic') return t('plans.basic.name');
+  return t('plans.premium.name');
 };
 
 const AppHeader: React.FC = () => {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  
-  const title = getPageTitle(location.pathname, t);
 
-  const handleShare = async () => {
+  const title = useMemo(() => getPageTitle(pathname, t), [pathname, t]);
+  const userPlanName = useMemo(() => (user ? getPlanName(user.plan, t) : ''), [user, t]);
+  const shouldShowLogin = pathname !== '/login' && pathname !== '/register';
+
+  const handleShare = useCallback(async () => {
     const shareData = {
       title: t('app.name'),
       text: t('app.shareMessage'),
@@ -62,82 +62,93 @@ const AppHeader: React.FC = () => {
     try {
       if (navigator.share) {
         await navigator.share(shareData);
-      } else {
-        // Fallback para cópia de link se a API de compartilhamento não estiver disponível
-        await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-        alert('Link copiado para a área de transferência!');
+        return;
       }
-    } catch (err) {
-      console.error('Erro ao compartilhar:', err);
+
+      await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      alert('Link copiado para a área de transferência!');
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
     }
-  };
-  
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-  };
-  
+  }, [t]);
+
+  const handleChangeLanguage = useCallback(
+    (language: string) => {
+      i18n.changeLanguage(language);
+    },
+    [i18n],
+  );
+
+  const handleLogout = useCallback(() => {
+    logout();
+    navigate('/login');
+  }, [logout, navigate]);
+
   return (
     <header className="bg-gradient-to-r from-background via-background to-primary/5 border-b border-border/50 backdrop-blur-sm py-4 px-6 sticky top-0 z-10 flex items-center justify-between shadow-elegant">
-      <div className="flex-1"></div>
-      
-      <h1 className="text-xl font-bold text-center bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent flex-1">{title}</h1>
-      
+      <div className="flex-1" />
+
+      <h1 className="text-xl font-bold text-center bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent flex-1">
+        {title}
+      </h1>
+
       <div className="flex items-center gap-2 flex-1 justify-end">
         <ThemeToggle />
-        
-        <Button 
-          variant="ghost" 
-          size="icon" 
+
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={handleShare}
           className="text-foreground hover:bg-primary/10 transition-smooth"
           title={t('app.share')}
+          aria-label={t('app.share')}
         >
           <Share2Icon size={20} />
         </Button>
 
         {user && <NotificationBell />}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/10 transition-smooth">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-foreground hover:bg-primary/10 transition-smooth"
+              aria-label="Idioma"
+            >
               <LanguagesIcon size={20} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => changeLanguage('en')}>
+            <DropdownMenuItem onClick={() => handleChangeLanguage('en')}>
               {t('language.english')}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => changeLanguage('pt')}>
+            <DropdownMenuItem onClick={() => handleChangeLanguage('pt')}>
               {t('language.portuguese')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        
+
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/10 transition-smooth">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-foreground hover:bg-primary/10 transition-smooth"
+                aria-label={t('navigation.profile')}
+              >
                 <UserIcon size={20} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
-                {user.name}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/plans')}>
-                {user.plan === 'free' ? t('plans.free.name') : 
-                 user.plan === 'basic' ? t('plans.basic.name') : 
-                 t('plans.premium.name')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                logout();
-                navigate('/login');
-              }}>
-                Sair
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>{user.name}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/plans')}>{userPlanName}</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          location.pathname !== '/login' && location.pathname !== '/register' && (
+          shouldShowLogin && (
             <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>
               {t('login.title')}
             </Button>
