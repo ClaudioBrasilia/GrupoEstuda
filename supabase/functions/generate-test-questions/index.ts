@@ -16,6 +16,8 @@ interface RequestBody {
   difficulty?: Difficulty;
   subjects?: string[];
   topic?: string;
+  subject?: string;
+  content?: string;
   fileContent?: string;
 }
 
@@ -144,8 +146,13 @@ serve(async (req) => {
     const numQuestions = Number.isFinite(body.numQuestions) ? Number(body.numQuestions) : 10;
     const difficulty: Difficulty = body.difficulty ?? "medium";
     const subjects = Array.isArray(body.subjects) ? body.subjects.map((subject) => String(subject)) : [];
-    const topic = body.topic?.trim();
-    const fileContent = body.fileContent?.trim();
+    const topicRaw = body.topic || body.subject || null;
+    const fileContentRaw = body.fileContent || body.content || null;
+    const topic = typeof topicRaw === "string" ? topicRaw.trim() : null;
+    const fileContent = typeof fileContentRaw === "string" ? fileContentRaw.trim() : null;
+
+    console.log("DEBUG BODY KEYS:", Object.keys(body));
+    console.log("DEBUG topic:", topic ? "YES" : "NO", "fileContent:", fileContent ? "YES" : "NO");
 
     if (!topic && !fileContent) {
       return new Response(
