@@ -43,11 +43,20 @@ export function useLeaderboardData(timeRange: string = 'week') {
       const groupIds = userGroups?.map(ug => ug.groups.id) || [];
 
       // Fetch global leaderboard - aggregate points by user
-      const { data: globalData } = await supabase
+      const { data: globalDataRaw } = await supabase
         .from('user_points')
-        .select('user_id, points')
-        .order('points', { ascending: false })
-        .limit(50);
+        .select('user_id, points');
+
+      // Agrupar pontos por usuário (já que user_points é por grupo)
+      const userPointsMap: Record<string, number> = {};
+      globalDataRaw?.forEach(item => {
+        userPointsMap[item.user_id] = (userPointsMap[item.user_id] || 0) + item.points;
+      });
+
+      const globalData = Object.entries(userPointsMap)
+        .map(([user_id, points]) => ({ user_id, points }))
+        .sort((a, b) => b.points - a.points)
+        .slice(0, 50);
 
       // Fetch user profiles for global leaderboard
       let globalUsers: LeaderboardUser[] = [];
