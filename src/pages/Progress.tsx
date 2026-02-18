@@ -239,8 +239,8 @@ const ProgressPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Goals Progress (only for group view) */}
-        {view === 'group' && stats.goalsProgress.length > 0 && (
+        {/* Goals Progress */}
+        {stats.goalsProgress.length > 0 && (
           <Card className="bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
