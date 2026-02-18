@@ -212,8 +212,10 @@ const TestGenerator: React.FC = () => {
   
   const handleGenerateTest = async () => {
     const selectedSubjects = subjects.filter(s => s.selected);
-    if (selectedSubjects.length === 0) {
-      toast.error(t('aiTests.selectAtLeastOne'));
+    const trimmedTopic = topic.trim();
+
+    if (!trimmedTopic && !fileContent) {
+      toast.error('Informe um assunto ou envie um arquivo');
       return;
     }
     
@@ -221,12 +223,7 @@ const TestGenerator: React.FC = () => {
     
     try {
       const selectedSubjectNames = selectedSubjects.map(s => s.name);
-      const trimmedTopic = topic.trim();
       const trimmedFileContent = fileContent.trim();
-
-      if (!trimmedTopic && !trimmedFileContent) {
-        throw new Error('Informe um assunto ou envie um arquivo .txt/.md para gerar as questões.');
-      }
       
       if (import.meta.env.DEV && trimmedFileContent) {
         console.info('[DEV][Teste IA] Caso B: geração com upload .txt/.md');
@@ -363,7 +360,7 @@ const TestGenerator: React.FC = () => {
               <Button
                 onClick={handleGenerateTest}
                 className="w-full bg-study-primary"
-                disabled={isGenerating || subjects.filter(s => s.selected).length === 0 || (!topic.trim() && !fileContent.trim())}
+                disabled={isGenerating || (!topic.trim() && !fileContent)}
               >
                 {isGenerating ? t('aiTests.generating') : t('aiTests.generate')}
               </Button>
