@@ -18,7 +18,7 @@ const ProgressPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState('week');
   const [view, setView] = useState<'individual' | 'group'>('individual');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [resolvedGroupId, setResolvedGroupId] = useState<string | undefined>(undefined);
+  const [fallbackGroupId, setFallbackGroupId] = useState<string | undefined>(undefined);
   const { t } = useTranslation();
   const { user } = useAuth();
   const params = useParams();
@@ -31,7 +31,7 @@ const ProgressPage: React.FC = () => {
     const resolveGroupId = async () => {
       if (routeGroupId) {
         if (isMounted) {
-          setResolvedGroupId(routeGroupId);
+          setFallbackGroupId(routeGroupId);
         }
         localStorage.setItem('activeGroupId', routeGroupId);
         return;
@@ -40,14 +40,14 @@ const ProgressPage: React.FC = () => {
       const storedGroupId = localStorage.getItem('activeGroupId');
       if (storedGroupId) {
         if (isMounted) {
-          setResolvedGroupId(storedGroupId);
+          setFallbackGroupId(storedGroupId);
         }
         return;
       }
 
       if (!user) {
         if (isMounted) {
-          setResolvedGroupId(undefined);
+          setFallbackGroupId(undefined);
         }
         return;
       }
@@ -67,7 +67,7 @@ const ProgressPage: React.FC = () => {
       }
 
       if (isMounted) {
-        setResolvedGroupId(fallbackGroupId || undefined);
+        setFallbackGroupId(fallbackGroupId || undefined);
       }
     };
 
@@ -78,11 +78,13 @@ const ProgressPage: React.FC = () => {
     };
   }, [routeGroupId, user]);
 
-  const groupId = resolvedGroupId;
-  
+  const groupId = routeGroupId;
+  const resolvedGroupId = groupId ?? fallbackGroupId;
+
   const { stats, loading, refreshData } = useProgressData(
-    view === 'group' ? groupId : undefined,
-    timeRange as 'day' | 'week' | 'month' | 'year'
+    view === 'group' ? resolvedGroupId : undefined,
+    timeRange as 'day' | 'week' | 'month' | 'year',
+    resolvedGroupId
   );
 
   useEffect(() => {
@@ -94,7 +96,7 @@ const ProgressPage: React.FC = () => {
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [refreshData, view, groupId]);
+  }, [refreshData, view, resolvedGroupId]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -161,7 +163,7 @@ const ProgressPage: React.FC = () => {
                   <Users className="h-3 w-3" />
                   Individual
                 </TabsTrigger>
-                {groupId && (
+                {resolvedGroupId && (
                   <TabsTrigger value="group" className="text-xs flex items-center gap-1">
                     <Target className="h-3 w-3" />
                     Grupo
