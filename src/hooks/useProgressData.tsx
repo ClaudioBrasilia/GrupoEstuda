@@ -76,7 +76,10 @@ export function useProgressData(
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const goalsScopeGroupId = groupId ?? goalsGroupIdFallback;
+  const localStorageFallbackGroupId = typeof window !== 'undefined'
+    ? localStorage.getItem('activeGroupId') ?? undefined
+    : undefined;
+  const goalsScopeGroupId = groupId ?? goalsGroupIdFallback ?? localStorageFallbackGroupId;
 
   const generateWeeklyData = useCallback((sessions: StudySessionWithSubject[]): WeeklyStudyData[] => {
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
