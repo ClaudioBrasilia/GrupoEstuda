@@ -80,15 +80,15 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      
+
       const dayName = weekDays[date.getDay()];
       const dateStr = date.toLocaleDateString('en-CA');
-      
+
       const daySessions = sessions.filter(session => {
         const sessionDate = new Date(session.started_at).toLocaleDateString('en-CA');
         return sessionDate === dateStr;
       });
-      
+
       const time = daySessions.reduce((sum, session) => sum + session.duration_minutes, 0);
       const pages = Math.floor(time / 5) * 2;
       const exercises = Math.floor(time / 10);
@@ -101,21 +101,31 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
   const fetchSubjectProgress = useCallback(async (sessions: StudySessionWithSubject[]): Promise<SubjectProgressData[]> => {
     const subjectStats: Record<string, number> = {};
-    
+
     sessions.forEach(session => {
       const subjectName = session.subjects?.name || 'Outros';
       subjectStats[subjectName] = (subjectStats[subjectName] || 0) + session.duration_minutes;
     });
 
     const total = Object.values(subjectStats).reduce((sum, value) => sum + value, 0);
-    
-    return Object.entries(subjectStats)
+
+    if (total === 0) return [];
+
+    const data = Object.entries(subjectStats)
       .map(([name, value], index) => ({
         name,
-        value: total > 0 ? Math.round((value / total) * 100) : 0,
+        value: Math.round((value / total) * 100),
         color: COLORS[index % COLORS.length]
       }))
       .sort((a, b) => b.value - a.value);
+
+    // Ajuste para garantir que a soma seja exatamente 100% se houver dados
+    const sum = data.reduce((s, item) => s + item.value, 0);
+    if (sum > 0 && sum !== 100 && data.length > 0) {
+      data[0].value += (100 - sum);
+    }
+
+    return data;
   }, []);
 
   const fetchGoalsProgress = useCallback(async (scopeGroupId: string): Promise<GoalProgressData[]> => {
@@ -209,7 +219,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     currentDate.setHours(0, 0, 0, 0);
 
     const studyDates = new Set(
-      sessions.map(session => 
+      sessions.map(session =>
         new Date(session.started_at).toLocaleDateString('en-CA')
       )
     );
@@ -233,9 +243,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     try {
       setLoading(true);
 
-      // Fetch study sessions based on selected time range
       const startDate = new Date();
-      // Garantir o início do dia local para 'day'
       if (timeRange === 'day') {
         startDate.setHours(0, 0, 0, 0);
       } else if (timeRange === 'week') {
@@ -245,7 +253,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       } else if (timeRange === 'year') {
         startDate.setFullYear(startDate.getFullYear() - 1);
       }
-      
+
       let sessionsQuery = supabase
         .from('study_sessions')
         .select(`
@@ -266,24 +274,20 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       const { data: sessions } = await sessionsQuery;
       const sessionRows = (sessions || []) as StudySessionWithSubject[];
 
-      // Calculate weekly data
       const weeklyData = generateWeeklyData(sessionRows);
-      
-      // Calculate totals
       const totalStudyTime = sessionRows.reduce((sum, session) => sum + session.duration_minutes, 0);
-      const totalPages = Math.floor(totalStudyTime / 5) * 2; // Estimate 2 pages per 5 minutes
-      const totalExercises = Math.floor(totalStudyTime / 10); // Estimate 1 exercise per 10 minutes
-
-      // Calculate study streak
+      const totalPages = Math.floor(totalStudyTime / 5) * 2;
+      const totalExercises = Math.floor(totalStudyTime / 10);
       const studyStreak = await calculateStudyStreak(groupId);
-
-      // Fetch subject progress
       const subjectData = await fetchSubjectProgress(sessionRows);
 
       // Fetch goals progress (only for group view)
       const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
 
-      // Fetch daily sessions (only for day view)
+      // Se estiver na visão individual, podemos mostrar o progresso das metas pessoais ou do grupo vinculadas ao usuário
+      // Por enquanto, vamos garantir que as metas do grupo apareçam se um groupId estiver ativo, mesmo na aba individual
+      // ou se o usuário quiser ver seu progresso em relação às metas do grupo.
+
       const dailySessions = timeRange === 'day' ? await fetchDailySessions(groupId) : [];
 
       setStats({
@@ -319,14 +323,12 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     }
   }, [fetchProgressData]);
 
-  // Atualização em tempo real - CORRIGIDO: usar filtros separados
   useEffect(() => {
     if (!user) return;
 
     const channelName = `progress_realtime:${user.id}:${groupId || 'all'}`;
     const channel = supabase.channel(channelName);
 
-    // Sempre escutar sessões do usuário (sem filtro duplo)
     channel.on(
       'postgres_changes',
       {
@@ -340,7 +342,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       }
     );
 
-    // Se tiver grupo, escutar mudanças nas metas do grupo
     if (groupId) {
       channel.on(
         'postgres_changes',
@@ -355,7 +356,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
         }
       );
 
-      // Escutar mudanças nos pontos do grupo
       channel.on(
         'postgres_changes',
         {
@@ -380,7 +380,6 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       supabase.removeChannel(channel);
     };
   }, [user, groupId, scheduleRefresh]);
-
 
   return {
     stats,
