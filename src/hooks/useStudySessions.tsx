@@ -135,116 +135,8 @@ export const useStudySessions = () => {
     return subjectId;
   };
 
-  const resolveSubject = async (subjectId: string | null) => {
-    if (!subjectId) {
-      return null;
-    }
 
-    const localSubject = subjects.find((subject) => subject.id === subjectId);
-    if (localSubject) {
-      return localSubject;
-    }
 
-    const { data, error } = await supabase
-      .from('subjects')
-      .select('id, name, group_id')
-      .eq('id', subjectId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching subject for study session:', error);
-      return null;
-    }
-
-    if (!data) {
-      return null;
-    }
-
-    return {
-      id: data.id,
-      name: data.name,
-      group_id: data.group_id
-    };
-  };
-
-  const updateTimeGoals = async (groupId: string, subjectId: string | null, durationMinutes: number) => {
-    if (durationMinutes <= 0) return;
-
-    let query = supabase
-      .from('goals')
-      .select('id, current, target')
-      .eq('group_id', groupId)
-      .eq('type', 'time');
-
-    query = subjectId
-      ? query.or(`subject_id.eq.${subjectId},subject_id.is.null`)
-      : query.is('subject_id', null);
-
-    const { data: goalsData, error: goalsError } = await query;
-
-    if (goalsError) {
-      console.error('Unable to load time goals for update:', goalsError);
-      return;
-    }
-
-    if (!goalsData || goalsData.length === 0) {
-      return;
-    }
-
-    for (const goal of goalsData) {
-      const nextCurrent = Math.min(goal.current + durationMinutes, goal.target);
-
-      const { error: goalUpdateError } = await supabase
-        .from('goals')
-        .update({
-          current: nextCurrent,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', goal.id);
-
-      if (goalUpdateError) {
-        console.error(`Unable to update time goal ${goal.id}:`, goalUpdateError);
-      }
-    }
-  };
-
-  const syncUserPoints = async (groupId: string, pointsToAdd: number) => {
-    if (pointsToAdd <= 0 || !user) return;
-
-    const { data: currentPointsData, error: currentPointsError } = await supabase
-      .from('user_points')
-      .select('points')
-      .eq('user_id', user.id)
-      .eq('group_id', groupId)
-      .single();
-
-    if (currentPointsError && currentPointsError.code !== 'PGRST116') {
-      console.error('Unable to fetch current user points:', currentPointsError);
-      return;
-    }
-
-    const currentPoints = currentPointsData?.points || 0;
-    const totalPoints = currentPoints + pointsToAdd;
-
-    const { error: upsertError } = await supabase
-      .from('user_points')
-      .upsert(
-        {
-          user_id: user.id,
-          group_id: groupId,
-          points: totalPoints,
-          updated_at: new Date().toISOString()
-        },
-        {
-          onConflict: 'user_id,group_id'
-        }
-      );
-
-    if (upsertError) {
-      console.error('Unable to sync user points from timer session:', upsertError);
-      toast.error('Sessão salva, mas não foi possível sincronizar os pontos automaticamente.');
-    }
-  };
 
   const createStudySession = async (subjectId: string, durationSeconds: number, selectedGroupId?: string) => {
     if (!user) return { success: false, error: 'Usuário não autenticado' };
@@ -252,7 +144,7 @@ export const useStudySessions = () => {
     try {
       const normalizedSubjectId = normalizeSubjectId(subjectId);
       const durationMinutes = Math.floor(durationSeconds / 60);
-      const points = durationMinutes; // 1 point per minute
+      const points = durationMinutes;
 
       const { data, error } = await supabase
         .from('study_sessions')
@@ -268,18 +160,56 @@ export const useStudySessions = () => {
 
       if (error) throw error;
 
-      const subject = await resolveSubject(normalizedSubjectId);
+      // CORREÇÃO: Atualizar metas do tipo "time" para a matéria
+      if (normalizedSubjectId) {
+        const { data: timeGoals } = await supabase
+          .from('goals')
+          .select('*')
+          .eq('subject_id', normalizedSubjectId)
+          .eq('type', 'time');
+
+        if (timeGoals && timeGoals.length > 0) {
+          for (const goal of timeGoals) {
+            const newCurrent = Math.min(goal.current + durationMinutes, goal.target);
+            await supabase
+              .from('goals')
+              .update({
+                current: newCurrent,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', goal.id);
+          }
+        }
+      }
+
+      // CORREÇÃO: Atualizar user_points
+      const subject = subjects.find(s => s.id === normalizedSubjectId);
       const sessionGroupId = subject?.group_id || selectedGroupId;
 
       if (sessionGroupId) {
-        await updateTimeGoals(sessionGroupId, normalizedSubjectId, durationMinutes);
-        await syncUserPoints(sessionGroupId, points);
-      } else {
-        console.error('Study session saved without group context. Goals and points were not updated.');
+        const { data: currentPointsData } = await supabase
+          .from('user_points')
+          .select('points')
+          .eq('user_id', user.id)
+          .eq('group_id', sessionGroupId)
+          .single();
+
+        const currentPoints = currentPointsData?.points || 0;
+
+        await supabase
+          .from('user_points')
+          .upsert({
+            user_id: user.id,
+            group_id: sessionGroupId,
+            points: currentPoints + points,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,group_id'
+          });
       }
 
       // Update local state
-      const subjectName = subject?.name || 'Matéria Geral';
+      const subjectName = subjects.find(s => s.id === normalizedSubjectId)?.name || 'Matéria Geral';
       const newSession: StudySession = {
         id: data.id,
         subject_id: data.subject_id,

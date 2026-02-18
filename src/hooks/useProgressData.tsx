@@ -319,29 +319,28 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     }
   }, [fetchProgressData]);
 
-  // Atualização em tempo real unificada com debounce para evitar storm
+  // Atualização em tempo real - CORRIGIDO: usar filtros separados
   useEffect(() => {
     if (!user) return;
 
-    const sessionFilter = groupId
-      ? `user_id=eq.${user.id},group_id=eq.${groupId}`
-      : `user_id=eq.${user.id}`;
+    const channelName = `progress_realtime:${user.id}:${groupId || 'all'}`;
+    const channel = supabase.channel(channelName);
 
-    const channel = supabase
-      .channel(`progress_realtime:${user.id}:${groupId || 'all'}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_sessions',
-          filter: sessionFilter
-        },
-        () => {
-          scheduleRefresh();
-        }
-      );
+    // Sempre escutar sessões do usuário (sem filtro duplo)
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'study_sessions',
+        filter: `user_id=eq.${user.id}`
+      },
+      () => {
+        scheduleRefresh();
+      }
+    );
 
+    // Se tiver grupo, escutar mudanças nas metas do grupo
     if (groupId) {
       channel.on(
         'postgres_changes',
@@ -349,6 +348,20 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
           event: '*',
           schema: 'public',
           table: 'goals',
+          filter: `group_id=eq.${groupId}`
+        },
+        () => {
+          scheduleRefresh();
+        }
+      );
+
+      // Escutar mudanças nos pontos do grupo
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_points',
           filter: `group_id=eq.${groupId}`
         },
         () => {
