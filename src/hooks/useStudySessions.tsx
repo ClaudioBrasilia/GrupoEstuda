@@ -164,24 +164,28 @@ export const useStudySessions = () => {
 
       if (error) throw error;
 
-      // CORREÇÃO: Atualizar metas do tipo "time" para a matéria
-      if (normalizedSubjectId) {
+      // CORREÇÃO: Atualizar metas do tipo "time" para a matéria OU metas gerais do grupo
+      if (groupId) {
+        // Busca metas de tempo que sejam da matéria específica OU que não tenham matéria (gerais do grupo)
         const { data: timeGoals } = await supabase
           .from('goals')
           .select('*')
-          .eq('subject_id', normalizedSubjectId)
+          .eq('group_id', groupId)
           .eq('type', 'time');
 
         if (timeGoals && timeGoals.length > 0) {
           for (const goal of timeGoals) {
-            const newCurrent = Math.min(goal.current + durationMinutes, goal.target);
-            await supabase
-              .from('goals')
-              .update({
-                current: newCurrent,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', goal.id);
+            // Atualiza se for a matéria correta OU se a meta for geral (subject_id nulo)
+            if (goal.subject_id === normalizedSubjectId || goal.subject_id === null) {
+              const newCurrent = Math.min(goal.current + durationMinutes, goal.target);
+              await supabase
+                .from('goals')
+                .update({
+                  current: newCurrent,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', goal.id);
+            }
           }
         }
       }
