@@ -85,10 +85,7 @@ const ProgressPage: React.FC = () => {
     timeRange as 'day' | 'week' | 'month' | 'year'
   );
 
-  // CORREÇÃO: Atualiza os dados ao carregar a página, ao focar na janela,
-  // ou ao trocar a visualização (Individual/Grupo)
   useEffect(() => {
-    // Força atualização imediata ao entrar na tela
     refreshData();
 
     const handleFocus = () => {
@@ -97,7 +94,7 @@ const ProgressPage: React.FC = () => {
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [refreshData, view, groupId]); // Adicionamos view e groupId para garantir a atualização ao trocar abas
+  }, [refreshData, view, groupId]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -140,7 +137,6 @@ const ProgressPage: React.FC = () => {
   return (
     <PageLayout>
       <div className="space-y-6">
-        {/* Header with view toggle */}
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <TrendingUp className="h-6 w-6 text-primary" />
@@ -185,7 +181,6 @@ const ProgressPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-l-4 border-l-primary bg-gradient-to-br from-background to-background/50">
             <CardContent className="p-4">
@@ -245,7 +240,7 @@ const ProgressPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
-                Progresso das Metas do Grupo
+                {view === 'group' ? 'Progresso das Metas do Grupo' : 'Meu Progresso nas Metas do Grupo'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -262,8 +257,8 @@ const ProgressPage: React.FC = () => {
                   </div>
                   <Progress value={goal.progress} className="h-2" />
                   <div className="text-right">
-                    <Badge variant={goal.progress >= 100 ? "default" : "secondary"} className="text-xs">
-                      {goal.progress}% completo
+                    <Badge variant="outline" className="text-[10px] h-5">
+                      {goal.progress}% concluído
                     </Badge>
                   </div>
                 </div>
@@ -272,7 +267,6 @@ const ProgressPage: React.FC = () => {
           </Card>
         )}
         
-        {/* Daily Sessions View - Only shown when timeRange === 'day' */}
         {timeRange === 'day' && stats.dailySessions && (
           <Card>
             <CardHeader>
@@ -310,7 +304,6 @@ const ProgressPage: React.FC = () => {
                     </div>
                   ))}
                   
-                  {/* Summary of the day */}
                   <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Total de Hoje</span>
@@ -334,7 +327,6 @@ const ProgressPage: React.FC = () => {
           </Card>
         )}
         
-        {/* Charts - Hide when in daily view */}
         {timeRange !== 'day' && (
           <div className="grid gap-6 lg:grid-cols-2">
           <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
@@ -423,7 +415,6 @@ const ProgressPage: React.FC = () => {
         </div>
         )}
         
-        {/* Subject Distribution */}
         {stats.subjectData.length > 0 && (
           <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
             <CardHeader className="pb-3">
