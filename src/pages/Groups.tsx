@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, User, Users, Crown, AlertCircle, FileText } from 'lucide-react';
+import { Plus, Search, Users, Crown, AlertCircle, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useGroups } from '@/hooks/useGroups';
@@ -122,7 +122,7 @@ const CreateGroupForm: React.FC<{ onCreateGroup: (name: string, description: str
 };
 
 const Groups: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { groups, loading, createGroup, joinGroup } = useGroups();
