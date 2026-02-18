@@ -82,7 +82,8 @@ const ProgressPage: React.FC = () => {
   
   const { stats, loading, refreshData } = useProgressData(
     view === 'group' ? groupId : undefined,
-    timeRange as 'day' | 'week' | 'month' | 'year'
+    timeRange as 'day' | 'week' | 'month' | 'year',
+    groupId
   );
 
   useEffect(() => {
