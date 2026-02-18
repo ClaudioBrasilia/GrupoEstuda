@@ -80,15 +80,15 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      
+
       const dayName = weekDays[date.getDay()];
       const dateStr = date.toLocaleDateString('en-CA');
-      
+
       const daySessions = sessions.filter(session => {
         const sessionDate = new Date(session.started_at).toLocaleDateString('en-CA');
         return sessionDate === dateStr;
       });
-      
+
       const time = daySessions.reduce((sum, session) => sum + session.duration_minutes, 0);
       const pages = Math.floor(time / 5) * 2;
       const exercises = Math.floor(time / 10);
@@ -101,36 +101,65 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
   const fetchSubjectProgress = useCallback(async (sessions: StudySessionWithSubject[]): Promise<SubjectProgressData[]> => {
     const subjectStats: Record<string, number> = {};
-    
+
     sessions.forEach(session => {
       const subjectName = session.subjects?.name || 'Outros';
       subjectStats[subjectName] = (subjectStats[subjectName] || 0) + session.duration_minutes;
     });
 
     const total = Object.values(subjectStats).reduce((sum, value) => sum + value, 0);
-    
-    return Object.entries(subjectStats)
+
+    const items = Object.entries(subjectStats)
       .map(([name, value], index) => ({
         name,
         value: total > 0 ? Math.round((value / total) * 100) : 0,
         color: COLORS[index % COLORS.length]
       }))
       .sort((a, b) => b.value - a.value);
+
+    // Ajuste para garantir que a soma seja exatamente 100% se houver dados
+    if (items.length > 0) {
+      const sum = items.reduce((acc, item) => acc + item.value, 0);
+      if (sum > 0 && sum !== 100) {
+        items[0].value += (100 - sum);
+      }
+    }
+
+    return items;
   }, []);
 
-  const fetchGoalsProgress = useCallback(async (scopeGroupId: string): Promise<GoalProgressData[]> => {
-    const { data: goals } = await supabase
+  const fetchGoalsProgress = useCallback(async (scopeGroupId?: string): Promise<GoalProgressData[]> => {
+    let goalsQuery = supabase
       .from('goals')
       .select(`
         id,
         type,
         current,
         target,
+        group_id,
         subjects:subject_id (
           name
         )
-      `)
-      .eq('group_id', scopeGroupId);
+      `);
+
+    if (scopeGroupId) {
+      goalsQuery = goalsQuery.eq('group_id', scopeGroupId);
+    } else if (user) {
+      // Fetch user's groups first
+      const { data: memberships } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      const groupIds = memberships?.map(m => m.group_id) || [];
+      if (groupIds.length === 0) return [];
+
+      goalsQuery = goalsQuery.in('group_id', groupIds);
+    } else {
+      return [];
+    }
+
+    const { data: goals } = await goalsQuery;
 
     return (goals || []).map(goal => ({
       id: goal.id,
@@ -140,7 +169,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       target: goal.target,
       progress: Math.round((goal.current / goal.target) * 100)
     }));
-  }, []);
+  }, [user]);
 
   const fetchDailySessions = useCallback(async (scopeGroupId?: string): Promise<DailySessionData[]> => {
     if (!user) return [];
@@ -209,7 +238,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     currentDate.setHours(0, 0, 0, 0);
 
     const studyDates = new Set(
-      sessions.map(session => 
+      sessions.map(session =>
         new Date(session.started_at).toLocaleDateString('en-CA')
       )
     );
@@ -245,7 +274,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       } else if (timeRange === 'year') {
         startDate.setFullYear(startDate.getFullYear() - 1);
       }
-      
+
       let sessionsQuery = supabase
         .from('study_sessions')
         .select(`
@@ -268,7 +297,7 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
 
       // Calculate weekly data
       const weeklyData = generateWeeklyData(sessionRows);
-      
+
       // Calculate totals
       const totalStudyTime = sessionRows.reduce((sum, session) => sum + session.duration_minutes, 0);
       const totalPages = Math.floor(totalStudyTime / 5) * 2; // Estimate 2 pages per 5 minutes
@@ -280,8 +309,8 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       // Fetch subject progress
       const subjectData = await fetchSubjectProgress(sessionRows);
 
-      // Fetch goals progress (only for group view)
-      const goalsProgress = groupId ? await fetchGoalsProgress(groupId) : [];
+      // Fetch goals progress (for group view or all user groups)
+      const goalsProgress = await fetchGoalsProgress(groupId);
 
       // Fetch daily sessions (only for day view)
       const dailySessions = timeRange === 'day' ? await fetchDailySessions(groupId) : [];
@@ -311,13 +340,13 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
     refreshTimeoutRef.current = setTimeout(() => {
       void fetchProgressData();
     }, 300);
-  }, [fetchProgressData, user]);
+  }, [fetchProgressData]);
 
   useEffect(() => {
     if (user) {
       fetchProgressData();
     }
-  }, [fetchProgressData]);
+  }, [fetchProgressData, user]);
 
   // Atualização em tempo real - CORRIGIDO: usar filtros separados
   useEffect(() => {
@@ -340,35 +369,39 @@ export function useProgressData(groupId?: string, timeRange: 'day' | 'week' | 'm
       }
     );
 
-    // Se tiver grupo, escutar mudanças nas metas do grupo
-    if (groupId) {
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'goals',
-          filter: `group_id=eq.${groupId}`
-        },
-        () => {
-          scheduleRefresh();
-        }
-      );
+    // Escutar mudanças nas metas
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'goals'
+      },
+      () => {
+        scheduleRefresh();
+      }
+    );
 
-      // Escutar mudanças nos pontos do grupo
-      channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_points',
-          filter: `group_id=eq.${groupId}`
-        },
-        () => {
+    // Escutar mudanças nos pontos
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'user_points'
+      },
+      (payload) => {
+        const payloadNew = payload.new as { group_id?: string; user_id?: string } | null;
+
+        if (groupId) {
+          if (payloadNew?.group_id === groupId) {
+            scheduleRefresh();
+          }
+        } else if (payloadNew?.user_id === user.id) {
           scheduleRefresh();
         }
-      );
-    }
+      }
+    );
 
     channel.subscribe();
 
