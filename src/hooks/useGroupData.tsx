@@ -351,13 +351,10 @@ export const useGroupData = (groupId: string | undefined) => {
     if (!groupId || !user || !currentUserIsAdmin) return;
     
     try {
-      const vestibularSubjects = [
-        'Português', 'Matemática', 'História', 'Geografia', 'Física', 
-        'Química', 'Biologia', 'Literatura', 'Inglês', 'Redação'
-      ];
-      
       const existingNames = subjects.map(s => s.name);
-      const newSubjects = vestibularSubjects.filter(name => !existingNames.includes(name));
+      const newSubjects = VESTIBULAR_SUBJECTS
+        .map(subject => subject.name)
+        .filter(name => !existingNames.includes(name));
       
       if (newSubjects.length === 0) {
         toast.info('Todas as matérias do vestibular já foram adicionadas');
