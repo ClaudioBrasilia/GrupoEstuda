@@ -146,11 +146,15 @@ export const useStudySessions = () => {
       const durationMinutes = Math.floor(durationSeconds / 60);
       const points = durationMinutes;
 
+      const subject = subjects.find(s => s.id === normalizedSubjectId);
+      const groupId = subject?.group_id || selectedGroupId || null;
+
       const { data, error } = await supabase
         .from('study_sessions')
         .insert({
           user_id: user.id,
           subject_id: normalizedSubjectId,
+          group_id: groupId,
           duration_minutes: durationMinutes,
           started_at: new Date(Date.now() - durationSeconds * 1000).toISOString(),
           completed_at: new Date().toISOString()
@@ -183,16 +187,13 @@ export const useStudySessions = () => {
       }
 
       // CORREÇÃO: Atualizar user_points
-      const subject = subjects.find(s => s.id === normalizedSubjectId);
-      const sessionGroupId = subject?.group_id || selectedGroupId;
-
-      if (sessionGroupId) {
+      if (groupId) {
         const { data: currentPointsData } = await supabase
           .from('user_points')
           .select('points')
           .eq('user_id', user.id)
-          .eq('group_id', sessionGroupId)
-          .single();
+          .eq('group_id', groupId)
+          .maybeSingle();
 
         const currentPoints = currentPointsData?.points || 0;
 
@@ -200,7 +201,7 @@ export const useStudySessions = () => {
           .from('user_points')
           .upsert({
             user_id: user.id,
-            group_id: sessionGroupId,
+            group_id: groupId,
             points: currentPoints + points,
             updated_at: new Date().toISOString()
           }, {
