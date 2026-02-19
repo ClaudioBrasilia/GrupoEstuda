@@ -350,7 +350,7 @@ export function useProgressData(
       }
     );
 
-    if (goalsScopeGroupId) {
+    if (groupId && goalsScopeGroupId) {
       channel.on(
         'postgres_changes',
         {
@@ -371,6 +371,30 @@ export function useProgressData(
           schema: 'public',
           table: 'user_points',
           filter: `group_id=eq.${goalsScopeGroupId}`
+        },
+        () => {
+          scheduleRefresh();
+        }
+      );
+    } else {
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'goals'
+        },
+        () => {
+          scheduleRefresh();
+        }
+      );
+
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_points'
         },
         () => {
           scheduleRefresh();
