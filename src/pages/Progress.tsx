@@ -103,13 +103,13 @@ const ProgressPage: React.FC = () => {
     try {
       await refreshData();
       toast({
-        title: "Atualizado",
-        description: "Progresso atualizado com sucesso",
+        title: t('progress.updated'),
+        description: t('progress.updateSuccess'),
       });
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Não foi possível atualizar os dados",
+        title: t('common.error'),
+        description: t('progress.updateError'),
         variant: "destructive",
       });
     } finally {
