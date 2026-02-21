@@ -104,6 +104,51 @@ export type Database = {
           },
         ]
       }
+      goal_progress_events: {
+        Row: {
+          created_at: string
+          delta: number
+          goal_id: string
+          group_id: string | null
+          id: string
+          metric: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          goal_id: string
+          group_id?: string | null
+          id?: string
+          metric: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          goal_id?: string
+          group_id?: string | null
+          id?: string
+          metric?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_progress_events_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_progress_events_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_files: {
         Row: {
           content_type: string | null

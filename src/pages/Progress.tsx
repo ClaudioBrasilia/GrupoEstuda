@@ -311,6 +311,9 @@ const ProgressPage: React.FC = () => {
                       <div className="text-right">
                         <p className="font-bold text-lg text-primary">{stats.totalStudyTime} min</p>
                         <p className="text-xs text-muted-foreground">
+                          {stats.totalPages} páginas • {stats.totalExercises} exercícios
+                        </p>
+                        <p className="text-xs text-muted-foreground">
                           {stats.dailySessions.length} {stats.dailySessions.length === 1 ? 'sessão' : 'sessões'}
                         </p>
                       </div>
