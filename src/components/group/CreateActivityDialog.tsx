@@ -150,22 +150,22 @@ export const CreateActivityDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle>Nova Atividade de Estudo</DialogTitle>
           <DialogDescription>
             Compartilhe sua sessão de estudos com o grupo
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 space-y-4">
           {/* Photo Preview or Upload */}
           {photoPreview ? (
             <div className="relative">
               <img
                 src={photoPreview}
                 alt="Preview"
-                className="w-full h-64 object-cover rounded-lg"
+                className="w-full h-48 object-cover rounded-lg"
               />
               <Button
                 variant="destructive"
@@ -245,7 +245,7 @@ export const CreateActivityDialog = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={500}
-              rows={4}
+              rows={3}
             />
             <p className="text-xs text-muted-foreground text-right">
               {description.length}/500
@@ -290,8 +290,10 @@ export const CreateActivityDialog = ({
               </p>
             )}
           </div>
+        </div>
 
-          {/* Submit Button */}
+        {/* Submit Button - Fixed at bottom */}
+        <div className="px-6 py-4 border-t border-border bg-background">
           <Button
             className="w-full"
             onClick={handleSubmit}
