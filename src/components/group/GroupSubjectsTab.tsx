@@ -68,7 +68,7 @@ const GroupSubjectsTab: React.FC<GroupSubjectsTabProps> = ({
                       placeholder="Digite o nome da matéria"
                     />
                   </div>
-                  <Button type="submit" className="w-full bg-study-primary" disabled={!newSubject.trim()}>{t('group.addSubject')}</Button>
+                  <Button type="submit" className="w-full bg-study-primary">{t('group.addSubject')}</Button>
                 </form>
               </DialogContent>
             </Dialog>
