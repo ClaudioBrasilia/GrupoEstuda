@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { getLocalDayRange, getRangeStart, isInDateRange, ProgressRange, toLocalDateKey } from '@/lib/progressDateRange';
 
 interface SessionSubject {
   name: string;
@@ -12,6 +13,18 @@ interface StudySessionWithSubject {
   completed_at: string | null;
   duration_minutes: number;
   subjects?: SessionSubject | null;
+  pages?: number | null;
+  exercises?: number | null;
+}
+
+interface GoalProgressEvent {
+  id: string;
+  user_id: string;
+  group_id: string | null;
+  goal_id: string;
+  metric: 'time' | 'pages' | 'exercises';
+  delta: number;
+  created_at: string;
 }
 
 export interface ProgressStats {
@@ -59,9 +72,12 @@ export interface GoalProgressData {
 
 const COLORS = ['hsl(265, 85%, 75%)', 'hsl(265, 53%, 64%)', 'hsl(195, 85%, 60%)', 'hsl(122, 39%, 49%)', 'hsl(45, 100%, 51%)'];
 
+const getSessionPages = (session: StudySessionWithSubject) => session.pages ?? Math.floor(session.duration_minutes / 5) * 2;
+const getSessionExercises = (session: StudySessionWithSubject) => session.exercises ?? Math.floor(session.duration_minutes / 10);
+
 export function useProgressData(
   groupId?: string,
-  timeRange: 'day' | 'week' | 'month' | 'year' = 'week',
+  timeRange: ProgressRange = 'week',
   goalsGroupIdFallback?: string
 ) {
   const [stats, setStats] = useState<ProgressStats>({
@@ -78,27 +94,74 @@ export function useProgressData(
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goalsScopeGroupId = groupId ?? goalsGroupIdFallback;
 
-  const generateWeeklyData = useCallback((sessions: StudySessionWithSubject[]): WeeklyStudyData[] => {
+  const buildPeriodData = useCallback((
+    sessions: StudySessionWithSubject[],
+    goalEvents: GoalProgressEvent[],
+    range: ProgressRange
+  ): WeeklyStudyData[] => {
+    const now = new Date();
+
+    if (range === 'year') {
+      const data: WeeklyStudyData[] = [];
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+        const monthSessions = sessions.filter((session) => {
+          const started = new Date(session.started_at);
+          const key = `${started.getFullYear()}-${String(started.getMonth() + 1).padStart(2, '0')}`;
+          return key === monthKey;
+        });
+
+        const monthEvents = goalEvents.filter((event) => {
+          const created = new Date(event.created_at);
+          const key = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}`;
+          return key === monthKey;
+        });
+
+        const time = monthSessions.reduce((sum, s) => sum + s.duration_minutes, 0) + monthEvents.filter(e => e.metric === 'time').reduce((sum, e) => sum + e.delta, 0);
+        const pages = monthSessions.reduce((sum, s) => sum + getSessionPages(s), 0) + monthEvents.filter(e => e.metric === 'pages').reduce((sum, e) => sum + e.delta, 0);
+        const exercises = monthSessions.reduce((sum, s) => sum + getSessionExercises(s), 0) + monthEvents.filter(e => e.metric === 'exercises').reduce((sum, e) => sum + e.delta, 0);
+
+        data.push({
+          name: date.toLocaleDateString('pt-BR', { month: 'short' }),
+          time,
+          pages,
+          exercises,
+          date: monthKey
+        });
+      }
+
+      return data;
+    }
+
+    const totalDays = range === 'month' ? 30 : 7;
     const weekDays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
     const data: WeeklyStudyData[] = [];
 
-    for (let i = 6; i >= 0; i--) {
+    for (let i = totalDays - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
+      const dateStr = toLocalDateKey(date);
 
-      const dayName = weekDays[date.getDay()];
-      const dateStr = date.toLocaleDateString('en-CA');
-
-      const daySessions = sessions.filter(session => {
-        const sessionDate = new Date(session.started_at).toLocaleDateString('en-CA');
-        return sessionDate === dateStr;
+      const daySessions = sessions.filter((session) => {
+        const completedOrStartedAt = session.completed_at ?? session.started_at;
+        return toLocalDateKey(completedOrStartedAt) === dateStr;
       });
 
-      const time = daySessions.reduce((sum, session) => sum + session.duration_minutes, 0);
-      const pages = Math.floor(time / 5) * 2;
-      const exercises = Math.floor(time / 10);
+      const dayEvents = goalEvents.filter((event) => toLocalDateKey(event.created_at) === dateStr);
 
-      data.push({ name: dayName, time, pages, exercises, date: dateStr });
+      const time = daySessions.reduce((sum, s) => sum + s.duration_minutes, 0) + dayEvents.filter(e => e.metric === 'time').reduce((sum, e) => sum + e.delta, 0);
+      const pages = daySessions.reduce((sum, s) => sum + getSessionPages(s), 0) + dayEvents.filter(e => e.metric === 'pages').reduce((sum, e) => sum + e.delta, 0);
+      const exercises = daySessions.reduce((sum, s) => sum + getSessionExercises(s), 0) + dayEvents.filter(e => e.metric === 'exercises').reduce((sum, e) => sum + e.delta, 0);
+
+      data.push({
+        name: range === 'week' ? weekDays[date.getDay()] : date.toLocaleDateString('pt-BR', { day: '2-digit' }),
+        time,
+        pages,
+        exercises,
+        date: dateStr
+      });
     }
 
     return data;
@@ -113,7 +176,6 @@ export function useProgressData(
     });
 
     const total = Object.values(subjectStats).reduce((sum, value) => sum + value, 0);
-
     if (total === 0) return [];
 
     const data = Object.entries(subjectStats)
@@ -159,10 +221,7 @@ export function useProgressData(
   const fetchDailySessions = useCallback(async (scopeGroupId?: string): Promise<DailySessionData[]> => {
     if (!user) return [];
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayRange = getLocalDayRange();
 
     let dailySessionsQuery = supabase
       .from('study_sessions')
@@ -177,8 +236,6 @@ export function useProgressData(
         )
       `)
       .eq('user_id', user.id)
-      .gte('started_at', today.toISOString())
-      .lt('started_at', tomorrow.toISOString())
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: true });
 
@@ -188,7 +245,13 @@ export function useProgressData(
 
     const { data: sessions } = await dailySessionsQuery;
 
-    return ((sessions || []) as StudySessionWithSubject[]).map((session, index) => ({
+    const filteredSessions = ((sessions || []) as StudySessionWithSubject[]).filter((session) => {
+      const startedInDay = isInDateRange(session.started_at, dayRange);
+      const completedInDay = session.completed_at ? isInDateRange(session.completed_at, dayRange) : false;
+      return startedInDay || completedInDay;
+    });
+
+    return filteredSessions.map((session, index) => ({
       id: session.id,
       startTime: new Date(session.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       endTime: session.completed_at
@@ -215,25 +278,19 @@ export function useProgressData(
     }
 
     const { data: sessions } = await streakQuery;
-
     if (!sessions || sessions.length === 0) return 0;
 
     let streak = 0;
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
-    const studyDates = new Set(
-      sessions.map(session =>
-        new Date(session.started_at).toLocaleDateString('en-CA')
-      )
-    );
+    const studyDates = new Set(sessions.map(session => toLocalDateKey(session.started_at)));
 
-    const todayStr = currentDate.toLocaleDateString('en-CA');
-    if (!studyDates.has(todayStr)) {
+    if (!studyDates.has(toLocalDateKey(currentDate))) {
       currentDate.setDate(currentDate.getDate() - 1);
     }
 
-    while (studyDates.has(currentDate.toLocaleDateString('en-CA'))) {
+    while (studyDates.has(toLocalDateKey(currentDate))) {
       streak++;
       currentDate.setDate(currentDate.getDate() - 1);
     }
@@ -247,16 +304,8 @@ export function useProgressData(
     try {
       setLoading(true);
 
-      const startDate = new Date();
-      if (timeRange === 'day') {
-        startDate.setHours(0, 0, 0, 0);
-      } else if (timeRange === 'week') {
-        startDate.setDate(startDate.getDate() - 7);
-      } else if (timeRange === 'month') {
-        startDate.setMonth(startDate.getMonth() - 1);
-      } else if (timeRange === 'year') {
-        startDate.setFullYear(startDate.getFullYear() - 1);
-      }
+      const startDate = getRangeStart(timeRange);
+      const dayRange = getLocalDayRange();
 
       let sessionsQuery = supabase
         .from('study_sessions')
@@ -278,12 +327,45 @@ export function useProgressData(
       const { data: sessions } = await sessionsQuery;
       const sessionRows = (sessions || []) as StudySessionWithSubject[];
 
-      const weeklyData = generateWeeklyData(sessionRows);
-      const totalStudyTime = sessionRows.reduce((sum, session) => sum + session.duration_minutes, 0);
-      const totalPages = Math.floor(totalStudyTime / 5) * 2;
-      const totalExercises = Math.floor(totalStudyTime / 10);
+      const filteredSessions = timeRange === 'day'
+        ? sessionRows.filter((session) => {
+            const startedInDay = isInDateRange(session.started_at, dayRange);
+            const completedInDay = session.completed_at ? isInDateRange(session.completed_at, dayRange) : false;
+            return startedInDay || completedInDay;
+          })
+        : sessionRows;
+
+      let eventsQuery = supabase
+        .from('goal_progress_events')
+        .select('*')
+        .gte('created_at', startDate.toISOString());
+
+      if (groupId) {
+        eventsQuery = eventsQuery.eq('group_id', groupId);
+      } else {
+        eventsQuery = eventsQuery.eq('user_id', user.id);
+      }
+
+      const { data: events } = await eventsQuery;
+      const eventRows = (events || []) as GoalProgressEvent[];
+      const filteredEvents = timeRange === 'day'
+        ? eventRows.filter((event) => isInDateRange(event.created_at, dayRange))
+        : eventRows;
+
+      const eventTime = filteredEvents.filter(e => e.metric === 'time').reduce((sum, event) => sum + event.delta, 0);
+      const eventPages = filteredEvents.filter(e => e.metric === 'pages').reduce((sum, event) => sum + event.delta, 0);
+      const eventExercises = filteredEvents.filter(e => e.metric === 'exercises').reduce((sum, event) => sum + event.delta, 0);
+
+      const sessionTime = filteredSessions.reduce((sum, session) => sum + session.duration_minutes, 0);
+      const sessionPages = filteredSessions.reduce((sum, session) => sum + getSessionPages(session), 0);
+      const sessionExercises = filteredSessions.reduce((sum, session) => sum + getSessionExercises(session), 0);
+
+      const weeklyData = buildPeriodData(filteredSessions, filteredEvents, timeRange);
+      const totalStudyTime = sessionTime + eventTime;
+      const totalPages = sessionPages + eventPages;
+      const totalExercises = sessionExercises + eventExercises;
       const studyStreak = await calculateStudyStreak(groupId);
-      const subjectData = await fetchSubjectProgress(sessionRows);
+      const subjectData = await fetchSubjectProgress(filteredSessions);
 
       const goalsProgress = goalsScopeGroupId ? await fetchGoalsProgress(goalsScopeGroupId) : [];
       const dailySessions = timeRange === 'day' ? await fetchDailySessions(groupId) : [];
@@ -308,7 +390,7 @@ export function useProgressData(
     groupId,
     goalsScopeGroupId,
     timeRange,
-    generateWeeklyData,
+    buildPeriodData,
     calculateStudyStreak,
     fetchSubjectProgress,
     fetchGoalsProgress,
@@ -345,9 +427,18 @@ export function useProgressData(
         table: 'study_sessions',
         filter: `user_id=eq.${user.id}`
       },
-      () => {
-        scheduleRefresh();
-      }
+      scheduleRefresh
+    );
+
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'goal_progress_events',
+        filter: groupId ? `group_id=eq.${groupId}` : `user_id=eq.${user.id}`
+      },
+      scheduleRefresh
     );
 
     if (goalsScopeGroupId) {
@@ -359,9 +450,7 @@ export function useProgressData(
           table: 'goals',
           filter: `group_id=eq.${goalsScopeGroupId}`
         },
-        () => {
-          scheduleRefresh();
-        }
+        scheduleRefresh
       );
 
       channel.on(
@@ -372,9 +461,7 @@ export function useProgressData(
           table: 'user_points',
           filter: `group_id=eq.${goalsScopeGroupId}`
         },
-        () => {
-          scheduleRefresh();
-        }
+        scheduleRefresh
       );
     }
 

@@ -462,6 +462,20 @@ export const useGroupData = (groupId: string | undefined) => {
         .eq('id', goalId);
       
       if (goalError) throw goalError;
+
+      if (actualProgress > 0) {
+        const { error: eventError } = await supabase
+          .from('goal_progress_events')
+          .insert({
+            user_id: user.id,
+            group_id: groupId,
+            goal_id: goalId,
+            metric: goalToUpdate.type,
+            delta: actualProgress
+          });
+
+        if (eventError) throw eventError;
+      }
       
       const { data: currentPointsData } = await supabase
         .from('user_points')
