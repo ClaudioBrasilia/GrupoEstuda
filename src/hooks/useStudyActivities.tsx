@@ -10,6 +10,7 @@ export interface StudyActivity {
   group_name?: string;
   user_id: string;
   user_name: string;
+  user_plan?: string;
   subject_id: string | null;
   subject_name?: string;
   description: string;
@@ -49,7 +50,7 @@ export const useStudyActivities = (groupId?: string) => {
           // Fetch user profile
           const { data: profile } = await supabase
             .from('profiles')
-            .select('name')
+            .select('name, plan')
             .eq('id', activity.user_id)
             .single();
 
@@ -67,6 +68,7 @@ export const useStudyActivities = (groupId?: string) => {
             group_name: activity.groups.name,
             user_id: activity.user_id,
             user_name: profile?.name || 'Usuário',
+            user_plan: profile?.plan || 'free',
             subject_id: activity.subject_id,
             subject_name: activity.subjects?.name || 'Matéria Geral',
             description: activity.description,
@@ -113,7 +115,7 @@ export const useStudyActivities = (groupId?: string) => {
           // Fetch user profile
           const { data: profile } = await supabase
             .from('profiles')
-            .select('name')
+            .select('name, plan')
             .eq('id', activity.user_id)
             .single();
 
@@ -130,6 +132,7 @@ export const useStudyActivities = (groupId?: string) => {
             group_id: activity.group_id,
             user_id: activity.user_id,
             user_name: profile?.name || 'Usuário',
+            user_plan: profile?.plan || 'free',
             subject_id: activity.subject_id,
             subject_name: activity.subjects?.name || 'Matéria Geral',
             description: activity.description,

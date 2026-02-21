@@ -35,7 +35,7 @@ export const GlobalActivityFeed = () => {
       {activities.map((activity) => (
         <ActivityCard
           key={activity.id}
-          activity={activity}
+          activity={{ ...activity, user_plan: activity.user_plan }}
           onLike={toggleLike}
           onDelete={deleteActivity}
           showGroupBadge

@@ -71,7 +71,7 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
             {recentActivities.map((activity) => (
               <ActivityCard
                 key={activity.id}
-                activity={activity}
+                activity={{ ...activity, user_plan: activity.user_plan }}
                 onLike={toggleLike}
                 onDelete={deleteActivity}
                 compact
