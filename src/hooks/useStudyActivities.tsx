@@ -29,8 +29,24 @@ export const useStudyActivities = (groupId?: string) => {
   const [uploading, setUploading] = useState(false);
 
   const fetchGlobalActivities = useCallback(async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
+
+      // Primeiro, pegamos os IDs dos grupos que o usuário participa
+      const { data: userGroups } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      const groupIds = userGroups?.map(g => g.group_id) || [];
+
+      if (groupIds.length === 0) {
+        setActivities([]);
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('study_activities')
@@ -40,6 +56,7 @@ export const useStudyActivities = (groupId?: string) => {
           subjects(name),
           study_activity_likes(id, user_id)
         `)
+        .in('group_id', groupIds)
         .order('created_at', { ascending: false })
         .limit(20);
 

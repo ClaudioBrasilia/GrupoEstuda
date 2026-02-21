@@ -3,8 +3,8 @@ import { ActivityCard } from './ActivityCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Camera } from 'lucide-react';
 
-export const GlobalActivityFeed = () => {
-  const { activities, loading, toggleLike, deleteActivity } = useStudyActivities();
+export const GlobalActivityFeed = ({ groupId }: { groupId?: string }) => {
+  const { activities, loading, toggleLike, deleteActivity } = useStudyActivities(groupId);
 
   if (loading) {
     return (
