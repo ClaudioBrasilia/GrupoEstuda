@@ -297,7 +297,7 @@ export const CreateActivityDialog = ({
           <Button
             className="w-full"
             onClick={handleSubmit}
-            disabled={uploading || !selectedPhoto || !description.trim()}
+            disabled={uploading || !selectedPhoto || !description.trim() || (userGroups.length > 0 && !selectedGroup && !groupId)}
           >
             {uploading ? 'Enviando...' : `Publicar Atividade (+${calculatedPoints} pontos)`}
           </Button>

@@ -63,7 +63,7 @@ const GroupMessagesTab: React.FC<GroupMessagesTabProps> = ({
           onChange={(e) => setMessageText(e.target.value)}
           className="flex-1"
         />
-        <Button type="submit" className="bg-study-primary">
+        <Button type="submit" className="bg-study-primary" disabled={!messageText.trim()}>
           <Send size={18} />
           <span className="ml-2 hidden sm:inline">{t('groupMessages.send')}</span>
         </Button>

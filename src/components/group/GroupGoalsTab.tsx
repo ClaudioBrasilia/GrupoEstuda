@@ -199,7 +199,7 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
                   />
                 </div>
                 
-                <Button type="submit" className="w-full bg-study-primary">
+                <Button type="submit" className="w-full bg-study-primary" disabled={!newGoalSubject || !newGoalType || !newGoalTarget}>
                   {t('goals.createGoal')}
                 </Button>
               </form>
@@ -227,7 +227,7 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
                 required
               />
             </div>
-            <Button type="submit" className="w-full bg-study-primary">
+            <Button type="submit" className="w-full bg-study-primary" disabled={!progressAmount}>
               {t('goals.saveProgress')}
             </Button>
           </form>
