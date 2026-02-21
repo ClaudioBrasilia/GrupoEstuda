@@ -216,7 +216,9 @@ const TestGenerator: React.FC = () => {
 
     const hasSubjects = selectedSubjects.length > 0;
 
-    if (!trimmedTopic && !fileContent && !hasSubjects) {
+    const hasAnyInput = trimmedTopic || fileContent || hasSubjects;
+
+    if (!hasAnyInput) {
       toast.error('Informe um assunto, selecione uma matéria ou envie um arquivo');
       return;
     }
@@ -362,7 +364,7 @@ const TestGenerator: React.FC = () => {
               <Button
                 onClick={handleGenerateTest}
                 className="w-full bg-study-primary"
-                disabled={isGenerating || (!topic.trim() && !fileContent)}
+                disabled={isGenerating || (!topic.trim() && !fileContent && subjects.filter(s => s.selected).length === 0)}
               >
                 {isGenerating ? t('aiTests.generating') : t('aiTests.generate')}
               </Button>
