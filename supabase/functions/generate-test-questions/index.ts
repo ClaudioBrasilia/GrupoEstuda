@@ -126,6 +126,30 @@ Regras obrigatórias:
 - Não inclua markdown, comentários ou texto fora do JSON.`;
   }
 
+  if (subjects.length > 0) {
+    return `Crie ${numQuestions} questões de múltipla escolha em português brasileiro.
+
+Dificuldade: ${difficulty}.
+Matérias obrigatórias: ${subjects.join(", ")}.
+
+Regras obrigatórias:
+- Retorne EXATAMENTE um objeto JSON com esta estrutura:
+{
+  "questions": [
+    {
+      "question": "texto",
+      "options": ["A", "B", "C", "D"],
+      "correctAnswer": 0,
+      "explanation": "texto",
+      "subject": "texto"
+    }
+  ]
+}
+- Cada questão deve ter exatamente 4 alternativas.
+- correctAnswer deve ser um número inteiro entre 0 e 3.
+- Não inclua markdown, comentários ou texto fora do JSON.`;
+  }
+
   throw new Error("MISSING_INPUT");
 };
 
@@ -154,9 +178,9 @@ serve(async (req) => {
     console.log("DEBUG BODY KEYS:", Object.keys(body));
     console.log("DEBUG topic:", topic ? "YES" : "NO", "fileContent:", fileContent ? "YES" : "NO");
 
-    if (!topic && !fileContent) {
+    if (!topic && !fileContent && subjects.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Informe um assunto ou envie um arquivo .txt/.md para gerar as questões." }),
+        JSON.stringify({ error: "Informe um assunto, selecione uma matéria ou envie um arquivo .txt/.md para gerar as questões." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

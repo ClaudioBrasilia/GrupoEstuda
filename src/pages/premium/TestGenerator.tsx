@@ -58,7 +58,7 @@ const TestGenerator: React.FC = () => {
   const [fileName, setFileName] = useState<string>('');
   
   const [subjects, setSubjects] = useState<Subject[]>([
-    { id: 'portuguese', name: t('groups.subjects.portuguese'), selected: true },
+    { id: 'portuguese', name: t('groups.subjects.portuguese'), selected: false },
     { id: 'math', name: t('groups.subjects.math'), selected: false },
     { id: 'history', name: t('groups.subjects.history'), selected: false },
     { id: 'geography', name: t('groups.subjects.geography'), selected: false },
@@ -214,8 +214,10 @@ const TestGenerator: React.FC = () => {
     const selectedSubjects = subjects.filter(s => s.selected);
     const trimmedTopic = topic.trim();
 
-    if (!trimmedTopic && !fileContent) {
-      toast.error('Informe um assunto ou envie um arquivo');
+    const hasSubjects = selectedSubjects.length > 0;
+
+    if (!trimmedTopic && !fileContent && !hasSubjects) {
+      toast.error('Informe um assunto, selecione uma matéria ou envie um arquivo');
       return;
     }
     
