@@ -12,7 +12,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/sonner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, FileText, X } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configurar o worker do PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 interface Subject {
   id: string;
@@ -49,6 +53,7 @@ const TestGenerator: React.FC = () => {
   const [numQuestions, setNumQuestions] = useState<number>(10);
   const [difficulty, setDifficulty] = useState<string>('medium');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isExtractingPdf, setIsExtractingPdf] = useState<boolean>(false);
   const [generatedTest, setGeneratedTest] = useState<GeneratedQuestion[] | null>(null);
   const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
   const [isCorrected, setIsCorrected] = useState<boolean>(false);
@@ -89,6 +94,21 @@ const TestGenerator: React.FC = () => {
     }));
   };
 
+  const extractTextFromPdf = async (file: File): Promise<string> => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+    
+    return fullText;
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
@@ -98,23 +118,33 @@ const TestGenerator: React.FC = () => {
       return;
     }
 
-    const validExtensions = ['text/plain', 'text/markdown'];
-    const hasValidExtension = file.name.endsWith('.txt') || file.name.endsWith('.md');
+    const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+    const isText = file.type === 'text/plain' || file.name.endsWith('.txt');
+    const isMarkdown = file.type === 'text/markdown' || file.name.endsWith('.md');
 
-    if (!validExtensions.includes(file.type) && !hasValidExtension) {
-      toast.error('Envie apenas arquivos .txt ou .md');
+    if (!isPdf && !isText && !isMarkdown) {
+      toast.error('Envie apenas arquivos .pdf, .txt ou .md');
       event.target.value = '';
       return;
     }
 
     try {
-      const content = await file.text();
+      let content = '';
+      if (isPdf) {
+        setIsExtractingPdf(true);
+        content = await extractTextFromPdf(file);
+      } else {
+        content = await file.text();
+      }
+      
       setFileContent(content);
       setFileName(file.name);
       toast.success('Arquivo carregado com sucesso.');
     } catch (error) {
       console.error('Erro ao ler arquivo:', error);
       toast.error('Não foi possível ler o arquivo enviado.');
+    } finally {
+      setIsExtractingPdf(false);
     }
   };
   
@@ -229,14 +259,6 @@ const TestGenerator: React.FC = () => {
       const selectedSubjectNames = selectedSubjects.map(s => s.name);
       const trimmedFileContent = fileContent.trim();
       
-      if (import.meta.env.DEV && trimmedFileContent) {
-        console.info('[DEV][Teste IA] Caso B: geração com upload .txt/.md');
-      }
-
-      if (import.meta.env.DEV && !trimmedFileContent && trimmedTopic === 'Equações do 2º grau') {
-        console.info('[DEV][Teste IA] Caso A: topic "Equações do 2º grau"');
-      }
-
       const { data, error } = await supabase.functions.invoke('generate-test-questions', {
         body: {
           numQuestions,
@@ -326,20 +348,52 @@ const TestGenerator: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="source-file" className="mb-2 block">Arquivo de base (.txt/.md) (opcional)</Label>
-                <input
-                  id="source-file"
-                  type="file"
-                  accept=".txt,.md,text/plain,text/markdown"
-                  onChange={handleFileUpload}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="source-file" className="block">Arquivo de base (.pdf, .txt, .md) (opcional)</Label>
+                <div className="relative">
+                  <input
+                    id="source-file"
+                    type="file"
+                    accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full border-dashed border-2 h-24 flex flex-col gap-2"
+                    onClick={() => document.getElementById('source-file')?.click()}
+                    disabled={isExtractingPdf}
+                  >
+                    {isExtractingPdf ? (
+                      <>
+                        <Loader2 className="h-6 w-6 animate-spin text-study-primary" />
+                        <span>Extraindo texto do PDF...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="h-6 w-6 text-muted-foreground" />
+                        <span>Clique para selecionar ou arraste um arquivo</span>
+                        <span className="text-xs text-muted-foreground">PDF, TXT ou Markdown</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
                 {fileName && (
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <p className="text-sm text-muted-foreground">Arquivo selecionado: {fileName}</p>
-                    <Button type="button" variant="outline" size="sm" onClick={handleRemoveFile}>
-                      Remover arquivo
+                  <div className="mt-2 flex items-center justify-between p-2 bg-muted rounded-md">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <FileText className="h-4 w-4 flex-shrink-0 text-study-primary" />
+                      <p className="text-sm font-medium truncate">{fileName}</p>
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={handleRemoveFile}
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
@@ -366,9 +420,16 @@ const TestGenerator: React.FC = () => {
               <Button
                 onClick={handleGenerateTest}
                 className="w-full bg-study-primary"
-                disabled={isGenerating || (!topic.trim() && !fileContent && subjects.filter(s => s.selected).length === 0)}
+                disabled={isGenerating || isExtractingPdf || (!topic.trim() && !fileContent && subjects.filter(s => s.selected).length === 0)}
               >
-                {isGenerating ? t('aiTests.generating') : t('aiTests.generate')}
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('aiTests.generating')}
+                  </>
+                ) : (
+                  t('aiTests.generate')
+                )}
               </Button>
             </div>
           </div>
