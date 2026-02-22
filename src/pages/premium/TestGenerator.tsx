@@ -243,7 +243,9 @@ const TestGenerator: React.FC = () => {
           difficulty,
           subjects: selectedSubjectNames,
           topic: trimmedTopic || undefined,
+          subject: trimmedTopic || (selectedSubjectNames.length > 0 ? selectedSubjectNames.join(", ") : undefined),
           fileContent: trimmedFileContent || undefined,
+          content: trimmedFileContent || undefined,
         }
       });
 
