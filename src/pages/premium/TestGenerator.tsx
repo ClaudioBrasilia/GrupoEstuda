@@ -15,8 +15,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, XCircle, Loader2, FileText, X } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurar o worker do PDF.js usando a versão exata instalada (5.4.624)
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.624/pdf.worker.min.mjs`;
+// Configurar o worker do PDF.js localmente usando a sintaxe do Vite para garantir que o arquivo seja incluído no build
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface Subject {
   id: string;
