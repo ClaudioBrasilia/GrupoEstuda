@@ -15,8 +15,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, XCircle, Loader2, FileText, X } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurar o worker do PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+// Configurar o worker do PDF.js usando uma URL compatível com a versão instalada
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs`;
 
 interface Subject {
   id: string;
@@ -132,7 +132,12 @@ const TestGenerator: React.FC = () => {
       let content = '';
       if (isPdf) {
         setIsExtractingPdf(true);
+        console.log('Iniciando extração de PDF:', file.name);
         content = await extractTextFromPdf(file);
+        
+        if (!content || content.trim().length === 0) {
+          throw new Error('O PDF parece estar vazio ou contém apenas imagens (OCR não suportado).');
+        }
       } else {
         content = await file.text();
       }
@@ -141,8 +146,9 @@ const TestGenerator: React.FC = () => {
       setFileName(file.name);
       toast.success('Arquivo carregado com sucesso.');
     } catch (error) {
-      console.error('Erro ao ler arquivo:', error);
-      toast.error('Não foi possível ler o arquivo enviado.');
+      console.error('Erro detalhado ao ler arquivo:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(`Não foi possível ler o arquivo: ${errorMessage}`);
     } finally {
       setIsExtractingPdf(false);
     }
