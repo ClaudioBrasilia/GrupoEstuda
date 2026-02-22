@@ -15,8 +15,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, XCircle, Loader2, FileText, X } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurar o worker do PDF.js usando uma URL compatível com a versão instalada
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs`;
+// Configurar o worker do PDF.js usando a versão exata instalada (5.4.624)
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.624/pdf.worker.min.mjs`;
 
 interface Subject {
   id: string;
