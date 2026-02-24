@@ -154,6 +154,21 @@ const ProgressPage: React.FC = () => {
     return () => window.removeEventListener('focus', handleFocus);
   }, [refreshData, view, groupId]);
 
+
+  const dayActivitiesData = [
+    { name: 'Tempo (min)', value: stats.totalStudyTime, color: 'hsl(var(--primary))' },
+    { name: 'Páginas', value: stats.totalPages, color: 'hsl(var(--secondary))' },
+    { name: 'Exercícios', value: stats.totalExercises, color: 'hsl(var(--accent))' }
+  ];
+
+  const remainingGoals = stats.goalsProgress.map((goal) => {
+    const remaining = Math.max(goal.target - goal.current, 0);
+    return {
+      ...goal,
+      remaining
+    };
+  });
+
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -347,7 +362,81 @@ const ProgressPage: React.FC = () => {
         )}
         
         {timeRange === 'day' && stats.dailySessions && (
-          <Card>
+          <>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Atividades Realizadas Hoje
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dayActivitiesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
+                        <XAxis
+                          dataKey="name"
+                          fontSize={12}
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis
+                          fontSize={12}
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip
+                          formatter={(value) => [`${value}`, 'Quantidade']}
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity">
+                          {dayActivitiesData.map((entry) => (
+                            <Cell key={entry.name} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Target className="h-5 w-5 text-accent" />
+                    Quanto Falta para as Metas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {remainingGoals.length > 0 ? (
+                    <div className="space-y-3">
+                      {remainingGoals.map((goal) => (
+                        <div key={goal.id} className="rounded-lg bg-muted/30 p-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{goal.subject}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {goal.type === 'time' ? 'Tempo' : goal.type === 'pages' ? 'Páginas' : 'Exercícios'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-sm">Faltam {goal.remaining} {goal.type === 'time' ? 'min' : goal.type === 'pages' ? 'páginas' : 'exercícios'}</p>
+                            <p className="text-xs text-muted-foreground">{goal.current}/{goal.target}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhuma meta ativa para este grupo.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
@@ -407,6 +496,7 @@ const ProgressPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
+          </>
         )}
         
         {timeRange !== 'day' && (
