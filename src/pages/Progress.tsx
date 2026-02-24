@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Calendar, Target, TrendingUp, Award, Clock, BookOpen, Users, RefreshCw } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -19,11 +20,55 @@ const ProgressPage: React.FC = () => {
   const [view, setView] = useState<'individual' | 'group'>('individual');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [resolvedGroupId, setResolvedGroupId] = useState<string | undefined>(undefined);
+  const [availableGroups, setAvailableGroups] = useState<Array<{ id: string; name: string }>>([]);
   const { t } = useTranslation();
   const { user } = useAuth();
   const params = useParams();
   const routeGroupId = params?.groupId;
   const { toast } = useToast();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAvailableGroups = async () => {
+      if (!user) {
+        if (isMounted) {
+          setAvailableGroups([]);
+        }
+        return;
+      }
+
+      const { data: memberships } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      const groupIds = (memberships || []).map((membership) => membership.group_id);
+
+      if (groupIds.length === 0) {
+        if (isMounted) {
+          setAvailableGroups([]);
+        }
+        return;
+      }
+
+      const { data: groups } = await supabase
+        .from('groups')
+        .select('id, name')
+        .in('id', groupIds)
+        .order('name', { ascending: true });
+
+      if (isMounted) {
+        setAvailableGroups((groups || []).map((group) => ({ id: group.id, name: group.name })));
+      }
+    };
+
+    void fetchAvailableGroups();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -77,6 +122,18 @@ const ProgressPage: React.FC = () => {
       isMounted = false;
     };
   }, [routeGroupId, user]);
+
+  useEffect(() => {
+    if (routeGroupId) return;
+    if (availableGroups.length === 0) return;
+
+    const hasSelectedGroup = resolvedGroupId && availableGroups.some((group) => group.id === resolvedGroupId);
+    if (hasSelectedGroup) return;
+
+    const defaultGroupId = availableGroups[0].id;
+    setResolvedGroupId(defaultGroupId);
+    localStorage.setItem('activeGroupId', defaultGroupId);
+  }, [availableGroups, resolvedGroupId, routeGroupId]);
 
   const groupId = resolvedGroupId;
   
@@ -162,7 +219,7 @@ const ProgressPage: React.FC = () => {
                   <Users className="h-3 w-3" />
                   Individual
                 </TabsTrigger>
-                {groupId && (
+                {availableGroups.length > 0 && (
                   <TabsTrigger value="group" className="text-xs flex items-center gap-1">
                     <Target className="h-3 w-3" />
                     Grupo
@@ -171,6 +228,27 @@ const ProgressPage: React.FC = () => {
               </TabsList>
             </Tabs>
             
+            {view === 'group' && availableGroups.length > 0 && (
+              <Select
+                value={groupId}
+                onValueChange={(selectedGroupId) => {
+                  setResolvedGroupId(selectedGroupId);
+                  localStorage.setItem('activeGroupId', selectedGroupId);
+                }}
+              >
+                <SelectTrigger className="w-[180px] h-9">
+                  <SelectValue placeholder="Selecione um grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableGroups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
               <TabsList className="grid grid-cols-4 h-9">
                 <TabsTrigger value="day" className="text-xs">Dia</TabsTrigger>
