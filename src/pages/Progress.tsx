@@ -410,7 +410,7 @@ const ProgressPage: React.FC = () => {
         )}
         
         {timeRange !== 'day' && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-3">
           <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -486,6 +486,47 @@ const ProgressPage: React.FC = () => {
                     <Bar 
                       dataKey="pages" 
                       fill="hsl(var(--secondary))" 
+                      radius={[4, 4, 0, 0]}
+                      className="hover:opacity-80 transition-opacity"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Target className="h-5 w-5 text-accent" />
+                Exercícios Resolvidos por Dia
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
+                    <XAxis
+                      dataKey="name"
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <Tooltip
+                      formatter={(value) => [`${value} exercícios`, t('progress.exercises')]}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar
+                      dataKey="exercises"
+                      fill="hsl(var(--accent))"
                       radius={[4, 4, 0, 0]}
                       className="hover:opacity-80 transition-opacity"
                     />
