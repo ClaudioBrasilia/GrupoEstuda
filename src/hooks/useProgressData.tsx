@@ -463,6 +463,17 @@ export function useProgressData(
         },
         scheduleRefresh
       );
+
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subjects',
+          filter: `group_id=eq.${goalsScopeGroupId}`
+        },
+        scheduleRefresh
+      );
     }
 
     channel.subscribe();
