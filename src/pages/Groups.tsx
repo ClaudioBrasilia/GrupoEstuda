@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GlobalActivityFeed } from '@/components/group/GlobalActivityFeed';
 import { FloatingActionButton } from '@/components/group/FloatingActionButton';
 import { CreateActivityDialog } from '@/components/group/CreateActivityDialog';
+import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 
 // Fixed group ID for Vestibular Brasil
 const VESTIBULAR_GROUP_ID = 'b47ac10b-58cc-4372-a567-0e02b2c3d479';
@@ -203,8 +204,28 @@ const Groups: React.FC = () => {
     );
   }
 
+  const { pendingCount } = useGroupInvitations();
+
   return (
     <PageLayout>
+      {pendingCount > 0 && (
+        <Alert className="mb-6 border-study-primary bg-study-primary/10">
+          <Users className="h-4 w-4 text-study-primary" />
+          <AlertDescription className="flex items-center justify-between w-full">
+            <span className="text-study-primary font-medium">
+              Você tem {pendingCount} {pendingCount === 1 ? 'convite pendente' : 'convites pendentes'}
+            </span>
+            <Button 
+              variant="link" 
+              className="text-study-primary font-bold p-0 h-auto"
+              onClick={() => navigate('/invitations')}
+            >
+              Ver convites
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Input 

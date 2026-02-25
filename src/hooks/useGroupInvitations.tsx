@@ -45,6 +45,7 @@ export const useGroupInvitations = () => {
           )
         `)
         .eq('status', 'pending')
+        .eq('invitee_email', user.email.toLowerCase())
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
