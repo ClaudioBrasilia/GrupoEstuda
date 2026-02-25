@@ -637,8 +637,7 @@ const ProgressPage: React.FC = () => {
         </div>
         )}
         
-        {stats.subjectData.length > 0 && (
-          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+        <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
             <CardHeader className="pb-3 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -655,65 +654,70 @@ const ProgressPage: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid lg:grid-cols-2 gap-6 items-center">
-                <div className="h-64 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={stats.subjectData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        className="hover:opacity-80 transition-opacity"
-                      >
-                        {stats.subjectData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value) => [`${value}%`, `${subjectMetricLabel} por matéria`]}
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                <div className="space-y-3">
-                  {stats.subjectData.map((subject, index) => (
-                    <div key={subject.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: subject.color }}
-                        ></div>
-                        <span className="font-medium">{subject.name}</span>
+              {stats.subjectData.length > 0 ? (
+                <div className="grid lg:grid-cols-2 gap-6 items-center">
+                  <div className="h-64 flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie
+                          data={stats.subjectData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          className="hover:opacity-80 transition-opacity"
+                        >
+                          {stats.subjectData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value) => [`${value}%`, `${subjectMetricLabel} por matéria`]}
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {stats.subjectData.map((subject) => (
+                      <div key={subject.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: subject.color }}
+                          ></div>
+                          <span className="font-medium">{subject.name}</span>
+                        </div>
+                        <Badge 
+                          variant="secondary" 
+                          className="font-bold"
+                          style={{ 
+                            backgroundColor: `${subject.color}20`,
+                            color: subject.color,
+                            borderColor: subject.color
+                          }}
+                        >
+                          {subject.value}%
+                        </Badge>
                       </div>
-                      <Badge 
-                        variant="secondary" 
-                        className="font-bold"
-                        style={{ 
-                          backgroundColor: `${subject.color}20`,
-                          color: subject.color,
-                          borderColor: subject.color
-                        }}
-                      >
-                        {subject.value}%
-                      </Badge>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="text-sm text-muted-foreground py-6">
+                  Sem dados de {subjectMetricLabel.toLowerCase()} por matéria neste período.
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
       </div>
     </PageLayout>
   );
