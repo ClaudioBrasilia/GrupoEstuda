@@ -32,7 +32,7 @@ export const useGroupInvitations = () => {
   const [pendingCount, setPendingCount] = useState(0);
 
   const fetchPendingInvitations = useCallback(async () => {
-    if (!user) return;
+    if (!user?.email) return;
 
     try {
       const { data, error } = await supabase
