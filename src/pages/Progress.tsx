@@ -3,12 +3,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Calendar, Target, TrendingUp, Award, Clock, BookOpen, Users, RefreshCw } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { useProgressData } from '@/hooks/useProgressData';
+import { SubjectMetric, useProgressData } from '@/hooks/useProgressData';
 import { useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,11 +20,56 @@ const ProgressPage: React.FC = () => {
   const [view, setView] = useState<'individual' | 'group'>('individual');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [resolvedGroupId, setResolvedGroupId] = useState<string | undefined>(undefined);
+  const [availableGroups, setAvailableGroups] = useState<Array<{ id: string; name: string }>>([]);
+  const [subjectMetric, setSubjectMetric] = useState<SubjectMetric>('time');
   const { t } = useTranslation();
   const { user } = useAuth();
   const params = useParams();
   const routeGroupId = params?.groupId;
   const { toast } = useToast();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAvailableGroups = async () => {
+      if (!user) {
+        if (isMounted) {
+          setAvailableGroups([]);
+        }
+        return;
+      }
+
+      const { data: memberships } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', user.id);
+
+      const groupIds = (memberships || []).map((membership) => membership.group_id);
+
+      if (groupIds.length === 0) {
+        if (isMounted) {
+          setAvailableGroups([]);
+        }
+        return;
+      }
+
+      const { data: groups } = await supabase
+        .from('groups')
+        .select('id, name')
+        .in('id', groupIds)
+        .order('name', { ascending: true });
+
+      if (isMounted) {
+        setAvailableGroups((groups || []).map((group) => ({ id: group.id, name: group.name })));
+      }
+    };
+
+    void fetchAvailableGroups();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -78,12 +124,25 @@ const ProgressPage: React.FC = () => {
     };
   }, [routeGroupId, user]);
 
+  useEffect(() => {
+    if (routeGroupId) return;
+    if (availableGroups.length === 0) return;
+
+    const hasSelectedGroup = resolvedGroupId && availableGroups.some((group) => group.id === resolvedGroupId);
+    if (hasSelectedGroup) return;
+
+    const defaultGroupId = availableGroups[0].id;
+    setResolvedGroupId(defaultGroupId);
+    localStorage.setItem('activeGroupId', defaultGroupId);
+  }, [availableGroups, resolvedGroupId, routeGroupId]);
+
   const groupId = resolvedGroupId;
   
   const { stats, loading, refreshData } = useProgressData(
     view === 'group' ? groupId : undefined,
     timeRange as 'day' | 'week' | 'month' | 'year',
-    groupId
+    groupId,
+    subjectMetric
   );
 
   useEffect(() => {
@@ -96,6 +155,28 @@ const ProgressPage: React.FC = () => {
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [refreshData, view, groupId]);
+
+
+  const dayActivitiesData = [
+    { name: 'Tempo (min)', value: stats.totalStudyTime, color: 'hsl(var(--primary))' },
+    { name: 'Páginas', value: stats.totalPages, color: 'hsl(var(--secondary))' },
+    { name: 'Exercícios', value: stats.totalExercises, color: 'hsl(var(--accent))' }
+  ];
+
+  const remainingGoals = stats.goalsProgress.map((goal) => {
+    const remaining = Math.max(goal.target - goal.current, 0);
+    return {
+      ...goal,
+      remaining
+    };
+  });
+
+
+  const subjectMetricLabel = {
+    time: 'Tempo',
+    pages: 'Páginas',
+    exercises: 'Exercícios'
+  }[subjectMetric];
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -162,7 +243,7 @@ const ProgressPage: React.FC = () => {
                   <Users className="h-3 w-3" />
                   Individual
                 </TabsTrigger>
-                {groupId && (
+                {availableGroups.length > 0 && (
                   <TabsTrigger value="group" className="text-xs flex items-center gap-1">
                     <Target className="h-3 w-3" />
                     Grupo
@@ -171,6 +252,27 @@ const ProgressPage: React.FC = () => {
               </TabsList>
             </Tabs>
             
+            {view === 'group' && availableGroups.length > 0 && (
+              <Select
+                value={groupId}
+                onValueChange={(selectedGroupId) => {
+                  setResolvedGroupId(selectedGroupId);
+                  localStorage.setItem('activeGroupId', selectedGroupId);
+                }}
+              >
+                <SelectTrigger className="w-[180px] h-9">
+                  <SelectValue placeholder="Selecione um grupo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableGroups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
               <TabsList className="grid grid-cols-4 h-9">
                 <TabsTrigger value="day" className="text-xs">Dia</TabsTrigger>
@@ -269,7 +371,81 @@ const ProgressPage: React.FC = () => {
         )}
         
         {timeRange === 'day' && stats.dailySessions && (
-          <Card>
+          <>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Atividades Realizadas Hoje
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dayActivitiesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
+                        <XAxis
+                          dataKey="name"
+                          fontSize={12}
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis
+                          fontSize={12}
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip
+                          formatter={(value) => [`${value}`, 'Quantidade']}
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity">
+                          {dayActivitiesData.map((entry) => (
+                            <Cell key={entry.name} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Target className="h-5 w-5 text-accent" />
+                    Quanto Falta para as Metas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {remainingGoals.length > 0 ? (
+                    <div className="space-y-3">
+                      {remainingGoals.map((goal) => (
+                        <div key={goal.id} className="rounded-lg bg-muted/30 p-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{goal.subject}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {goal.type === 'time' ? 'Tempo' : goal.type === 'pages' ? 'Páginas' : 'Exercícios'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-sm">Faltam {goal.remaining} {goal.type === 'time' ? 'min' : goal.type === 'pages' ? 'páginas' : 'exercícios'}</p>
+                            <p className="text-xs text-muted-foreground">{goal.current}/{goal.target}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhuma meta ativa para este grupo.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
@@ -329,10 +505,11 @@ const ProgressPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
+          </>
         )}
         
         {timeRange !== 'day' && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-3">
           <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
@@ -416,16 +593,66 @@ const ProgressPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Target className="h-5 w-5 text-accent" />
+                Exercícios Resolvidos por Dia
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
+                    <XAxis
+                      dataKey="name"
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <YAxis
+                      fontSize={12}
+                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <Tooltip
+                      formatter={(value) => [`${value} exercícios`, t('progress.exercises')]}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                    <Bar
+                      dataKey="exercises"
+                      fill="hsl(var(--accent))"
+                      radius={[4, 4, 0, 0]}
+                      className="hover:opacity-80 transition-opacity"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
         </div>
         )}
         
         {stats.subjectData.length > 0 && (
           <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="h-5 w-5 text-accent" />
-                {t('progress.studyBySubject')}
-              </CardTitle>
+            <CardHeader className="pb-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-5 w-5 text-accent" />
+                  {t('progress.studyBySubject')}
+                </CardTitle>
+                <Tabs value={subjectMetric} onValueChange={(value) => setSubjectMetric(value as SubjectMetric)} className="w-auto">
+                  <TabsList className="grid grid-cols-3 h-8">
+                    <TabsTrigger value="time" className="text-xs">Tempo</TabsTrigger>
+                    <TabsTrigger value="pages" className="text-xs">Páginas</TabsTrigger>
+                    <TabsTrigger value="exercises" className="text-xs">Exercícios</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid lg:grid-cols-2 gap-6 items-center">
@@ -448,7 +675,7 @@ const ProgressPage: React.FC = () => {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value) => [`${value}%`, 'Percentagem']}
+                        formatter={(value) => [`${value}%`, `${subjectMetricLabel} por matéria`]}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
