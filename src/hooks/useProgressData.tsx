@@ -41,9 +41,12 @@ export interface ProgressStats {
 export interface DailySessionData {
   id: string;
   startTime: string;
+  start_time: string;
   endTime: string;
   duration: number;
+  duration_minutes: number;
   subject: string;
+  subject_name: string;
   subjectColor: string;
 }
 
@@ -265,12 +268,13 @@ export function useProgressData(
 
     return filteredSessions.map((session, index) => ({
       id: session.id,
-      startTime: new Date(session.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      endTime: session.completed_at
-        ? new Date(session.completed_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-        : '-',
+      startTime: session.started_at,
+      start_time: session.started_at,
+      endTime: session.completed_at || '',
       duration: session.duration_minutes,
+      duration_minutes: session.duration_minutes,
       subject: session.subjects?.name || 'Sem matéria',
+      subject_name: session.subjects?.name || 'Sem matéria',
       subjectColor: COLORS[index % COLORS.length]
     }));
   }, [user]);
