@@ -43,7 +43,7 @@ const GroupSubjectsTab: React.FC<GroupSubjectsTabProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Matérias Disponíveis</h3>
+        <h3 className="font-semibold">{t('group.availableSubjects', 'Matérias Disponíveis')}</h3>
         
         {currentUserIsAdmin && (
           <div className="flex gap-2">
@@ -56,16 +56,16 @@ const GroupSubjectsTab: React.FC<GroupSubjectsTabProps> = ({
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Adicionar Nova Matéria</DialogTitle>
+                  <DialogTitle>{t('group.addNewSubject', 'Adicionar Nova Matéria')}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleAddSubject} className="space-y-4">
                   <div>
-                    <Label htmlFor="subject">Nome da Matéria</Label>
+                    <Label htmlFor="subject">{t('timer.subject')}</Label>
                     <Input
                       id="subject"
                       value={newSubject}
                       onChange={(e) => setNewSubject(e.target.value)}
-                      placeholder="Digite o nome da matéria"
+                      placeholder={t('group.enterSubjectName', 'Digite o nome da matéria')}
                     />
                   </div>
                   <Button type="submit" className="w-full bg-study-primary">{t('group.addSubject')}</Button>
@@ -82,17 +82,17 @@ const GroupSubjectsTab: React.FC<GroupSubjectsTabProps> = ({
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Adicionar Módulo Vestibular</DialogTitle>
+                  <DialogTitle>{t('groups.addVestibular')}</DialogTitle>
                 </DialogHeader>
                 <p className="text-sm text-gray-500 mb-4">
-                  Isso adicionará todas as matérias padrão do vestibular ao seu grupo.
+                  {t('group.addVestibularDescription', 'Isso adicionará todas as matérias padrão do vestibular ao seu grupo.')}
                 </p>
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => setAddVestibularDialogOpen(false)}>
-                    Cancelar
+                    {t('common.cancel')}
                   </Button>
                   <Button onClick={handleAddVestibularModule} className="bg-study-primary">
-                    Confirmar
+                    {t('common.confirm', 'Confirmar')}
                   </Button>
                 </div>
               </DialogContent>
@@ -132,14 +132,14 @@ const GroupSubjectsTab: React.FC<GroupSubjectsTabProps> = ({
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Excluir Matéria</DialogTitle>
+            <DialogTitle>{t('groups.deleteSubject')}</DialogTitle>
           </DialogHeader>
           <DialogDescription>
-            Tem certeza que deseja excluir esta matéria? Esta ação não pode ser desfeita.
+            {t('group.deleteSubjectConfirmation', 'Tem certeza que deseja excluir esta matéria? Esta ação não pode ser desfeita.')}
           </DialogDescription>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={confirmDeleteSubject}>Excluir</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>{t('common.cancel')}</Button>
+            <Button variant="destructive" onClick={confirmDeleteSubject}>{t('common.delete')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -183,13 +183,13 @@ const ProgressPage: React.FC = () => {
     try {
       await refreshData();
       toast({
-        title: "Atualizado",
-        description: "Progresso atualizado com sucesso",
+        title: t('progress.updated'),
+        description: t('progress.updateSuccess'),
       });
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Não foi possível atualizar os dados",
+        title: t('common.error'),
+        description: t('progress.updateError'),
         variant: "destructive",
       });
     } finally {
@@ -241,13 +241,13 @@ const ProgressPage: React.FC = () => {
               <TabsList className="grid grid-cols-2 h-9">
                 <TabsTrigger value="individual" className="text-xs flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  Individual
+                  {t('progress.individual')}
                 </TabsTrigger>
                 {availableGroups.length > 0 && (
                   <TabsTrigger value="group" className="text-xs flex items-center gap-1">
                     <Target className="h-3 w-3" />
-                    Grupo
-                  </TabsTrigger>
+{t('progress.group')}
+                    </TabsTrigger>
                 )}
               </TabsList>
             </Tabs>
@@ -275,10 +275,10 @@ const ProgressPage: React.FC = () => {
 
             <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
               <TabsList className="grid grid-cols-4 h-9">
-                <TabsTrigger value="day" className="text-xs">Dia</TabsTrigger>
+                <TabsTrigger value="day" className="text-xs">{t('progress.day')}</TabsTrigger>
                 <TabsTrigger value="week" className="text-xs">{t('leaderboard.week')}</TabsTrigger>
                 <TabsTrigger value="month" className="text-xs">{t('leaderboard.month')}</TabsTrigger>
-                <TabsTrigger value="year" className="text-xs">Ano</TabsTrigger>
+                <TabsTrigger value="year" className="text-xs">{t('progress.year')}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -341,7 +341,7 @@ const ProgressPage: React.FC = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  Atividades de Hoje
+                  {t('progress.todaySessions')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -384,7 +384,7 @@ const ProgressPage: React.FC = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Target className="h-5 w-5 text-secondary" />
-                  Metas Restantes
+                  {t('progress.remainingGoals')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -395,7 +395,7 @@ const ProgressPage: React.FC = () => {
                         <div className="flex justify-between text-sm">
                           <span className="font-medium">{goal.title}</span>
                           <span className="text-muted-foreground">
-                            {goal.remaining > 0 ? `Faltam ${goal.remaining}` : 'Meta batida!'}
+                            {goal.remaining > 0 ? t('progress.remaining', { count: goal.remaining }) : t('progress.goalMet')}
                           </span>
                         </div>
                         <Progress value={(goal.current / goal.target) * 100} className="h-2" />
@@ -403,7 +403,7 @@ const ProgressPage: React.FC = () => {
                     ))
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                      <p>Nenhuma meta definida para hoje</p>
+                      <p>{t('progress.noGoalsToday')}</p>
                     </div>
                   )}
                 </div>
@@ -415,7 +415,7 @@ const ProgressPage: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Clock className="h-5 w-5 text-accent" />
-                Sessões de Hoje
+                {t('progress.todaySessions')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -428,7 +428,7 @@ const ProgressPage: React.FC = () => {
                           <Clock className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{session.subject_name || 'Sem matéria'}</p>
+                          <p className="text-sm font-medium">{session.subject_name || t('progress.noSubject')}</p>
                           <p className="text-xs text-muted-foreground">
                             {session.duration_minutes} min • {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -440,12 +440,12 @@ const ProgressPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Total de hoje</span>
+                        <span className="text-sm font-medium">{t('progress.todayTotal')}</span>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-primary">{stats.totalStudyTime} minutos</p>
+                        <p className="text-sm font-bold text-primary">{stats.totalStudyTime} {t('progress.minutes')}</p>
                         <p className="text-xs text-muted-foreground">
-                          {stats.dailySessions.length} {stats.dailySessions.length === 1 ? 'sessão' : 'sessões'}
+                          {t('progress.session', { count: stats.dailySessions.length })}
                         </p>
                       </div>
                     </div>
@@ -454,8 +454,8 @@ const ProgressPage: React.FC = () => {
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <Clock className="mx-auto h-12 w-12 opacity-50 mb-3" />
-                  <p className="text-sm">Nenhuma sessão de estudo registrada hoje</p>
-                  <p className="text-xs mt-1">Inicie uma sessão no Timer para começar!</p>
+                  <p className="text-sm">{t('progress.noSessionsToday')}</p>
+                  <p className="text-xs mt-1">{t('progress.startSessionHint')}</p>
                 </div>
               )}
             </CardContent>
@@ -553,7 +553,7 @@ const ProgressPage: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Target className="h-5 w-5 text-accent" />
-                Exercícios Resolvidos por Dia
+                {t('progress.exercisesResolvedByDay')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -602,9 +602,9 @@ const ProgressPage: React.FC = () => {
                 </CardTitle>
                 <Tabs value={subjectMetric} onValueChange={(value) => setSubjectMetric(value as SubjectMetric)} className="w-auto">
                   <TabsList className="grid grid-cols-3 h-8">
-                    <TabsTrigger value="time" className="text-xs">Tempo</TabsTrigger>
-                    <TabsTrigger value="pages" className="text-xs">Páginas</TabsTrigger>
-                    <TabsTrigger value="exercises" className="text-xs">Exercícios</TabsTrigger>
+                    <TabsTrigger value="time" className="text-xs">{t('progress.studyTime')}</TabsTrigger>
+                    <TabsTrigger value="pages" className="text-xs">{t('progress.pagesRead')}</TabsTrigger>
+                    <TabsTrigger value="exercises" className="text-xs">{t('progress.exercises')}</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -630,7 +630,7 @@ const ProgressPage: React.FC = () => {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value) => [`${value}%`, `${subjectMetricLabel} por matéria`]}
+                        formatter={(value) => [`${value}%`, `${subjectMetricLabel} ${t('progress.bySubject')}`]}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
@@ -680,16 +680,16 @@ const ProgressPage: React.FC = () => {
                 </CardTitle>
                 <Tabs value={subjectMetric} onValueChange={(value) => setSubjectMetric(value as SubjectMetric)} className="w-auto">
                   <TabsList className="grid grid-cols-3 h-8">
-                    <TabsTrigger value="time" className="text-xs">Tempo</TabsTrigger>
-                    <TabsTrigger value="pages" className="text-xs">Páginas</TabsTrigger>
-                    <TabsTrigger value="exercises" className="text-xs">Exercícios</TabsTrigger>
+                    <TabsTrigger value="time" className="text-xs">{t('progress.studyTime')}</TabsTrigger>
+                    <TabsTrigger value="pages" className="text-xs">{t('progress.pagesRead')}</TabsTrigger>
+                    <TabsTrigger value="exercises" className="text-xs">{t('progress.exercises')}</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground py-6">
-                Sem dados de {subjectMetricLabel.toLowerCase()} por matéria neste período.
+                {t('progress.noDataForSubject', { metric: subjectMetricLabel.toLowerCase() })}
               </div>
             </CardContent>
           </Card>

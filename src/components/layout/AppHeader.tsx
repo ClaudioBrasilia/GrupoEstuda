@@ -66,7 +66,7 @@ const AppHeader: React.FC = () => {
       }
 
       await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
-      alert('Link copiado para a área de transferência!');
+      alert(t('app.linkCopied'));
     } catch (error) {
       console.error('Erro ao compartilhar:', error);
     }
@@ -114,7 +114,7 @@ const AppHeader: React.FC = () => {
               variant="ghost"
               size="icon"
               className="text-foreground hover:bg-primary/10 transition-smooth"
-              aria-label="Idioma"
+              aria-label={t('language.title')}
             >
               <LanguagesIcon size={20} />
             </Button>
@@ -144,7 +144,7 @@ const AppHeader: React.FC = () => {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => navigate('/profile')}>{user.name}</DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/plans')}>{userPlanName}</DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>{t('settings.logout')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (

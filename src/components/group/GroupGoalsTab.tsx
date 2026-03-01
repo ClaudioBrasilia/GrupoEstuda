@@ -124,7 +124,7 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
     
     const amount = parsePositiveNumber(additionalTarget);
     if (!amount) {
-      toast.error('O valor deve ser maior que zero');
+      toast.error(t('goals.invalidAmount'));
       return;
     }
     
@@ -267,14 +267,14 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
                             className="cursor-pointer"
                           >
                             <TrendingUp className="mr-2 h-4 w-4" />
-                            Aumentar Meta
+                            {t('goals.increaseTarget', 'Aumentar Meta')}
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => openDeleteDialog(goal.id)}
                             className="cursor-pointer text-red-600"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir Meta
+                            {t('goals.deleteGoal', 'Excluir Meta')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -319,9 +319,9 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Excluir
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -331,7 +331,7 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
       <Dialog open={increaseTargetDialogOpen} onOpenChange={setIncreaseTargetDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Aumentar Meta</DialogTitle>
+            <DialogTitle>{t('goals.increaseTarget', 'Aumentar Meta')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleIncreaseTarget} className="space-y-4">
             <div>

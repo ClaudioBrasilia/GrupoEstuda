@@ -27,10 +27,10 @@ const VESTIBULAR_GROUP_ID = 'b47ac10b-58cc-4372-a567-0e02b2c3d479';
 // Schema validation for group creation
 const createGroupSchema = z.object({
   name: z.string()
-    .min(3, 'Nome do grupo deve ter pelo menos 3 caracteres')
-    .max(50, 'Nome do grupo não pode ter mais de 50 caracteres'),
+    .min(3, t('groups.validation.nameMin', 'Nome do grupo deve ter pelo menos 3 caracteres'))
+    .max(50, t('groups.validation.nameMax', 'Nome do grupo não pode ter mais de 50 caracteres')),
   description: z.string()
-    .max(200, 'Descrição não pode ter mais de 200 caracteres')
+    .max(200, t('groups.validation.descriptionMax', 'Descrição não pode ter mais de 200 caracteres'))
     .optional()
 });
 
@@ -57,7 +57,7 @@ const CreateGroupForm: React.FC<{ onCreateGroup: (name: string, description: str
       await onCreateGroup(data.name, data.description || '');
       form.reset();
     } catch (error: unknown) {
-      setErrorMessage(error instanceof Error ? error.message : 'Erro ao criar grupo. Tente novamente.');
+      setErrorMessage(error instanceof Error ? error.message : t('groups.error.create', 'Erro ao criar grupo. Tente novamente.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -79,10 +79,10 @@ const CreateGroupForm: React.FC<{ onCreateGroup: (name: string, description: str
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nome do Grupo</FormLabel>
+                <FormLabel>{t('groups.form.name', 'Nome do Grupo')}</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="Digite o nome do grupo" 
+                    placeholder={t('groups.form.namePlaceholder', 'Digite o nome do grupo')} 
                     {...field} 
                   />
                 </FormControl>
@@ -96,10 +96,10 @@ const CreateGroupForm: React.FC<{ onCreateGroup: (name: string, description: str
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Descrição (opcional)</FormLabel>
+                <FormLabel>{t('groups.form.description', 'Descrição (opcional)')}</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="Descreva seu grupo de estudo" 
+                    placeholder={t('groups.form.descriptionPlaceholder', 'Descreva seu grupo de estudo')} 
                     {...field} 
                   />
                 </FormControl>
@@ -113,7 +113,7 @@ const CreateGroupForm: React.FC<{ onCreateGroup: (name: string, description: str
             className="w-full bg-study-primary"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Criando...' : 'Criar Grupo'}
+            {isSubmitting ? t('loading') : t('groups.create')}
           </Button>
         </form>
       </Form>
@@ -136,7 +136,7 @@ const Groups: React.FC = () => {
     if (result.success) {
       setOpen(false);
       navigate(`/group/${result.groupId}`);
-      toast.success('Grupo criado com sucesso!');
+      toast.success(t('groups.success.create', 'Grupo criado com sucesso!'));
     } else {
       if (result.error === 'Criar grupos requer uma assinatura paga') {
         setOpen(false);
@@ -151,7 +151,7 @@ const Groups: React.FC = () => {
   const handleGroupClick = async (group: Group) => {
     // Premium gating for premium groups
     if (group.isPremium && user?.plan !== 'premium') {
-      toast.error('Este é um grupo exclusivo para usuários Premium');
+      toast.error(t('groups.error.premiumOnly', 'Este é um grupo exclusivo para usuários Premium'));
       navigate('/plans');
       return;
     }
@@ -159,14 +159,14 @@ const Groups: React.FC = () => {
     // Special case: Vestibular Brasil group (premium-only join allowed)
     if (group.id === VESTIBULAR_GROUP_ID) {
       if (user?.plan !== 'premium') {
-        toast.error('Este é um grupo exclusivo para usuários Premium');
+        toast.error(t('groups.error.premiumOnly', 'Este é um grupo exclusivo para usuários Premium'));
         navigate('/plans');
         return;
       }
       if (!group.isMember) {
         const result = await joinGroup(group.id);
         if (result.success) {
-          toast.success('Você entrou no grupo!');
+          toast.success(t('groups.success.join', 'Você entrou no grupo!'));
         } else {
           toast.error(result.error);
           return;
@@ -178,7 +178,7 @@ const Groups: React.FC = () => {
 
     // Other groups: only allow access if already a member
     if (!group.isMember) {
-      toast.error('Você não faz parte deste grupo');
+      toast.error(t('groups.error.notMember', 'Você não faz parte deste grupo'));
       return;
     }
 
@@ -196,7 +196,7 @@ const Groups: React.FC = () => {
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-study-primary mx-auto mb-2"></div>
-            <p className="text-gray-500">Carregando grupos...</p>
+            <p className="text-gray-500">{t('loading')}</p>
           </div>
         </div>
       </PageLayout>
@@ -225,7 +225,7 @@ const Groups: React.FC = () => {
                 <Button 
                   onClick={() => {
                     if (user?.plan !== 'premium') {
-                      toast.error('Recurso exclusivo para usuários Premium');
+                      toast.error(t('aiTests.premiumFeature'));
                       navigate('/plans');
                       return;
                     }
@@ -235,13 +235,13 @@ const Groups: React.FC = () => {
                   className="flex items-center gap-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-950"
                 >
                   <FileText size={18} />
-                  <span>Criar Teste IA</span>
+                  <span>{t('aiTests.generate')}</span>
                   <Crown size={14} className="text-yellow-500" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Gere testes personalizados com Inteligência Artificial</p>
-                <p className="text-xs text-yellow-600 dark:text-yellow-500">🔒 Exclusivo Premium</p>
+                <p>{t('aiTests.generateDescription', 'Gere testes personalizados com Inteligência Artificial')}</p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-500">🔒 {t('aiTests.premiumFeature')}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -251,7 +251,7 @@ const Groups: React.FC = () => {
             <DialogTrigger asChild>
               <Button className="bg-study-primary flex items-center gap-2">
                 <Plus size={18} />
-                <span>Criar Grupo</span>
+                <span>{t('groups.create')}</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -266,13 +266,13 @@ const Groups: React.FC = () => {
 
       {/* Atividades Recentes */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">🔥 Atividades Recentes</h2>
+        <h2 className="text-xl font-semibold mb-4">🔥 {t('groups.recentActivities', 'Atividades Recentes')}</h2>
         <GlobalActivityFeed />
       </div>
 
       {/* Lista de Grupos */}
       <div className="mb-4">
-        <h2 className="text-xl font-semibold mb-4">📚 Grupos Disponíveis</h2>
+        <h2 className="text-xl font-semibold mb-4">📚 {t('groups.availableGroups', 'Grupos Disponíveis')}</h2>
       </div>
       
       <div className="space-y-3">
@@ -289,7 +289,7 @@ const Groups: React.FC = () => {
                 </h3>
                 <div className="flex gap-1">
                   {group.isMember && (
-                    <Badge variant="secondary">Membro</Badge>
+                    <Badge variant="secondary">{t('groups.member', 'Membro')}</Badge>
                   )}
                 </div>
               </div>

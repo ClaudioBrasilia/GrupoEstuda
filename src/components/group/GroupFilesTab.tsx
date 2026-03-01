@@ -28,7 +28,7 @@ const GroupFilesTab: React.FC<GroupFilesTabProps> = ({ groupId }) => {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast.error('Por favor, selecione um arquivo');
+      toast.error(t('files.selectFile'));
       return;
     }
 
@@ -36,9 +36,9 @@ const GroupFilesTab: React.FC<GroupFilesTabProps> = ({ groupId }) => {
     if (result.success) {
       setSelectedFile(null);
       setUploadDialogOpen(false);
-      toast.success('Arquivo enviado com sucesso!');
+      toast.success(t('files.uploadSuccess'));
     } else {
-      toast.error(result.error || 'Erro ao fazer upload');
+      toast.error(result.error || t('files.uploadError'));
     }
   };
 
@@ -47,7 +47,7 @@ const GroupFilesTab: React.FC<GroupFilesTabProps> = ({ groupId }) => {
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-study-primary mx-auto mb-2"></div>
-          <p className="text-gray-500">Carregando arquivos...</p>
+          <p className="text-gray-500">{t('loading')}</p>
         </div>
       </div>
     );
@@ -61,12 +61,12 @@ const GroupFilesTab: React.FC<GroupFilesTabProps> = ({ groupId }) => {
           <DialogTrigger asChild>
             <Button size="sm" className="bg-study-primary">
               <Plus className="w-4 h-4 mr-2" />
-              Enviar Arquivo
+              {t('files.upload')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Enviar Arquivo</DialogTitle>
+              <DialogTitle>{t('files.upload')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -77,20 +77,20 @@ const GroupFilesTab: React.FC<GroupFilesTabProps> = ({ groupId }) => {
                 />
                 {selectedFile && (
                   <p className="text-sm text-gray-500 mt-2">
-                    Arquivo selecionado: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                    {t('files.selectedFile')}: {selectedFile.name} ({formatFileSize(selectedFile.size)})
                   </p>
                 )}
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
-                  Cancelar
+                  {t('common.cancel', 'Cancelar')}
                 </Button>
                 <Button 
                   onClick={handleUpload} 
                   disabled={!selectedFile || uploading}
                   className="bg-study-primary"
                 >
-                  {uploading ? 'Enviando...' : 'Enviar'}
+                  {uploading ? t('files.uploading') : t('files.upload')}
                 </Button>
               </div>
             </div>
@@ -108,7 +108,7 @@ const GroupFilesTab: React.FC<GroupFilesTabProps> = ({ groupId }) => {
                   <div>
                     <h4 className="font-medium">{file.file_name}</h4>
                     <p className="text-sm text-gray-500">
-                      Enviado por {file.user_name} • {formatFileSize(file.file_size)}
+                      {t('files.uploadedBy', 'Enviado por')} {file.user_name} • {formatFileSize(file.file_size)}
                     </p>
                     <p className="text-xs text-gray-400">
                       {file.created_at.toLocaleDateString()} às {file.created_at.toLocaleTimeString()}
@@ -117,7 +117,7 @@ const GroupFilesTab: React.FC<GroupFilesTabProps> = ({ groupId }) => {
                 </div>
                 <div className="flex items-center space-x-2">
                   {file.user_id === user?.id && (
-                    <Badge variant="secondary">Seu arquivo</Badge>
+                    <Badge variant="secondary">{t('files.yourFile', 'Seu arquivo')}</Badge>
                   )}
                   <Button
                     size="sm"
@@ -143,8 +143,8 @@ const GroupFilesTab: React.FC<GroupFilesTabProps> = ({ groupId }) => {
         ) : (
           <div className="text-center py-8">
             <File className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum arquivo ainda</h3>
-            <p className="text-gray-500">Seja o primeiro a compartilhar um arquivo com o grupo.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('files.noFiles')}</h3>
+            <p className="text-gray-500">{t('files.uploadFirst')}</p>
           </div>
         )}
       </div>

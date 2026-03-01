@@ -3,9 +3,19 @@
     "name": "Grupo Estuda",
     "slogan": "Alcance suas metas de estudo junto com seus amigos",
     "share": "Compartilhar",
-    "shareMessage": "Junte-se a mim no Grupo Estuda! Vamos alcançar nossas metas de estudo juntos."
+    "shareMessage": "Junte-se a mim no Grupo Estuda! Vamos alcançar nossas metas de estudo juntos.",
+    "linkCopied": "Link copiado para a área de transferência!"
   },
   "loading": "Carregando...",
+  "common": {
+    "error": "Erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar"
+  },
   "navigation": {
     "groups": "Grupos",
     "progress": "Progresso",
@@ -132,6 +142,8 @@
     "reviewWrong": "Revisar Questões Erradas",
     "unansweredWarning": "Você deixou {{count}} questão(ões) sem resposta! Deseja submeter mesmo assim?",
     "correctionSuccess": "Teste corrigido! Você acertou {{correct}} de {{total}} questões.",
+    "isCorrect": "Correta",
+    "isWrong": "Errada",
     "correctAnswer": "Resposta correta",
     "yourAnswer": "Sua resposta",
     "invalidQuestions": "Algumas questões foram geradas incorretamente. Por favor, tente gerar novamente.",
@@ -190,7 +202,8 @@
     "delete": "Excluir",
     "confirmDelete": "Tem certeza que deseja excluir este arquivo?",
     "deleteSuccess": "Arquivo excluído com sucesso!",
-    "deleteError": "Erro ao excluir arquivo"
+    "deleteError": "Erro ao excluir arquivo",
+    "yourFile": "Seu arquivo"
   },
   "goals": {
     "title": "Metas do Grupo",
@@ -311,6 +324,17 @@
     "studyTime": "Tempo de Estudo",
     "exercises": "Exercícios",
     "awards": "Conquistas",
+    "remainingGoals": "Metas Restantes",
+    "remaining": "Faltam {{count}}",
+    "goalMet": "Meta batida!",
+    "noGoalsToday": "Nenhuma meta definida para hoje",
+    "noSubject": "Sem matéria",
+    "studyTimeBySubject": "Tempo de Estudo por Matéria",
+    "pagesReadBySubject": "Páginas Lidas por Matéria",
+    "exercisesBySubject": "Exercícios por Matéria",
+    "exercisesResolvedByDay": "Exercícios Resolvidos por Dia",
+    "bySubject": "por matéria",
+    "noDataForSubject": "Sem dados de {{metric}} por matéria neste período.",
     "studyStreak": "Sequência de Estudos",
     "minutes": "min",
     "days": "dias",
