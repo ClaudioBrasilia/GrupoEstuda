@@ -1,11 +1,21 @@
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Clock, BookOpen, TrendingUp, Camera } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { GoalType } from '@/types/groupTypes';
 import { useNavigate } from 'react-router-dom';
 import { useStudyActivities } from '@/hooks/useStudyActivities';
 import { ActivityCard } from './ActivityCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+
+
+interface RecentSessionActivity {
+  id: string;
+  userName: string;
+  happenedAt: string;
+}
 
 interface GroupOverviewTabProps {
   goals: GoalType[];
@@ -13,8 +23,6 @@ interface GroupOverviewTabProps {
   onViewAllGoals: () => void;
   groupId: string;
 }
-
-const RECENT_ACTIVITY_ITEMS = [1, 2, 3] as const;
 
 const getGoalTypeLabel = (type: GoalType['type']) => {
   switch (type) {
@@ -43,6 +51,68 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
 
   const recentActivities = useMemo(() => activities.slice(0, 3), [activities]);
   const overviewGoals = useMemo(() => goals.slice(0, 2), [goals]);
+  const [recentSessions, setRecentSessions] = useState<RecentSessionActivity[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchRecentSessions = async () => {
+      const { data: sessions } = await supabase
+        .from('study_sessions')
+        .select('id, user_id, completed_at')
+        .eq('group_id', groupId)
+        .not('completed_at', 'is', null)
+        .order('completed_at', { ascending: false })
+        .limit(3);
+
+      const sessionRows = sessions || [];
+      if (sessionRows.length === 0) {
+        if (isMounted) setRecentSessions([]);
+        return;
+      }
+
+      const userIds = Array.from(new Set(sessionRows.map((session) => session.user_id)));
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds);
+
+      const profileById = new Map((profiles || []).map((profile) => [profile.id, profile.name]));
+
+      const formatted: RecentSessionActivity[] = sessionRows.map((session) => ({
+        id: session.id,
+        userName: profileById.get(session.user_id) || 'Usuário',
+        happenedAt: session.completed_at ?? new Date().toISOString()
+      }));
+
+      if (isMounted) {
+        setRecentSessions(formatted);
+      }
+    };
+
+    void fetchRecentSessions();
+
+    const channel = supabase
+      .channel(`group-overview-sessions:${groupId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'study_sessions',
+          filter: `group_id=eq.${groupId}`
+        },
+        () => {
+          void fetchRecentSessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [groupId]);
 
   const handleViewProgress = useCallback(() => {
     navigate(`/group/${groupId}/progress`);
@@ -96,15 +166,21 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
         </div>
 
         <div className="space-y-3">
-          {RECENT_ACTIVITY_ITEMS.map((item) => (
-            <div key={item} className="flex items-start space-x-3">
-              <Clock size={18} className="text-gray-400 mt-1" />
-              <div>
-                <p className="text-sm font-medium">Usuário completou uma sessão de estudo</p>
-                <p className="text-xs text-gray-500">2 horas atrás</p>
+          {recentSessions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sem sessões recentes dos participantes.</p>
+          ) : (
+            recentSessions.map((session) => (
+              <div key={session.id} className="flex items-start space-x-3">
+                <Clock size={18} className="text-gray-400 mt-1" />
+                <div>
+                  <p className="text-sm font-medium">{session.userName} completou uma sessão de estudo</p>
+                  <p className="text-xs text-gray-500">
+                    {formatDistanceToNow(new Date(session.happenedAt), { addSuffix: true, locale: ptBR })}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { useProgressData } from '@/hooks/useProgressData';
+import { SubjectMetric, useProgressData } from '@/hooks/useProgressData';
 import { useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +21,7 @@ const ProgressPage: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [resolvedGroupId, setResolvedGroupId] = useState<string | undefined>(undefined);
   const [availableGroups, setAvailableGroups] = useState<Array<{ id: string; name: string }>>([]);
+  const [subjectMetric, setSubjectMetric] = useState<SubjectMetric>('time');
   const { t } = useTranslation();
   const { user } = useAuth();
   const params = useParams();
@@ -140,7 +141,8 @@ const ProgressPage: React.FC = () => {
   const { stats, loading, refreshData } = useProgressData(
     view === 'group' ? groupId : undefined,
     timeRange as 'day' | 'week' | 'month' | 'year',
-    groupId
+    groupId,
+    subjectMetric
   );
 
   useEffect(() => {
@@ -168,6 +170,13 @@ const ProgressPage: React.FC = () => {
       remaining
     };
   });
+
+
+  const subjectMetricLabel = {
+    time: 'Tempo',
+    pages: 'Páginas',
+    exercises: 'Exercícios'
+  }[subjectMetric];
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -287,19 +296,19 @@ const ProgressPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="border-l-4 border-l-secondary bg-gradient-to-br from-background to-background/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('progress.studyTime')}</p>
-                  <div className="text-2xl font-bold text-secondary">{stats.totalStudyTime} min</div>
+                  <div className="text-2xl font-bold text-secondary">{stats.totalStudyTime}m</div>
                 </div>
                 <Clock className="h-8 w-8 text-secondary opacity-80" />
               </div>
             </CardContent>
           </Card>
-
+          
           <Card className="border-l-4 border-l-accent bg-gradient-to-br from-background to-background/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -311,175 +320,130 @@ const ProgressPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-l-4 border-l-destructive bg-gradient-to-br from-background to-background/50">
+          
+          <Card className="border-l-4 border-l-yellow-500 bg-gradient-to-br from-background to-background/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('progress.studyStreak')}</p>
-                  <div className="flex items-center gap-1">
-                    <span className="text-2xl font-bold text-destructive">{stats.studyStreak}</span>
-                    <Calendar className="h-5 w-5 text-destructive" />
-                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">{t('progress.awards')}</p>
+                  <div className="text-2xl font-bold text-yellow-500">{stats.awardsCount}</div>
                 </div>
-                <Award className="h-8 w-8 text-destructive opacity-80" />
+                <Award className="h-8 w-8 text-yellow-500 opacity-80" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Goals Progress */}
-        {stats.goalsProgress.length > 0 && (
-          <Card className="bg-gradient-to-r from-primary/5 to-secondary/5 border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
-                {view === 'group' ? 'Progresso das Metas do Grupo' : 'Meu Progresso nas Metas do Grupo'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {stats.goalsProgress.map((goal) => (
-                <div key={goal.id} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-medium">{goal.subject}</span>
-                      <span className="text-sm text-muted-foreground ml-2">
-                        ({goal.type === 'time' ? 'Tempo' : goal.type === 'pages' ? 'Páginas' : 'Exercícios'})
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">{goal.current}/{goal.target}</span>
-                  </div>
-                  <Progress value={goal.progress} className="h-2" />
-                  <div className="text-right">
-                    <Badge variant="outline" className="text-[10px] h-5">
-                      {goal.progress}% concluído
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-        
-        {timeRange === 'day' && stats.dailySessions && (
+        {timeRange === 'day' && (
           <>
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    Atividades Realizadas Hoje
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={dayActivitiesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
-                        <XAxis
-                          dataKey="name"
-                          fontSize={12}
-                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                        />
-                        <YAxis
-                          fontSize={12}
-                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                        />
-                        <Tooltip
-                          formatter={(value) => [`${value}`, 'Quantidade']}
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--card))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Bar dataKey="value" radius={[4, 4, 0, 0]} className="hover:opacity-80 transition-opacity">
-                          {dayActivitiesData.map((entry) => (
-                            <Cell key={entry.name} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Atividades de Hoje
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dayActivitiesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
+                      <XAxis 
+                        dataKey="name" 
+                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis 
+                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="value" 
+                        radius={[4, 4, 0, 0]}
+                        className="hover:opacity-80 transition-opacity"
+                      >
+                        {dayActivitiesData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Target className="h-5 w-5 text-accent" />
-                    Quanto Falta para as Metas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+            <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-5 w-5 text-secondary" />
+                  Metas Restantes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
                   {remainingGoals.length > 0 ? (
-                    <div className="space-y-3">
-                      {remainingGoals.map((goal) => (
-                        <div key={goal.id} className="rounded-lg bg-muted/30 p-3 flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{goal.subject}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {goal.type === 'time' ? 'Tempo' : goal.type === 'pages' ? 'Páginas' : 'Exercícios'}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-sm">Faltam {goal.remaining} {goal.type === 'time' ? 'min' : goal.type === 'pages' ? 'páginas' : 'exercícios'}</p>
-                            <p className="text-xs text-muted-foreground">{goal.current}/{goal.target}</p>
-                          </div>
+                    remainingGoals.map((goal) => (
+                      <div key={goal.id} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium">{goal.title}</span>
+                          <span className="text-muted-foreground">
+                            {goal.remaining > 0 ? `Faltam ${goal.remaining}` : 'Meta batida!'}
+                          </span>
                         </div>
-                      ))}
-                    </div>
+                        <Progress value={(goal.current / goal.target) * 100} className="h-2" />
+                      </div>
+                    ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">Nenhuma meta ativa para este grupo.</p>
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>Nenhuma meta definida para hoje</p>
+                    </div>
                   )}
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-            <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Sessões de Estudo de Hoje
+          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5 text-accent" />
+                Sessões de Hoje
               </CardTitle>
             </CardHeader>
             <CardContent>
               {stats.dailySessions.length > 0 ? (
-                <div className="space-y-3">
-                  {stats.dailySessions.map((session) => (
-                    <div 
-                      key={session.id} 
-                      className="flex items-center justify-between p-4 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: session.subjectColor }}
-                        ></div>
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {stats.dailySessions.map((session, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Clock className="h-5 w-5 text-primary" />
+                        </div>
                         <div>
-                          <p className="font-medium text-sm">{session.subject}</p>
+                          <p className="text-sm font-medium">{session.subject_name || 'Sem matéria'}</p>
                           <p className="text-xs text-muted-foreground">
-                            {session.startTime} - {session.endTime}
+                            {session.duration_minutes} min • {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-primary">{session.duration} min</p>
-                        <p className="text-xs text-muted-foreground">
-                          {Math.floor(session.duration / 5) * 2} páginas
-                        </p>
+                    ))}
+                  </div>
+                  <div className="pt-4 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Total de hoje</span>
                       </div>
-                    </div>
-                  ))}
-                  
-                  <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Total de Hoje</span>
                       <div className="text-right">
-                        <p className="font-bold text-lg text-primary">{stats.totalStudyTime} min</p>
-                        <p className="text-xs text-muted-foreground">
-                          {stats.totalPages} páginas • {stats.totalExercises} exercícios
-                        </p>
+                        <p className="text-sm font-bold text-primary">{stats.totalStudyTime} minutos</p>
                         <p className="text-xs text-muted-foreground">
                           {stats.dailySessions.length} {stats.dailySessions.length === 1 ? 'sessão' : 'sessões'}
                         </p>
@@ -630,11 +594,20 @@ const ProgressPage: React.FC = () => {
         
         {stats.subjectData.length > 0 && (
           <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="h-5 w-5 text-accent" />
-                {t('progress.studyBySubject')}
-              </CardTitle>
+            <CardHeader className="pb-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-5 w-5 text-accent" />
+                  {t('progress.studyBySubject')}
+                </CardTitle>
+                <Tabs value={subjectMetric} onValueChange={(value) => setSubjectMetric(value as SubjectMetric)} className="w-auto">
+                  <TabsList className="grid grid-cols-3 h-8">
+                    <TabsTrigger value="time" className="text-xs">Tempo</TabsTrigger>
+                    <TabsTrigger value="pages" className="text-xs">Páginas</TabsTrigger>
+                    <TabsTrigger value="exercises" className="text-xs">Exercícios</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid lg:grid-cols-2 gap-6 items-center">
@@ -657,7 +630,7 @@ const ProgressPage: React.FC = () => {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value) => [`${value}%`, 'Percentagem']}
+                        formatter={(value) => [`${value}%`, `${subjectMetricLabel} por matéria`]}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
@@ -669,7 +642,7 @@ const ProgressPage: React.FC = () => {
                 </div>
                 
                 <div className="space-y-3">
-                  {stats.subjectData.map((subject, index) => (
+                  {stats.subjectData.map((subject) => (
                     <div key={subject.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                       <div className="flex items-center gap-2">
                         <div 
@@ -692,6 +665,31 @@ const ProgressPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {stats.subjectData.length === 0 && (
+          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+            <CardHeader className="pb-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-5 w-5 text-accent" />
+                  {t('progress.studyBySubject')}
+                </CardTitle>
+                <Tabs value={subjectMetric} onValueChange={(value) => setSubjectMetric(value as SubjectMetric)} className="w-auto">
+                  <TabsList className="grid grid-cols-3 h-8">
+                    <TabsTrigger value="time" className="text-xs">Tempo</TabsTrigger>
+                    <TabsTrigger value="pages" className="text-xs">Páginas</TabsTrigger>
+                    <TabsTrigger value="exercises" className="text-xs">Exercícios</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground py-6">
+                Sem dados de {subjectMetricLabel.toLowerCase()} por matéria neste período.
               </div>
             </CardContent>
           </Card>

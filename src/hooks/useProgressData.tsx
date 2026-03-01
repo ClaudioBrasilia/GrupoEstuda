@@ -61,6 +61,8 @@ export interface SubjectProgressData {
   color: string;
 }
 
+export type SubjectMetric = 'time' | 'pages' | 'exercises';
+
 export interface GoalProgressData {
   id: string;
   type: string;
@@ -78,7 +80,8 @@ const getSessionExercises = (session: StudySessionWithSubject) => session.exerci
 export function useProgressData(
   groupId?: string,
   timeRange: ProgressRange = 'week',
-  goalsGroupIdFallback?: string
+  goalsGroupIdFallback?: string,
+  subjectMetric: SubjectMetric = 'time'
 ) {
   const [stats, setStats] = useState<ProgressStats>({
     totalStudyTime: 0,
@@ -167,12 +170,21 @@ export function useProgressData(
     return data;
   }, []);
 
-  const fetchSubjectProgress = useCallback(async (sessions: StudySessionWithSubject[]): Promise<SubjectProgressData[]> => {
+  const fetchSubjectProgress = useCallback(async (
+    sessions: StudySessionWithSubject[],
+    metric: SubjectMetric
+  ): Promise<SubjectProgressData[]> => {
     const subjectStats: Record<string, number> = {};
 
-    sessions.forEach(session => {
+    sessions.forEach((session) => {
       const subjectName = session.subjects?.name || 'Outros';
-      subjectStats[subjectName] = (subjectStats[subjectName] || 0) + session.duration_minutes;
+      const metricValue = metric === 'pages'
+        ? getSessionPages(session)
+        : metric === 'exercises'
+          ? getSessionExercises(session)
+          : session.duration_minutes;
+
+      subjectStats[subjectName] = (subjectStats[subjectName] || 0) + metricValue;
     });
 
     const total = Object.values(subjectStats).reduce((sum, value) => sum + value, 0);
@@ -365,7 +377,7 @@ export function useProgressData(
       const totalPages = sessionPages + eventPages;
       const totalExercises = sessionExercises + eventExercises;
       const studyStreak = await calculateStudyStreak(groupId);
-      const subjectData = await fetchSubjectProgress(filteredSessions);
+      const subjectData = await fetchSubjectProgress(filteredSessions, subjectMetric);
 
       const goalsProgress = goalsScopeGroupId ? await fetchGoalsProgress(goalsScopeGroupId) : [];
       const dailySessions = timeRange === 'day' ? await fetchDailySessions(groupId) : [];
@@ -394,7 +406,8 @@ export function useProgressData(
     calculateStudyStreak,
     fetchSubjectProgress,
     fetchGoalsProgress,
-    fetchDailySessions
+    fetchDailySessions,
+    subjectMetric
   ]);
 
   const scheduleRefresh = useCallback(() => {
