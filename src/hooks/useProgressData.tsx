@@ -31,6 +31,7 @@ export interface ProgressStats {
   totalStudyTime: number;
   totalPages: number;
   totalExercises: number;
+  awardsCount: number;
   studyStreak: number;
   weeklyData: WeeklyStudyData[];
   subjectData: SubjectProgressData[];
@@ -87,6 +88,7 @@ export function useProgressData(
     totalStudyTime: 0,
     totalPages: 0,
     totalExercises: 0,
+    awardsCount: 0,
     studyStreak: 0,
     weeklyData: [],
     subjectData: [],
@@ -378,6 +380,12 @@ export function useProgressData(
       const totalExercises = sessionExercises + eventExercises;
       const studyStreak = await calculateStudyStreak(groupId);
       const subjectData = await fetchSubjectProgress(filteredSessions, subjectMetric);
+      
+      const { data: userAchievements } = await supabase
+        .from('user_achievements')
+        .select('achievement_id')
+        .eq('user_id', user.id);
+      const awardsCount = userAchievements?.length || 0;
 
       const goalsProgress = goalsScopeGroupId ? await fetchGoalsProgress(goalsScopeGroupId) : [];
       const dailySessions = timeRange === 'day' ? await fetchDailySessions(groupId) : [];
@@ -386,6 +394,7 @@ export function useProgressData(
         totalStudyTime,
         totalPages,
         totalExercises,
+        awardsCount,
         studyStreak,
         weeklyData,
         subjectData,
