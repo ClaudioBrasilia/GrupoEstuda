@@ -32,7 +32,7 @@ export const useGroupInvitations = () => {
   const [pendingCount, setPendingCount] = useState(0);
 
   const fetchPendingInvitations = useCallback(async () => {
-    if (!user) return;
+    if (!user?.email) return;
 
     try {
       const normalizedEmail = user.email.toLowerCase();
@@ -46,6 +46,7 @@ export const useGroupInvitations = () => {
           )
         `)
         .eq('status', 'pending')
+        .eq('invitee_email', user.email.toLowerCase())
         .gt('expires_at', new Date().toISOString())
         .or(`invitee_id.eq.${user.id},invitee_email.eq.${normalizedEmail}`)
         .order('created_at', { ascending: false });
