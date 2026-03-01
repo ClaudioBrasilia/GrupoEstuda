@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface RecentSessionActivity {
   id: string;
   userName: string;
+  subjectName: string;
   happenedAt: string;
 }
 
@@ -59,11 +60,11 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
     const fetchRecentSessions = async () => {
       const { data: sessions } = await supabase
         .from('study_sessions')
-        .select('id, user_id, completed_at')
+        .select('id, user_id, completed_at, subject_id, subjects(name)')
         .eq('group_id', groupId)
         .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false })
-        .limit(3);
+        .limit(5);
 
       const sessionRows = sessions || [];
       if (sessionRows.length === 0) {
@@ -79,9 +80,10 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
 
       const profileById = new Map((profiles || []).map((profile) => [profile.id, profile.name]));
 
-      const formatted: RecentSessionActivity[] = sessionRows.map((session) => ({
+      const formatted: RecentSessionActivity[] = sessionRows.map((session: any) => ({
         id: session.id,
         userName: profileById.get(session.user_id) || 'Usuário',
+        subjectName: session.subjects?.name || 'Matéria Geral',
         happenedAt: session.completed_at ?? new Date().toISOString()
       }));
 
@@ -173,7 +175,9 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
               <div key={session.id} className="flex items-start space-x-3">
                 <Clock size={18} className="text-gray-400 mt-1" />
                 <div>
-                  <p className="text-sm font-medium">{session.userName} completou uma sessão de estudo</p>
+                  <p className="text-sm font-medium">
+                    {session.userName} completou uma sessão de {session.subjectName}
+                  </p>
                   <p className="text-xs text-gray-500">
                     {formatDistanceToNow(new Date(session.happenedAt), { addSuffix: true, locale: ptBR })}
                   </p>
