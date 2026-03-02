@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -10,7 +10,6 @@ export interface StudyActivity {
   group_name?: string;
   user_id: string;
   user_name: string;
-  user_plan?: string;
   subject_id: string | null;
   subject_name?: string;
   description: string;
@@ -28,25 +27,19 @@ export const useStudyActivities = (groupId?: string) => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  const fetchGlobalActivities = useCallback(async () => {
-    if (!user) return;
+  useEffect(() => {
+    if (user) {
+      if (groupId) {
+        fetchGroupActivities();
+      } else {
+        fetchGlobalActivities();
+      }
+    }
+  }, [user, groupId]);
 
+  const fetchGlobalActivities = async () => {
     try {
       setLoading(true);
-
-      // Primeiro, pegamos os IDs dos grupos que o usuário participa
-      const { data: userGroups } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_id', user.id);
-
-      const groupIds = userGroups?.map(g => g.group_id) || [];
-
-      if (groupIds.length === 0) {
-        setActivities([]);
-        setLoading(false);
-        return;
-      }
 
       const { data, error } = await supabase
         .from('study_activities')
@@ -56,7 +49,6 @@ export const useStudyActivities = (groupId?: string) => {
           subjects(name),
           study_activity_likes(id, user_id)
         `)
-        .in('group_id', groupIds)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -67,7 +59,7 @@ export const useStudyActivities = (groupId?: string) => {
           // Fetch user profile
           const { data: profile } = await supabase
             .from('profiles')
-            .select('name, plan')
+            .select('name')
             .eq('id', activity.user_id)
             .single();
 
@@ -76,7 +68,7 @@ export const useStudyActivities = (groupId?: string) => {
             .getPublicUrl(activity.photo_path);
 
           const userLiked = activity.study_activity_likes.some(
-            (like: { user_id: string }) => like.user_id === user?.id
+            (like: any) => like.user_id === user?.id
           );
 
           return {
@@ -85,7 +77,6 @@ export const useStudyActivities = (groupId?: string) => {
             group_name: activity.groups.name,
             user_id: activity.user_id,
             user_name: profile?.name || 'Usuário',
-            user_plan: profile?.plan || 'free',
             subject_id: activity.subject_id,
             subject_name: activity.subjects?.name || 'Matéria Geral',
             description: activity.description,
@@ -106,9 +97,9 @@ export const useStudyActivities = (groupId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  };
 
-  const fetchGroupActivities = useCallback(async () => {
+  const fetchGroupActivities = async () => {
     if (!groupId) return;
 
     try {
@@ -132,7 +123,7 @@ export const useStudyActivities = (groupId?: string) => {
           // Fetch user profile
           const { data: profile } = await supabase
             .from('profiles')
-            .select('name, plan')
+            .select('name')
             .eq('id', activity.user_id)
             .single();
 
@@ -141,7 +132,7 @@ export const useStudyActivities = (groupId?: string) => {
             .getPublicUrl(activity.photo_path);
 
           const userLiked = activity.study_activity_likes.some(
-            (like: { user_id: string }) => like.user_id === user?.id
+            (like: any) => like.user_id === user?.id
           );
 
           return {
@@ -149,7 +140,6 @@ export const useStudyActivities = (groupId?: string) => {
             group_id: activity.group_id,
             user_id: activity.user_id,
             user_name: profile?.name || 'Usuário',
-            user_plan: profile?.plan || 'free',
             subject_id: activity.subject_id,
             subject_name: activity.subjects?.name || 'Matéria Geral',
             description: activity.description,
@@ -170,58 +160,7 @@ export const useStudyActivities = (groupId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [groupId, user]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    if (groupId) {
-      void fetchGroupActivities();
-    } else {
-      void fetchGlobalActivities();
-    }
-
-    const channel = supabase
-      .channel('activities_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_activities',
-          ...(groupId ? { filter: `group_id=eq.${groupId}` } : {})
-        },
-        () => {
-          console.log('📡 Atividades de estudo atualizadas');
-          if (groupId) {
-            void fetchGroupActivities();
-          } else {
-            void fetchGlobalActivities();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'study_activity_likes'
-        },
-        () => {
-          console.log('📡 Likes de atividades atualizados');
-          if (groupId) {
-            void fetchGroupActivities();
-          } else {
-            void fetchGlobalActivities();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchGlobalActivities, fetchGroupActivities, groupId, user]);
+  };
 
   const compressImage = async (file: File): Promise<File> => {
     const options = {
@@ -353,9 +292,9 @@ export const useStudyActivities = (groupId?: string) => {
       }
 
       return { success: true, data };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('❌ Erro completo ao criar atividade:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao criar atividade';
+      const errorMessage = error.message || 'Erro desconhecido ao criar atividade';
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {

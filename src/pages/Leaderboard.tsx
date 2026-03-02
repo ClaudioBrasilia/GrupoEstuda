@@ -47,7 +47,7 @@ const Leaderboard: React.FC = () => {
             className="flex items-center gap-2"
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            {t('common.update', 'Atualizar')}
+            Atualizar
           </Button>
         </div>
         
@@ -114,11 +114,12 @@ const Leaderboard: React.FC = () => {
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
               <Trophy size={48} className="mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">{t('leaderboard.noData', 'Nenhum dado disponível')}</p>
+              <p className="text-lg font-medium mb-2">Nenhum dado disponível</p>
               <p className="text-sm">
-{leaderboardType === 'global' 
-	                  ? t('leaderboard.noGlobalData', 'Não há rankings globais ainda.')
-	                  : t('leaderboard.noGroupData', 'Não há rankings para este grupo ainda.')}
+                {leaderboardType === 'global' 
+                  ? 'Não há rankings globais ainda.'
+                  : 'Não há rankings para este grupo ainda.'
+                }
               </p>
             </CardContent>
           </Card>
@@ -147,11 +148,11 @@ const Leaderboard: React.FC = () => {
                       <div>
                         <div className="font-medium flex items-center gap-1.5">
                           {user.name}
-                          {user.plan === 'premium' && <PremiumBadge size="sm" />}
-                          {user.isCurrentUser && <span className="text-xs ml-1 text-primary">({t('leaderboard.you')})</span>}
+                          {(user as any).plan === 'premium' && <PremiumBadge size="sm" />}
+                          {user.isCurrentUser && <span className="text-xs ml-1 text-primary">(Você)</span>}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {user.points} {t('leaderboard.points')}
+                          {user.points} pontos
                         </div>
                       </div>
                     </div>

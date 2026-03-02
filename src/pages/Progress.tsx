@@ -158,9 +158,9 @@ const ProgressPage: React.FC = () => {
 
 
   const dayActivitiesData = [
-    { name: 'Tempo (min)', value: stats.totalStudyTime, color: 'hsl(var(--primary))' },
-    { name: 'Páginas', value: stats.totalPages, color: 'hsl(var(--secondary))' },
-    { name: 'Exercícios', value: stats.totalExercises, color: 'hsl(var(--accent))' }
+    { name: t('progress.studyTime'), value: stats.totalStudyTime, color: 'hsl(var(--primary))' },
+    { name: t('progress.pagesRead'), value: stats.totalPages, color: 'hsl(var(--secondary))' },
+    { name: t('progress.exercises'), value: stats.totalExercises, color: 'hsl(var(--accent))' }
   ];
 
   const remainingGoals = stats.goalsProgress.map((goal) => {
@@ -173,9 +173,9 @@ const ProgressPage: React.FC = () => {
 
 
   const subjectMetricLabel = {
-    time: 'Tempo',
-    pages: 'Páginas',
-    exercises: 'Exercícios'
+    time: t('progress.studyTime'),
+    pages: t('progress.pagesRead'),
+    exercises: t('progress.exercises')
   }[subjectMetric];
 
   const handleManualRefresh = async () => {
@@ -246,8 +246,8 @@ const ProgressPage: React.FC = () => {
                 {availableGroups.length > 0 && (
                   <TabsTrigger value="group" className="text-xs flex items-center gap-1">
                     <Target className="h-3 w-3" />
-{t('progress.group')}
-                    </TabsTrigger>
+                    {t('progress.group')}
+                  </TabsTrigger>
                 )}
               </TabsList>
             </Tabs>
@@ -261,7 +261,7 @@ const ProgressPage: React.FC = () => {
                 }}
               >
                 <SelectTrigger className="w-[180px] h-9">
-                  <SelectValue placeholder="Selecione um grupo" />
+                  <SelectValue placeholder={t('progress.selectGroup')} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableGroups.map((group) => (
@@ -276,8 +276,8 @@ const ProgressPage: React.FC = () => {
             <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
               <TabsList className="grid grid-cols-4 h-9">
                 <TabsTrigger value="day" className="text-xs">{t('progress.day')}</TabsTrigger>
-                <TabsTrigger value="week" className="text-xs">{t('leaderboard.week')}</TabsTrigger>
-                <TabsTrigger value="month" className="text-xs">{t('leaderboard.month')}</TabsTrigger>
+                <TabsTrigger value="week" className="text-xs">{t('progress.week')}</TabsTrigger>
+                <TabsTrigger value="month" className="text-xs">{t('progress.month')}</TabsTrigger>
                 <TabsTrigger value="year" className="text-xs">{t('progress.year')}</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -335,7 +335,6 @@ const ProgressPage: React.FC = () => {
         </div>
 
         {timeRange === 'day' && (
-          <>
           <div className="grid gap-6 lg:grid-cols-2">
             <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
               <CardHeader className="pb-3">
@@ -384,37 +383,67 @@ const ProgressPage: React.FC = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Target className="h-5 w-5 text-secondary" />
-                  {t('progress.remainingGoals')}
+                  {view === 'group' ? t('progress.groupGoalsProgress') : t('progress.remainingGoals')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {remainingGoals.length > 0 ? (
-                    remainingGoals.map((goal) => (
-                      <div key={goal.id} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium">{goal.title}</span>
-                          <span className="text-muted-foreground">
-                            {goal.remaining > 0 ? t('progress.remaining', { count: goal.remaining }) : t('progress.goalMet')}
-                          </span>
+                  {view === 'group' ? (
+                    stats.goalsProgress.length > 0 ? (
+                      stats.goalsProgress.map((goal) => (
+                        <div key={goal.id} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-medium">{goal.subject}</span>
+                              <span className="text-sm text-muted-foreground ml-2">
+                                ({goal.type === 'time' ? t('progress.studyTime') : goal.type === 'pages' ? t('progress.pagesRead') : t('progress.exercises')})
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium">{goal.current}/{goal.target}</span>
+                          </div>
+                          <Progress value={goal.progress} className="h-2" />
+                          <div className="text-right">
+                            <Badge variant={goal.progress >= 100 ? "default" : "secondary"} className="text-xs">
+                              {goal.progress}% {t('progress.complete')}
+                            </Badge>
+                          </div>
                         </div>
-                        <Progress value={(goal.current / goal.target) * 100} className="h-2" />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>{t('progress.noGoalsToday')}</p>
                       </div>
-                    ))
+                    )
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>{t('progress.noGoalsToday')}</p>
-                    </div>
+                    remainingGoals.length > 0 ? (
+                      remainingGoals.map((goal) => (
+                        <div key={goal.id} className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="font-medium">{goal.subject}</span>
+                            <span className="text-muted-foreground">
+                              {goal.remaining > 0 ? t('progress.remaining', { count: goal.remaining }) : t('progress.goalMet')}
+                            </span>
+                          </div>
+                          <Progress value={(goal.current / goal.target) * 100} className="h-2" />
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>{t('progress.noGoalsToday')}</p>
+                      </div>
+                    )
                   )}
                 </div>
               </CardContent>
             </Card>
           </div>
+        )}
 
+        {timeRange === 'day' && stats.dailySessions && (
           <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-accent" />
+                <Calendar className="h-5 w-5 text-primary" />
                 {t('progress.todaySessions')}
               </CardTitle>
             </CardHeader>
@@ -423,14 +452,14 @@ const ProgressPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {stats.dailySessions.map((session, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <div key={session.id || index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                           <Clock className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{session.subject_name || t('progress.noSubject')}</p>
+                          <p className="text-sm font-medium">{session.subject || t('progress.noSubject')}</p>
                           <p className="text-xs text-muted-foreground">
-                            {session.duration_minutes} min • {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {session.duration} min • {session.startTime}
                           </p>
                         </div>
                       </div>
@@ -445,7 +474,7 @@ const ProgressPage: React.FC = () => {
                       <div className="text-right">
                         <p className="text-sm font-bold text-primary">{stats.totalStudyTime} {t('progress.minutes')}</p>
                         <p className="text-xs text-muted-foreground">
-                          {t('progress.session', { count: stats.dailySessions.length })}
+                          {stats.dailySessions.length} {stats.dailySessions.length === 1 ? t('progress.session') : t('progress.sessions')}
                         </p>
                       </div>
                     </div>
@@ -460,136 +489,135 @@ const ProgressPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
-          </>
         )}
         
         {timeRange !== 'day' && (
           <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                {t('progress.studyTimeByDay')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
-                    <XAxis 
-                      dataKey="name" 
-                      fontSize={12}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => `${value}m`}
-                      fontSize={12}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <Tooltip 
-                      formatter={(value) => [`${value} minutos`, t('progress.studyTime')]} 
-                      labelFormatter={(label) => `${label}`}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Bar 
-                      dataKey="time" 
-                      fill="hsl(var(--primary))" 
-                      radius={[4, 4, 0, 0]} 
-                      className="hover:opacity-80 transition-opacity"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-secondary" />
-                {t('progress.pagesReadByDay')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
-                    <XAxis 
-                      dataKey="name" 
-                      fontSize={12}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis 
-                      fontSize={12}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <Tooltip 
-                      formatter={(value) => [`${value} páginas`, t('progress.pagesRead')]} 
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Bar 
-                      dataKey="pages" 
-                      fill="hsl(var(--secondary))" 
-                      radius={[4, 4, 0, 0]}
-                      className="hover:opacity-80 transition-opacity"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  {t('progress.studyTimeByDay')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
+                      <XAxis 
+                        dataKey="name" 
+                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis 
+                        tickFormatter={(value) => `${value}m`}
+                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <Tooltip 
+                        formatter={(value) => [`${value} minutos`, t('progress.studyTime')]} 
+                        labelFormatter={(label) => `${label}`}
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="time" 
+                        fill="hsl(var(--primary))" 
+                        radius={[4, 4, 0, 0]} 
+                        className="hover:opacity-80 transition-opacity"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-secondary" />
+                  {t('progress.pagesReadByDay')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
+                      <XAxis 
+                        dataKey="name" 
+                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis 
+                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <Tooltip 
+                        formatter={(value) => [`${value} páginas`, t('progress.pagesRead')]} 
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="pages" 
+                        fill="hsl(var(--secondary))" 
+                        radius={[4, 4, 0, 0]}
+                        className="hover:opacity-80 transition-opacity"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="h-5 w-5 text-accent" />
-                {t('progress.exercisesResolvedByDay')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
-                    <XAxis
-                      dataKey="name"
-                      fontSize={12}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <YAxis
-                      fontSize={12}
-                      tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    />
-                    <Tooltip
-                      formatter={(value) => [`${value} exercícios`, t('progress.exercises')]}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Bar
-                      dataKey="exercises"
-                      fill="hsl(var(--accent))"
-                      radius={[4, 4, 0, 0]}
-                      className="hover:opacity-80 transition-opacity"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-lg">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-5 w-5 text-accent" />
+                  {t('progress.exercisesResolvedByDay')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats.weeklyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} className="opacity-30" />
+                      <XAxis
+                        dataKey="name"
+                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis
+                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <Tooltip
+                        formatter={(value) => [`${value} exercícios`, t('progress.exercises')]}
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Bar
+                        dataKey="exercises"
+                        fill="hsl(var(--accent))"
+                        radius={[4, 4, 0, 0]}
+                        className="hover:opacity-80 transition-opacity"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
         
         {stats.subjectData.length > 0 && (
@@ -630,7 +658,7 @@ const ProgressPage: React.FC = () => {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value) => [`${value}%`, `${subjectMetricLabel} ${t('progress.bySubject')}`]}
+                        formatter={(value) => [`${value}%`, t('progress.percentage')]}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',

@@ -59,7 +59,7 @@ const Login: React.FC = () => {
     }
     
     toast.success('Login realizado com sucesso');
-    navigate('/groups', { replace: true });
+    // Navigation will happen via useEffect when user state updates
   };
   
   return (

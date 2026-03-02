@@ -42,7 +42,7 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <TimerProvider>
@@ -50,7 +50,7 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 {showingSplash ? (
-                  <SplashScreen onFinish={handleSplashFinished} />
+                  <SplashScreen onFinished={handleSplashFinished} />
                 ) : (
                   <BrowserRouter>
                     <Routes>

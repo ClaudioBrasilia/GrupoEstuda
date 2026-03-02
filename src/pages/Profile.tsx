@@ -76,13 +76,13 @@ const Profile: React.FC = () => {
           </Button>
         </div>
         <div className="flex items-center justify-center gap-2">
-          <h2 className="text-2xl font-bold">{profileStats?.name || t('profile.user', 'Usuário')}</h2>
+          <h2 className="text-2xl font-bold">{profileStats?.name || 'Usuário'}</h2>
           {user?.plan === 'premium' && <PremiumBadge size="lg" />}
         </div>
         {user?.plan === 'premium' && (
           <Badge className="bg-gradient-to-r from-amber-400 to-yellow-500 text-white mb-1">
             <Crown className="h-3 w-3 mr-1" />
-            {t('plans.premium.name')}
+            Premium
           </Badge>
         )}
         <div className="text-muted-foreground mb-2">{t('profile.level')} {profileStats?.level || 1} {t('profile.scholar')}</div>

@@ -268,9 +268,7 @@ export function useProgressData(
     return filteredSessions.map((session, index) => ({
       id: session.id,
       startTime: new Date(session.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      endTime: session.completed_at
-        ? new Date(session.completed_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-        : '-',
+      endTime: session.completed_at ? new Date(session.completed_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '',
       duration: session.duration_minutes,
       subject: session.subjects?.name || 'Sem matéria',
       subjectColor: COLORS[index % COLORS.length]

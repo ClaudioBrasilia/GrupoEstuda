@@ -69,23 +69,12 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
   const [selectedGoalForIncrease, setSelectedGoalForIncrease] = useState<string | null>(null);
   const [additionalTarget, setAdditionalTarget] = useState<string>('');
 
-  const parsePositiveNumber = (value: string): number | null => {
-    const parsed = Number.parseInt(value, 10);
-    return Number.isNaN(parsed) || parsed <= 0 ? null : parsed;
-  };
-
-  const selectedGoalTarget = selectedGoalForIncrease
-    ? goals.find((goal) => goal.id === selectedGoalForIncrease)?.target ?? 0
-    : 0;
-
-  const projectedTarget = selectedGoalTarget + (parsePositiveNumber(additionalTarget) ?? 0);
-
   const handleUpdateProgress = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedGoalId || !progressAmount) return;
     
-    const amount = parsePositiveNumber(progressAmount);
-    if (!amount) {
+    const amount = parseInt(progressAmount);
+    if (isNaN(amount) || amount <= 0) {
       toast.error(t('goals.invalidAmount'));
       return;
     }
@@ -105,9 +94,9 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
     setDeleteGoalDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (goalToDelete) {
-      await handleDeleteGoal(goalToDelete);
+      handleDeleteGoal(goalToDelete);
       setDeleteGoalDialogOpen(false);
       setGoalToDelete(null);
     }
@@ -118,17 +107,17 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
     setIncreaseTargetDialogOpen(true);
   };
 
-  const handleIncreaseTarget = async (e: React.FormEvent) => {
+  const handleIncreaseTarget = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedGoalForIncrease || !additionalTarget) return;
     
-    const amount = parsePositiveNumber(additionalTarget);
-    if (!amount) {
-      toast.error(t('goals.invalidAmount'));
+    const amount = parseInt(additionalTarget);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('O valor deve ser maior que zero');
       return;
     }
     
-    await handleIncreaseGoalTarget(selectedGoalForIncrease, amount);
+    handleIncreaseGoalTarget(selectedGoalForIncrease, amount);
     setAdditionalTarget('');
     setIncreaseTargetDialogOpen(false);
     setSelectedGoalForIncrease(null);
@@ -267,14 +256,14 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
                             className="cursor-pointer"
                           >
                             <TrendingUp className="mr-2 h-4 w-4" />
-                            {t('goals.increaseTarget', 'Aumentar Meta')}
+                            Aumentar Meta
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => openDeleteDialog(goal.id)}
                             className="cursor-pointer text-red-600"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            {t('goals.deleteGoal', 'Excluir Meta')}
+                            Excluir Meta
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -319,9 +308,9 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              {t('common.delete')}
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -331,7 +320,7 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
       <Dialog open={increaseTargetDialogOpen} onOpenChange={setIncreaseTargetDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('goals.increaseTarget', 'Aumentar Meta')}</DialogTitle>
+            <DialogTitle>Aumentar Meta</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleIncreaseTarget} className="space-y-4">
             <div>
@@ -346,7 +335,7 @@ const GroupGoalsTab: React.FC<GroupGoalsTabProps> = ({
                 required
               />
               <p className="text-xs text-muted-foreground mt-1">
-                O novo valor será: {selectedGoalTarget} + {parsePositiveNumber(additionalTarget) ?? 0} = {projectedTarget}
+                O novo valor será: {selectedGoalForIncrease && goals.find(g => g.id === selectedGoalForIncrease)?.target} + {additionalTarget || 0}
               </p>
             </div>
             <Button type="submit" className="w-full bg-study-primary">
