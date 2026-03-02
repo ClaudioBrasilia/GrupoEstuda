@@ -333,7 +333,28 @@
     "noSessionsToday": "Nenhuma sessão de estudo registrada hoje",
     "startSessionHint": "Inicie uma sessão no Timer para começar!",
     "complete": "completo",
-    "percentage": "Percentagem"
+    "percentage": "Percentagem",
+    "mode": {
+      "individual": "Individual",
+      "group": "Grupo"
+    },
+    "range": {
+      "day": "Dia",
+      "week": "Semana",
+      "month": "Mês",
+      "year": "Ano"
+    },
+    "cards": {
+      "achievements": "Conquistas"
+    },
+    "charts": {
+      "exercisesByDayTitle": "Exercícios Resolvidos por Dia"
+    },
+    "filters": {
+      "time": "Tempo",
+      "pages": "Páginas",
+      "exercises": "Exercícios"
+    }
   },
   "group": {
     "members": "Membros do Grupo",

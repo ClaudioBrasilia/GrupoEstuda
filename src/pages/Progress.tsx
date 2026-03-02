@@ -157,10 +157,28 @@ const ProgressPage: React.FC = () => {
   }, [refreshData, view, groupId]);
 
 
+  const modeLabels = {
+    individual: t('progress.mode.individual'),
+    group: t('progress.mode.group')
+  };
+
+  const rangeTabs = [
+    { value: 'day', label: t('progress.range.day') },
+    { value: 'week', label: t('progress.range.week') },
+    { value: 'month', label: t('progress.range.month') },
+    { value: 'year', label: t('progress.range.year') }
+  ];
+
+  const subjectMetricTabs: Array<{ value: SubjectMetric; label: string }> = [
+    { value: 'time', label: t('progress.filters.time') },
+    { value: 'pages', label: t('progress.filters.pages') },
+    { value: 'exercises', label: t('progress.filters.exercises') }
+  ];
+
   const dayActivitiesData = [
-    { name: 'Tempo (min)', value: stats.totalStudyTime, color: 'hsl(var(--primary))' },
-    { name: 'Páginas', value: stats.totalPages, color: 'hsl(var(--secondary))' },
-    { name: 'Exercícios', value: stats.totalExercises, color: 'hsl(var(--accent))' }
+    { name: `${t('progress.filters.time')} (${t('progress.minutes')})`, value: stats.totalStudyTime, color: 'hsl(var(--primary))' },
+    { name: t('progress.filters.pages'), value: stats.totalPages, color: 'hsl(var(--secondary))' },
+    { name: t('progress.filters.exercises'), value: stats.totalExercises, color: 'hsl(var(--accent))' }
   ];
 
   const remainingGoals = stats.goalsProgress.map((goal) => {
@@ -173,9 +191,9 @@ const ProgressPage: React.FC = () => {
 
 
   const subjectMetricLabel = {
-    time: 'Tempo',
-    pages: 'Páginas',
-    exercises: 'Exercícios'
+    time: t('progress.filters.time'),
+    pages: t('progress.filters.pages'),
+    exercises: t('progress.filters.exercises')
   }[subjectMetric];
 
   const handleManualRefresh = async () => {
@@ -241,12 +259,12 @@ const ProgressPage: React.FC = () => {
               <TabsList className="grid grid-cols-2 h-9">
                 <TabsTrigger value="individual" className="text-xs flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  Individual
+                  {modeLabels.individual}
                 </TabsTrigger>
                 {availableGroups.length > 0 && (
                   <TabsTrigger value="group" className="text-xs flex items-center gap-1">
                     <Target className="h-3 w-3" />
-                    Grupo
+                    {modeLabels.group}
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -275,10 +293,9 @@ const ProgressPage: React.FC = () => {
 
             <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
               <TabsList className="grid grid-cols-4 h-9">
-                <TabsTrigger value="day" className="text-xs">Dia</TabsTrigger>
-                <TabsTrigger value="week" className="text-xs">{t('leaderboard.week')}</TabsTrigger>
-                <TabsTrigger value="month" className="text-xs">{t('leaderboard.month')}</TabsTrigger>
-                <TabsTrigger value="year" className="text-xs">Ano</TabsTrigger>
+                {rangeTabs.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value} className="text-xs">{tab.label}</TabsTrigger>
+                ))}
               </TabsList>
             </Tabs>
           </div>
@@ -598,7 +615,7 @@ const ProgressPage: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Target className="h-5 w-5 text-accent" />
-                Exercícios Resolvidos por Dia
+                {t('progress.charts.exercisesByDayTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -646,9 +663,9 @@ const ProgressPage: React.FC = () => {
                 </CardTitle>
                 <Tabs value={subjectMetric} onValueChange={(value) => setSubjectMetric(value as SubjectMetric)} className="w-auto">
                   <TabsList className="grid grid-cols-3 h-8">
-                    <TabsTrigger value="time" className="text-xs">Tempo</TabsTrigger>
-                    <TabsTrigger value="pages" className="text-xs">Páginas</TabsTrigger>
-                    <TabsTrigger value="exercises" className="text-xs">Exercícios</TabsTrigger>
+                    {subjectMetricTabs.map((tab) => (
+                      <TabsTrigger key={tab.value} value={tab.value} className="text-xs">{tab.label}</TabsTrigger>
+                    ))}
                   </TabsList>
                 </Tabs>
               </div>

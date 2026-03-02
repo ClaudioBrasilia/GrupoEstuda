@@ -1,4 +1,3 @@
-
 {
   "app": {
     "name": "Grupo Estuda",
@@ -168,7 +167,7 @@
     "settings": {
       "profile": "Profile",
       "security": "Security",
-      "subscription": "Subscription", 
+      "subscription": "Subscription",
       "name": "Name",
       "email": "Email",
       "currentPassword": "Current Password",
@@ -177,7 +176,7 @@
     },
     "achievementNames": {
       "studyWarrior": "Study Warrior",
-      "knowledgeSeeker": "Knowledge Seeker", 
+      "knowledgeSeeker": "Knowledge Seeker",
       "groupLeader": "Group Leader",
       "problemSolver": "Problem Solver",
       "hydrationMaster": "Hydration Master",
@@ -187,7 +186,7 @@
       "studyWarrior": "Earn 100 study points",
       "knowledgeSeeker": "Earn 500 study points",
       "groupLeader": "Join at least 1 study group",
-      "problemSolver": "Earn 1000 study points", 
+      "problemSolver": "Earn 1000 study points",
       "hydrationMaster": "Stay hydrated for 7 days",
       "dedicationStar": "Reach level 10"
     }
@@ -197,7 +196,7 @@
     "english": "English",
     "portuguese": "Portuguese"
   },
-"progress": {
+  "progress": {
     "title": "Progress",
     "pagesRead": "Pages Read",
     "studyTime": "Study Time",
@@ -225,7 +224,28 @@
     "noSessionsToday": "No study sessions recorded today",
     "startSessionHint": "Start a session in the Timer to begin!",
     "complete": "complete",
-    "percentage": "Percentage"
+    "percentage": "Percentage",
+    "mode": {
+      "individual": "Individual",
+      "group": "Group"
+    },
+    "range": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "year": "Year"
+    },
+    "cards": {
+      "achievements": "Achievements"
+    },
+    "charts": {
+      "exercisesByDayTitle": "Exercises Solved by Day"
+    },
+    "filters": {
+      "time": "Time",
+      "pages": "Pages",
+      "exercises": "Exercises"
+    }
   },
   "timer": {
     "title": "Timer",
@@ -233,7 +253,7 @@
     "points": "points",
     "pointsPerMinute": "point per minute",
     "selectGroup": "Select Group",
-    "selectSubject": "Select Subject", 
+    "selectSubject": "Select Subject",
     "start": "Start",
     "resume": "Resume",
     "pause": "Pause",
@@ -251,9 +271,9 @@
     "admin": "Admin",
     "addSubject": "Add Subject"
   },
-"days": {
+  "days": {
     "mon": "Mon",
-    "tue": "Tue", 
+    "tue": "Tue",
     "wed": "Wed",
     "thu": "Thu",
     "fri": "Fri",
