@@ -7,12 +7,14 @@ interface SessionSubject {
   name: string;
 }
 
+type SessionSubjectsField = SessionSubject | SessionSubject[] | null | undefined;
+
 interface StudySessionWithSubject {
   id: string;
   started_at: string;
   completed_at: string | null;
   duration_minutes: number;
-  subjects?: SessionSubject | null;
+  subjects?: SessionSubjectsField;
   pages?: number | null;
   exercises?: number | null;
 }
@@ -77,6 +79,13 @@ const COLORS = ['hsl(265, 85%, 75%)', 'hsl(265, 53%, 64%)', 'hsl(195, 85%, 60%)'
 
 const getSessionPages = (session: StudySessionWithSubject) => session.pages ?? Math.floor(session.duration_minutes / 5) * 2;
 const getSessionExercises = (session: StudySessionWithSubject) => session.exercises ?? Math.floor(session.duration_minutes / 10);
+const getSubjectName = (subjects: SessionSubjectsField, fallback: string) => {
+  if (Array.isArray(subjects)) {
+    return subjects[0]?.name || fallback;
+  }
+
+  return subjects?.name || fallback;
+};
 
 export function useProgressData(
   groupId?: string,
@@ -179,7 +188,7 @@ export function useProgressData(
     const subjectStats: Record<string, number> = {};
 
     sessions.forEach((session) => {
-      const subjectName = session.subjects?.name || 'Outros';
+      const subjectName = getSubjectName(session.subjects, 'Outros');
       const metricValue = metric === 'pages'
         ? getSessionPages(session)
         : metric === 'exercises'
@@ -272,7 +281,7 @@ export function useProgressData(
         ? new Date(session.completed_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         : '-',
       duration: session.duration_minutes,
-      subject: session.subjects?.name || 'Sem matéria',
+      subject: getSubjectName(session.subjects, 'Sem matéria'),
       subjectColor: COLORS[index % COLORS.length]
     }));
   }, [user]);
