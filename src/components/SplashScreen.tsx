@@ -37,7 +37,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-gradient-to-b from-study-primary to-blue-700 flex flex-col items-center justify-center z-50"
+          className="fixed inset-0 bg-gradient-to-b from-primary to-primary/80 flex flex-col items-center justify-center z-50"
         >
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -45,7 +45,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
             transition={{ delay: 0.2, duration: 0.5 }}
             className="rounded-full bg-white p-5 mb-4"
           >
-            <BookOpen size={48} className="text-study-primary" />
+            <BookOpen size={48} className="text-primary" />
           </motion.div>
           <motion.h1
             initial={{ y: 20, opacity: 0 }}
