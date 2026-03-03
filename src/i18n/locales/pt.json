@@ -331,7 +331,15 @@
     "noSessionsToday": "Nenhuma sessão de estudo registrada hoje",
     "startSessionHint": "Inicie uma sessão no Timer para começar!",
     "complete": "completo",
-    "percentage": "Percentagem"
+    "percentage": "Percentagem",
+    "awards": "Conquistas",
+    "exercisesResolvedByDay": "Exercícios Resolvidos por Dia",
+    "remainingGoals": "Metas Restantes",
+    "noGoalsToday": "Nenhuma meta para hoje",
+    "remaining": "{{count}} restantes",
+    "goalMet": "Meta alcançada!",
+    "noSubject": "Sem matéria",
+    "noDataForSubject": "Nenhum dado de {{metric}} para exibir"
   },
   "group": {
     "members": "Membros do Grupo",

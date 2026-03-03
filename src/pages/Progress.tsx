@@ -154,7 +154,7 @@ const ProgressPage: React.FC = () => {
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [refreshData, view, groupId]);
+  }, [refreshData, view, groupId, subjectMetric, timeRange]);
 
 
   const dayActivitiesData = [
