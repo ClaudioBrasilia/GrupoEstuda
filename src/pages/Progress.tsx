@@ -428,9 +428,9 @@ const ProgressPage: React.FC = () => {
                           <Clock className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">{session.subject_name || t('progress.noSubject')}</p>
+                          <p className="text-sm font-medium">{session.subject || t('progress.noSubject')}</p>
                           <p className="text-xs text-muted-foreground">
-                            {session.duration_minutes} min • {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {session.duration} min • {session.startTime}
                           </p>
                         </div>
                       </div>
