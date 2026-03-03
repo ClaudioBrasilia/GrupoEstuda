@@ -94,11 +94,11 @@ const formatSessionTime = (value: string | null) => {
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 };
+
 const getSubjectName = (subjects: SessionSubjectsField, fallback: string) => {
   if (Array.isArray(subjects)) {
     return subjects[0]?.name || fallback;
   }
-
   return subjects?.name || fallback;
 };
 
@@ -139,10 +139,8 @@ export function useProgressData(
         const monthSessions = sessions.filter((session) => {
           const startedAt = getSessionStartedAt(session);
           if (!startedAt) return false;
-
           const started = new Date(startedAt);
           if (Number.isNaN(started.getTime())) return false;
-
           const key = `${started.getFullYear()}-${String(started.getMonth() + 1).padStart(2, '0')}`;
           return key === monthKey;
         });
@@ -165,7 +163,6 @@ export function useProgressData(
           date: monthKey
         });
       }
-
       return data;
     }
 
@@ -198,7 +195,6 @@ export function useProgressData(
         date: dateStr
       });
     }
-
     return data;
   }, []);
 
@@ -234,7 +230,6 @@ export function useProgressData(
     if (sum > 0 && sum !== 100 && data.length > 0) {
       data[0].value += (100 - sum);
     }
-
     return data;
   }, []);
 
@@ -302,7 +297,7 @@ export function useProgressData(
       startTime: formatSessionTime(getSessionStartedAt(session)),
       endTime: formatSessionTime(getSessionCompletedAt(session)),
       duration: getSessionDuration(session),
-      subject: getSubjectName(session.subjects, session.subject_name || 'Sem matéria'),
+      subject: getSubjectName(session.subjects, 'Sem matéria'),
       subjectColor: COLORS[index % COLORS.length]
     }));
   }, [user]);
@@ -328,12 +323,7 @@ export function useProgressData(
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
-    const studyDates = new Set(
-      sessions
-        .map((session) => (session as StudySessionWithSubject).started_at)
-        .filter((value): value is string => Boolean(value))
-        .map((value) => toLocalDateKey(value))
-    );
+    const studyDates = new Set(sessions.map(session => toLocalDateKey(session.started_at)));
 
     if (!studyDates.has(toLocalDateKey(currentDate))) {
       currentDate.setDate(currentDate.getDate() - 1);
@@ -343,7 +333,6 @@ export function useProgressData(
       streak++;
       currentDate.setDate(currentDate.getDate() - 1);
     }
-
     return streak;
   }, [user]);
 
@@ -352,7 +341,6 @@ export function useProgressData(
 
     try {
       setLoading(true);
-
       const startDate = getRangeStart(timeRange);
       const dayRange = getLocalDayRange();
 
@@ -460,7 +448,6 @@ export function useProgressData(
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current);
     }
-
     refreshTimeoutRef.current = setTimeout(() => {
       void fetchProgressData();
     }, 300);

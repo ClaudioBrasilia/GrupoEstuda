@@ -2,9 +2,7 @@
 {
   "app": {
     "name": "Grupo Estuda",
-    "slogan": "Achieve your study goals together with friends",
-    "share": "Share",
-    "shareMessage": "Join me on Grupo Estuda! Let's achieve our study goals together."
+    "slogan": "Achieve your study goals together with friends"
   },
   "loading": "Loading...",
   "navigation": {

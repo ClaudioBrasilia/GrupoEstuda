@@ -139,28 +139,3 @@
     @apply border border-primary text-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-primary-foreground transition-all;
   }
 }
-
-@layer utilities {
-  .text-gradient {
-    background-image: var(--gradient-primary);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .bg-gradient-primary {
-    background-image: var(--gradient-primary);
-  }
-
-  .bg-gradient-accent {
-    background-image: var(--gradient-accent);
-  }
-
-  .bg-gradient-hero {
-    background-image: var(--gradient-hero);
-  }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-}
