@@ -3,8 +3,8 @@ import { ActivityCard } from './ActivityCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Camera } from 'lucide-react';
 
-export const GlobalActivityFeed = ({ groupId }: { groupId?: string }) => {
-  const { activities, loading, toggleLike, deleteActivity } = useStudyActivities(groupId);
+export const GlobalActivityFeed = () => {
+  const { activities, loading, toggleLike, deleteActivity } = useStudyActivities();
 
   if (loading) {
     return (
@@ -35,7 +35,7 @@ export const GlobalActivityFeed = ({ groupId }: { groupId?: string }) => {
       {activities.map((activity) => (
         <ActivityCard
           key={activity.id}
-          activity={{ ...activity, user_plan: activity.user_plan }}
+          activity={activity}
           onLike={toggleLike}
           onDelete={deleteActivity}
           showGroupBadge

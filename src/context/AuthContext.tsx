@@ -18,8 +18,8 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthActionLoading: boolean;
-  login: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  register: (name: string, email: string, password: string) => Promise<{ error: AuthError | null }>;
+  login: (email: string, password: string) => Promise<{ error: any }>;
+  register: (name: string, email: string, password: string) => Promise<{ error: any }>;
   logout: () => Promise<void>;
   updateUserPlan: (plan: PlanType) => Promise<void>;
 }
@@ -58,16 +58,13 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         if (!isMounted) return;
         
         setSession(currentSession);
         
         if (currentSession?.user) {
-          setTimeout(() => {
-            if (!isMounted) return;
-            fetchUserProfile(currentSession.user.id, currentSession.user.email!);
-          }, 0);
+          await fetchUserProfile(currentSession.user.id, currentSession.user.email!);
         } else {
           setUser(null);
         }
@@ -157,7 +154,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     try {
       const result = await withTimeout(
         supabase.auth.signInWithPassword({ email, password }),
-        30000,
+        15000,
         'Sem resposta do servidor. Verifique sua conexão e tente novamente.'
       );
 
@@ -174,7 +171,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
           result.error.message.toLowerCase().includes('credenciais inválidas');
 
         if (isInvalidCredentials) {
-          return { error: new AuthError('Email ou senha inválidos. Confira os dados e tente novamente.') };
+          return { error: { message: 'Email ou senha inválidos. Confira os dados e tente novamente.' } };
         }
       }
 
@@ -198,9 +195,8 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         ? 'Sem conexão com o servidor de autenticação. Verifique internet, URL/chave do Supabase no ambiente e tente novamente.'
         : errorMessage;
 
-      const fallbackError = new AuthError(normalizedMessage);
       return {
-        error: fallbackError
+        error: { message: normalizedMessage }
       };
     } finally {
       setIsAuthActionLoading(false);
@@ -228,9 +224,10 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       
       return { error: result.error };
     } catch (error) {
-      const fallbackError = new AuthError(error instanceof Error ? error.message : 'Erro ao registrar');
       return { 
-        error: fallbackError
+        error: { 
+          message: error instanceof Error ? error.message : 'Erro ao registrar' 
+        } 
       };
     } finally {
       setIsAuthActionLoading(false);
