@@ -11,14 +11,9 @@ type SessionSubjectsField = SessionSubject | SessionSubject[] | null | undefined
 
 interface StudySessionWithSubject {
   id: string;
-  started_at?: string | null;
-  startedAt?: string | null;
-  start_time?: string | null;
-  completed_at?: string | null;
-  completedAt?: string | null;
-  duration_minutes?: number | null;
-  duration?: number | null;
-  subject_name?: string | null;
+  started_at: string;
+  completed_at: string | null;
+  duration_minutes: number;
   subjects?: SessionSubjectsField;
   pages?: number | null;
   exercises?: number | null;
@@ -82,18 +77,8 @@ export interface GoalProgressData {
 
 const COLORS = ['hsl(265, 85%, 75%)', 'hsl(265, 53%, 64%)', 'hsl(195, 85%, 60%)', 'hsl(122, 39%, 49%)', 'hsl(45, 100%, 51%)'];
 
-const getSessionDuration = (session: StudySessionWithSubject) => session.duration_minutes ?? session.duration ?? 0;
-const getSessionPages = (session: StudySessionWithSubject) => session.pages ?? Math.floor(getSessionDuration(session) / 5) * 2;
-const getSessionExercises = (session: StudySessionWithSubject) => session.exercises ?? Math.floor(getSessionDuration(session) / 10);
-const getSessionStartedAt = (session: StudySessionWithSubject) => session.started_at ?? session.startedAt ?? session.start_time ?? null;
-const getSessionCompletedAt = (session: StudySessionWithSubject) => session.completed_at ?? session.completedAt ?? null;
-
-const formatSessionTime = (value: string | null) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-};
+const getSessionPages = (session: StudySessionWithSubject) => session.pages ?? Math.floor(session.duration_minutes / 5) * 2;
+const getSessionExercises = (session: StudySessionWithSubject) => session.exercises ?? Math.floor(session.duration_minutes / 10);
 const getSubjectName = (subjects: SessionSubjectsField, fallback: string) => {
   if (Array.isArray(subjects)) {
     return subjects[0]?.name || fallback;
@@ -137,12 +122,7 @@ export function useProgressData(
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
         const monthSessions = sessions.filter((session) => {
-          const startedAt = getSessionStartedAt(session);
-          if (!startedAt) return false;
-
-          const started = new Date(startedAt);
-          if (Number.isNaN(started.getTime())) return false;
-
+          const started = new Date(session.started_at);
           const key = `${started.getFullYear()}-${String(started.getMonth() + 1).padStart(2, '0')}`;
           return key === monthKey;
         });
@@ -153,7 +133,7 @@ export function useProgressData(
           return key === monthKey;
         });
 
-        const time = monthSessions.reduce((sum, s) => sum + getSessionDuration(s), 0) + monthEvents.filter(e => e.metric === 'time').reduce((sum, e) => sum + e.delta, 0);
+        const time = monthSessions.reduce((sum, s) => sum + s.duration_minutes, 0) + monthEvents.filter(e => e.metric === 'time').reduce((sum, e) => sum + e.delta, 0);
         const pages = monthSessions.reduce((sum, s) => sum + getSessionPages(s), 0) + monthEvents.filter(e => e.metric === 'pages').reduce((sum, e) => sum + e.delta, 0);
         const exercises = monthSessions.reduce((sum, s) => sum + getSessionExercises(s), 0) + monthEvents.filter(e => e.metric === 'exercises').reduce((sum, e) => sum + e.delta, 0);
 
@@ -179,14 +159,13 @@ export function useProgressData(
       const dateStr = toLocalDateKey(date);
 
       const daySessions = sessions.filter((session) => {
-        const completedOrStartedAt = getSessionCompletedAt(session) ?? getSessionStartedAt(session);
-        if (!completedOrStartedAt) return false;
+        const completedOrStartedAt = session.completed_at ?? session.started_at;
         return toLocalDateKey(completedOrStartedAt) === dateStr;
       });
 
       const dayEvents = goalEvents.filter((event) => toLocalDateKey(event.created_at) === dateStr);
 
-      const time = daySessions.reduce((sum, s) => sum + getSessionDuration(s), 0) + dayEvents.filter(e => e.metric === 'time').reduce((sum, e) => sum + e.delta, 0);
+      const time = daySessions.reduce((sum, s) => sum + s.duration_minutes, 0) + dayEvents.filter(e => e.metric === 'time').reduce((sum, e) => sum + e.delta, 0);
       const pages = daySessions.reduce((sum, s) => sum + getSessionPages(s), 0) + dayEvents.filter(e => e.metric === 'pages').reduce((sum, e) => sum + e.delta, 0);
       const exercises = daySessions.reduce((sum, s) => sum + getSessionExercises(s), 0) + dayEvents.filter(e => e.metric === 'exercises').reduce((sum, e) => sum + e.delta, 0);
 
@@ -214,7 +193,7 @@ export function useProgressData(
         ? getSessionPages(session)
         : metric === 'exercises'
           ? getSessionExercises(session)
-          : getSessionDuration(session);
+          : session.duration_minutes;
 
       subjectStats[subjectName] = (subjectStats[subjectName] || 0) + metricValue;
     });
@@ -290,19 +269,19 @@ export function useProgressData(
     const { data: sessions } = await dailySessionsQuery;
 
     const filteredSessions = ((sessions || []) as StudySessionWithSubject[]).filter((session) => {
-      const startedAt = getSessionStartedAt(session);
-      const completedAt = getSessionCompletedAt(session);
-      const startedInDay = startedAt ? isInDateRange(startedAt, dayRange) : false;
-      const completedInDay = completedAt ? isInDateRange(completedAt, dayRange) : false;
+      const startedInDay = isInDateRange(session.started_at, dayRange);
+      const completedInDay = session.completed_at ? isInDateRange(session.completed_at, dayRange) : false;
       return startedInDay || completedInDay;
     });
 
     return filteredSessions.map((session, index) => ({
       id: session.id,
-      startTime: formatSessionTime(getSessionStartedAt(session)),
-      endTime: formatSessionTime(getSessionCompletedAt(session)),
-      duration: getSessionDuration(session),
-      subject: getSubjectName(session.subjects, session.subject_name || 'Sem matéria'),
+      startTime: new Date(session.started_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      endTime: session.completed_at
+        ? new Date(session.completed_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : '-',
+      duration: session.duration_minutes,
+      subject: getSubjectName(session.subjects, 'Sem matéria'),
       subjectColor: COLORS[index % COLORS.length]
     }));
   }, [user]);
@@ -328,12 +307,7 @@ export function useProgressData(
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
-    const studyDates = new Set(
-      sessions
-        .map((session) => (session as StudySessionWithSubject).started_at)
-        .filter((value): value is string => Boolean(value))
-        .map((value) => toLocalDateKey(value))
-    );
+    const studyDates = new Set(sessions.map(session => toLocalDateKey(session.started_at)));
 
     if (!studyDates.has(toLocalDateKey(currentDate))) {
       currentDate.setDate(currentDate.getDate() - 1);
@@ -378,10 +352,8 @@ export function useProgressData(
 
       const filteredSessions = timeRange === 'day'
         ? sessionRows.filter((session) => {
-            const startedAt = getSessionStartedAt(session);
-            const completedAt = getSessionCompletedAt(session);
-            const startedInDay = startedAt ? isInDateRange(startedAt, dayRange) : false;
-            const completedInDay = completedAt ? isInDateRange(completedAt, dayRange) : false;
+            const startedInDay = isInDateRange(session.started_at, dayRange);
+            const completedInDay = session.completed_at ? isInDateRange(session.completed_at, dayRange) : false;
             return startedInDay || completedInDay;
           })
         : sessionRows;
@@ -407,7 +379,7 @@ export function useProgressData(
       const eventPages = filteredEvents.filter(e => e.metric === 'pages').reduce((sum, event) => sum + event.delta, 0);
       const eventExercises = filteredEvents.filter(e => e.metric === 'exercises').reduce((sum, event) => sum + event.delta, 0);
 
-      const sessionTime = filteredSessions.reduce((sum, session) => sum + getSessionDuration(session), 0);
+      const sessionTime = filteredSessions.reduce((sum, session) => sum + session.duration_minutes, 0);
       const sessionPages = filteredSessions.reduce((sum, session) => sum + getSessionPages(session), 0);
       const sessionExercises = filteredSessions.reduce((sum, session) => sum + getSessionExercises(session), 0);
 
