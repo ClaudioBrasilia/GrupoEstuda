@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session } from '@supabase/supabase-js';
+import { AuthError, Session } from '@supabase/supabase-js';
 import { withTimeout } from '@/lib/authUtils';
 
 export type PlanType = 'free' | 'basic' | 'premium';
@@ -135,20 +135,68 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     setIsAuthActionLoading(true);
-    
+
+    const hasSupabaseUrl = Boolean(import.meta.env.VITE_SUPABASE_URL);
+    const hasSupabaseAnonKey = Boolean(import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+
+    console.info('[Auth][Login] Attempt started', {
+      hasSupabaseUrl,
+      hasSupabaseAnonKey,
+      supabaseHost: (() => {
+        try {
+          return new URL(import.meta.env.VITE_SUPABASE_URL || 'https://nwtodahupgqbatxeluat.supabase.co').host;
+        } catch {
+          return 'invalid-url';
+        }
+      })()
+    });
+
     try {
       const result = await withTimeout(
         supabase.auth.signInWithPassword({ email, password }),
         15000,
         'Sem resposta do servidor. Verifique sua conexão e tente novamente.'
       );
-      
+
+      if (result.error) {
+        console.error('[Auth][Login] Supabase returned error', {
+          status: result.error.status,
+          code: result.error.code,
+          name: result.error.name,
+          message: result.error.message
+        });
+
+        const isInvalidCredentials =
+          result.error.message.toLowerCase().includes('invalid login credentials') ||
+          result.error.message.toLowerCase().includes('credenciais inválidas');
+
+        if (isInvalidCredentials) {
+          return { error: { message: 'Email ou senha inválidos. Confira os dados e tente novamente.' } };
+        }
+      }
+
       return { error: result.error };
     } catch (error) {
-      return { 
-        error: { 
-          message: error instanceof Error ? error.message : 'Erro ao fazer login' 
-        } 
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao fazer login';
+
+      console.error('[Auth][Login] Request failed before Supabase response', {
+        message: errorMessage,
+        name: error instanceof Error ? error.name : 'UnknownError',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+
+      const isConnectionIssue =
+        errorMessage.toLowerCase().includes('failed to fetch') ||
+        errorMessage.toLowerCase().includes('networkerror') ||
+        errorMessage.toLowerCase().includes('load failed') ||
+        errorMessage.toLowerCase().includes('sem resposta do servidor');
+
+      const normalizedMessage = isConnectionIssue
+        ? 'Sem conexão com o servidor de autenticação. Verifique internet, URL/chave do Supabase no ambiente e tente novamente.'
+        : errorMessage;
+
+      return {
+        error: { message: normalizedMessage }
       };
     } finally {
       setIsAuthActionLoading(false);
