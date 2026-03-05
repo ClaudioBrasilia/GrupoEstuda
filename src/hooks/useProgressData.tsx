@@ -200,6 +200,7 @@ export function useProgressData(
 
   const fetchSubjectProgress = useCallback(async (
     sessions: StudySessionWithSubject[],
+    goalEvents: GoalProgressEvent[],
     metric: SubjectMetric
   ): Promise<SubjectProgressData[]> => {
     const subjectStats: Record<string, number> = {};
@@ -215,8 +216,31 @@ export function useProgressData(
       subjectStats[subjectName] = (subjectStats[subjectName] || 0) + metricValue;
     });
 
+    const metricEvents = goalEvents.filter((event) => event.metric === metric);
+    if (metricEvents.length > 0) {
+      const goalIds = [...new Set(metricEvents.map((event) => event.goal_id))];
+      const { data: goals } = await supabase
+        .from('goals')
+        .select(`
+          id,
+          subjects:subject_id (
+            name
+          )
+        `)
+        .in('id', goalIds);
+
+      const goalSubjectMap = new Map(
+        (goals || []).map((goal) => [goal.id, goal.subjects?.name || 'Outros'])
+      );
+
+      metricEvents.forEach((event) => {
+        const subjectName = goalSubjectMap.get(event.goal_id) || 'Outros';
+        subjectStats[subjectName] = (subjectStats[subjectName] || 0) + event.delta;
+      });
+    }
+
     const total = Object.values(subjectStats).reduce((sum, value) => sum + value, 0);
-    if (total === 0) return [];
+    if (total <= 0) return [];
 
     const data = Object.entries(subjectStats)
       .map(([name, value], index) => ({
@@ -404,7 +428,7 @@ export function useProgressData(
       const totalPages = sessionPages + eventPages;
       const totalExercises = sessionExercises + eventExercises;
       const studyStreak = await calculateStudyStreak(groupId);
-      const subjectData = await fetchSubjectProgress(filteredSessions, subjectMetric);
+      const subjectData = await fetchSubjectProgress(filteredSessions, filteredEvents, subjectMetric);
       
       const { data: userAchievements } = await supabase
         .from('user_achievements')
@@ -471,7 +495,7 @@ export function useProgressData(
         event: '*',
         schema: 'public',
         table: 'study_sessions',
-        filter: `user_id=eq.${user.id}`
+        filter: groupId ? `group_id=eq.${groupId}` : `user_id=eq.${user.id}`
       },
       scheduleRefresh
     );
