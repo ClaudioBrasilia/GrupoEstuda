@@ -464,7 +464,10 @@ export type Database = {
         Row: {
           completed_at: string | null
           duration_minutes: number
+          exercises: number | null
+          group_id: string | null
           id: string
+          pages: number | null
           started_at: string
           subject_id: string | null
           user_id: string
@@ -472,7 +475,10 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           duration_minutes: number
+          exercises?: number | null
+          group_id?: string | null
           id?: string
+          pages?: number | null
           started_at?: string
           subject_id?: string | null
           user_id: string
@@ -480,12 +486,22 @@ export type Database = {
         Update: {
           completed_at?: string | null
           duration_minutes?: number
+          exercises?: number | null
+          group_id?: string | null
           id?: string
+          pages?: number | null
           started_at?: string
           subject_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "study_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "study_sessions_subject_id_fkey"
             columns: ["subject_id"]
