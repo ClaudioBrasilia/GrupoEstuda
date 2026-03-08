@@ -443,8 +443,6 @@ export const useGroupData = (groupId: string | undefined) => {
       pointsEarned = progress * POINTS_CONFIG.exercises;
     } else if (goalToUpdate.type === 'pages') {
       pointsEarned = progress * POINTS_CONFIG.pages;
-    } else if (goalToUpdate.type === 'time') {
-      pointsEarned = progress * POINTS_CONFIG.time;
     }
     
     // CORREÇÃO: Permitir progresso além da meta
@@ -463,7 +461,7 @@ export const useGroupData = (groupId: string | undefined) => {
       
       if (goalError) throw goalError;
 
-      if (actualProgress > 0) {
+      if (actualProgress > 0 && goalToUpdate.type !== 'time') {
         const { error: eventError } = await supabase
           .from('goal_progress_events')
           .insert({
@@ -477,28 +475,32 @@ export const useGroupData = (groupId: string | undefined) => {
         if (eventError) throw eventError;
       }
       
-      const { data: currentPointsData } = await supabase
-        .from('user_points')
-        .select('points')
-        .eq('user_id', user.id)
-        .eq('group_id', groupId)
-        .single();
-      
-      const currentPoints = currentPointsData?.points || 0;
-      const newTotalPoints = currentPoints + actualPoints;
-      
-      const { error: pointsError } = await supabase
-        .from('user_points')
-        .upsert({
-          user_id: user.id,
-          group_id: groupId,
-          points: newTotalPoints,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id,group_id'
-        });
-      
-      if (pointsError) throw pointsError;
+      let newTotalPoints = userPoints;
+
+      if (actualPoints > 0) {
+        const { data: currentPointsData } = await supabase
+          .from('user_points')
+          .select('points')
+          .eq('user_id', user.id)
+          .eq('group_id', groupId)
+          .single();
+
+        const currentPoints = currentPointsData?.points || 0;
+        newTotalPoints = currentPoints + actualPoints;
+
+        const { error: pointsError } = await supabase
+          .from('user_points')
+          .upsert({
+            user_id: user.id,
+            group_id: groupId,
+            points: newTotalPoints,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,group_id'
+          });
+
+        if (pointsError) throw pointsError;
+      }
       
       const updatedGoals = goals.map(goal => {
         if (goal.id === goalId) {
@@ -508,12 +510,18 @@ export const useGroupData = (groupId: string | undefined) => {
       });
       
       setGoals(updatedGoals);
-      setUserPoints(newTotalPoints);
+      if (actualPoints > 0) {
+        setUserPoints(newTotalPoints);
+      }
       
       const goalType = goalToUpdate.type === 'exercises' ? 'exercícios' : 
                         goalToUpdate.type === 'pages' ? 'páginas' : 'minutos';
       
-      toast.success(`Progresso atualizado! +${actualPoints} pontos por ${actualProgress} ${goalType}.`);
+      if (goalToUpdate.type === 'time') {
+        toast.success(`Progresso de tempo atualizado! ${actualProgress} ${goalType} adicionados sem pontuação automática.`);
+      } else {
+        toast.success(`Progresso atualizado! +${actualPoints} pontos por ${actualProgress} ${goalType}.`);
+      }
       
       if (newCurrent >= goalToUpdate.target && goalToUpdate.current < goalToUpdate.target) {
         toast.success(`🎉 Meta concluída! Parabéns!`, { duration: 5000 });
