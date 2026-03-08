@@ -2,15 +2,27 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import type { Database } from '@/integrations/supabase/types';
 
 export interface StudySession {
   id: string;
   subject_id: string | null;
   subject_name: string;
   duration_minutes: number;
+  pages?: number | null;
+  exercises?: number | null;
   points: number;
   started_at: Date;
   completed_at: Date | null;
+}
+
+interface StudySessionMetricsInput {
+  user_id?: string;
+  subject_id?: string | null;
+  group_id?: string | null;
+  duration_minutes?: number;
+  pages?: number | null;
+  exercises?: number | null;
 }
 
 export interface Subject {
@@ -80,6 +92,8 @@ export const useStudySessions = () => {
       setGroups(formattedGroups);
 
       const groupIds = formattedGroups.map(g => g.id);
+      let formattedSubjects: Subject[] = [];
+
       if (groupIds.length > 0) {
         const { data: subjectsData } = await supabase
           .from('subjects')
@@ -87,14 +101,14 @@ export const useStudySessions = () => {
           .in('group_id', groupIds)
           .order('name');
 
-        const formattedSubjects = subjectsData?.map(subj => ({
+        formattedSubjects = subjectsData?.map(subj => ({
           id: subj.id,
           name: subj.name,
           group_id: subj.group_id
         })) || [];
-
-        setSubjects(formattedSubjects);
       }
+
+      setSubjects(formattedSubjects);
 
       const { data: sessionsData } = await supabase
         .from('study_sessions')
@@ -105,8 +119,10 @@ export const useStudySessions = () => {
       const formattedSessions = sessionsData?.map(session => ({
         id: session.id,
         subject_id: session.subject_id,
-        subject_name: subjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
+        subject_name: formattedSubjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
         duration_minutes: session.duration_minutes,
+        pages: session.pages,
+        exercises: session.exercises,
         points: Math.floor(session.duration_minutes),
         started_at: new Date(session.started_at),
         completed_at: session.completed_at ? new Date(session.completed_at) : null
@@ -128,27 +144,38 @@ export const useStudySessions = () => {
     return subjectId;
   };
 
-  const createStudySession = async (subjectId: string, durationSeconds: number, selectedGroupId?: string) => {
+  const createStudySession = async (
+    subjectId: string,
+    durationSeconds: number,
+    selectedGroupId?: string,
+    metrics?: StudySessionMetricsInput
+  ) => {
     if (!user) return { success: false, error: 'Usuário não autenticado' };
 
     try {
       const normalizedSubjectId = normalizeSubjectId(subjectId);
-      const durationMinutes = Math.floor(durationSeconds / 60);
+      const durationMinutes = metrics?.duration_minutes ?? Math.floor(durationSeconds / 60);
       const points = durationMinutes;
 
       const subject = subjects.find(s => s.id === normalizedSubjectId);
-      const groupId = subject?.group_id || selectedGroupId || null;
+      const groupId = metrics?.group_id ?? subject?.group_id ?? selectedGroupId ?? null;
+      const insertUserId = metrics?.user_id ?? user.id;
+      const insertSubjectId = metrics?.subject_id ?? normalizedSubjectId;
+
+      const sessionInsert: Database['public']['Tables']['study_sessions']['Insert'] = {
+        user_id: insertUserId,
+        subject_id: insertSubjectId,
+        group_id: groupId,
+        duration_minutes: durationMinutes,
+        pages: metrics?.pages ?? null,
+        exercises: metrics?.exercises ?? null,
+        started_at: new Date(Date.now() - durationSeconds * 1000).toISOString(),
+        completed_at: new Date().toISOString()
+      };
 
       const { data, error } = await supabase
         .from('study_sessions')
-        .insert({
-          user_id: user.id,
-          subject_id: normalizedSubjectId,
-          group_id: groupId,
-          duration_minutes: durationMinutes,
-          started_at: new Date(Date.now() - durationSeconds * 1000).toISOString(),
-          completed_at: new Date().toISOString()
-        })
+        .insert(sessionInsert)
         .select()
         .single();
 
@@ -157,12 +184,14 @@ export const useStudySessions = () => {
       // Fonte única de verdade para metas/pontos: trigger SQL no banco.
       // Não realizar atualizações client-side para evitar dupla contabilização.
 
-      const subjectName = subjects.find(s => s.id === normalizedSubjectId)?.name || 'Matéria Geral';
+      const subjectName = subjects.find(s => s.id === insertSubjectId)?.name || 'Matéria Geral';
       const newSession: StudySession = {
         id: data.id,
         subject_id: data.subject_id,
         subject_name: subjectName,
         duration_minutes: data.duration_minutes,
+        pages: data.pages,
+        exercises: data.exercises,
         points,
         started_at: new Date(data.started_at),
         completed_at: new Date(data.completed_at!)
