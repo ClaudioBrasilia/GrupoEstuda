@@ -6,14 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface TimeGoal {
-  id: string;
-  current: number;
-  target: number;
-  subject_id: string | null;
-  group_id: string;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,64 +16,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Keep function backward-compatible: now also syncs time-based goals before achievements.
-    const { data: timeGoals, error: goalsError } = await supabase
-      .from('goals')
-      .select('id, current, target, subject_id, group_id')
-      .eq('type', 'time');
-
-    if (goalsError) {
-      throw goalsError;
-    }
-
-    let goalsUpdated = 0;
-
-    for (const goal of (timeGoals || []) as TimeGoal[]) {
-      if (!goal.subject_id) {
-        continue;
-      }
-
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('study_sessions')
-        .select('duration_minutes')
-        .eq('subject_id', goal.subject_id)
-        .not('completed_at', 'is', null);
-
-      if (sessionsError) {
-        console.error(`Unable to load sessions for goal ${goal.id}:`, sessionsError);
-        continue;
-      }
-
-      const totalMinutes = (sessions || []).reduce((sum, session) => sum + (session.duration_minutes ?? 0), 0);
-      const nextCurrent = Math.min(Math.max(goal.current, totalMinutes), goal.target);
-
-      if (nextCurrent === goal.current) {
-        continue;
-      }
-
-      const { error: goalUpdateError } = await supabase
-        .from('goals')
-        .update({
-          current: nextCurrent,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', goal.id);
-
-      if (goalUpdateError) {
-        console.error(`Unable to update goal ${goal.id}:`, goalUpdateError);
-        continue;
-      }
-
-      goalsUpdated++;
-    }
-
     // Get all users
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id');
 
     if (!profiles) {
-      return new Response(JSON.stringify({ message: 'No users found', goalsUpdated }), {
+      return new Response(JSON.stringify({ message: 'No users found' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -192,8 +133,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        message: 'Goal sync and achievement check completed successfully',
-        goalsUpdated,
+        message: 'Achievement check completed successfully',
         achievementsUnlocked
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
