@@ -77,7 +77,9 @@ export const ActivityCard = ({
                 {activity.subject_name}
               </Badge>
             )}
-            <Badge variant="default">+{activity.points_earned} pts</Badge>
+            {activity.points_earned > 0 && (
+              <Badge variant="default">+{activity.points_earned} pts</Badge>
+            )}
           </div>
         </div>
 

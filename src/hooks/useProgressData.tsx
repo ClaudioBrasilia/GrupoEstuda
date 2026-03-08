@@ -151,7 +151,8 @@ export function useProgressData(
           return key === monthKey;
         });
 
-        const time = monthSessions.reduce((sum, s) => sum + getSessionDuration(s), 0) + monthEvents.filter(e => e.metric === 'time').reduce((sum, e) => sum + e.delta, 0);
+        // Regra de negócio: tempo oficial vem somente de study_sessions.
+        const time = monthSessions.reduce((sum, s) => sum + getSessionDuration(s), 0);
         const pages = monthSessions.reduce((sum, s) => sum + getSessionPages(s), 0) + monthEvents.filter(e => e.metric === 'pages').reduce((sum, e) => sum + e.delta, 0);
         const exercises = monthSessions.reduce((sum, s) => sum + getSessionExercises(s), 0) + monthEvents.filter(e => e.metric === 'exercises').reduce((sum, e) => sum + e.delta, 0);
 
@@ -183,7 +184,8 @@ export function useProgressData(
 
       const dayEvents = goalEvents.filter((event) => toLocalDateKey(event.created_at) === dateStr);
 
-      const time = daySessions.reduce((sum, s) => sum + getSessionDuration(s), 0) + dayEvents.filter(e => e.metric === 'time').reduce((sum, e) => sum + e.delta, 0);
+      // Regra de negócio: tempo oficial vem somente de study_sessions.
+      const time = daySessions.reduce((sum, s) => sum + getSessionDuration(s), 0);
       const pages = daySessions.reduce((sum, s) => sum + getSessionPages(s), 0) + dayEvents.filter(e => e.metric === 'pages').reduce((sum, e) => sum + e.delta, 0);
       const exercises = daySessions.reduce((sum, s) => sum + getSessionExercises(s), 0) + dayEvents.filter(e => e.metric === 'exercises').reduce((sum, e) => sum + e.delta, 0);
 
@@ -216,7 +218,9 @@ export function useProgressData(
       subjectStats[subjectName] = (subjectStats[subjectName] || 0) + metricValue;
     });
 
-    const metricEvents = goalEvents.filter((event) => event.metric === metric);
+    const metricEvents = metric === 'time'
+      ? []
+      : goalEvents.filter((event) => event.metric === metric);
     if (metricEvents.length > 0) {
       const goalIds = [...new Set(metricEvents.map((event) => event.goal_id))];
       const { data: goals } = await supabase
@@ -415,7 +419,8 @@ export function useProgressData(
         ? eventRows.filter((event) => isInDateRange(event.created_at, dayRange))
         : eventRows;
 
-      const eventTime = filteredEvents.filter(e => e.metric === 'time').reduce((sum, event) => sum + event.delta, 0);
+      // Regra de negócio: tempo oficial vem somente de study_sessions.
+      const eventTime = 0;
       const eventPages = filteredEvents.filter(e => e.metric === 'pages').reduce((sum, event) => sum + event.delta, 0);
       const eventExercises = filteredEvents.filter(e => e.metric === 'exercises').reduce((sum, event) => sum + event.delta, 0);
 

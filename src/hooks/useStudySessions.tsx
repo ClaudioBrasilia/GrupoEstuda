@@ -154,49 +154,8 @@ export const useStudySessions = () => {
 
       if (error) throw error;
 
-      // CORREÇÃO: Atualizar metas do tipo "time" para a matéria
-      if (normalizedSubjectId) {
-        const { data: timeGoals } = await supabase
-          .from('goals')
-          .select('*')
-          .eq('subject_id', normalizedSubjectId)
-          .eq('type', 'time');
-
-        if (timeGoals && timeGoals.length > 0) {
-          for (const goal of timeGoals) {
-            const newCurrent = goal.current + durationMinutes;
-            await supabase
-              .from('goals')
-              .update({
-                current: newCurrent,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', goal.id);
-          }
-        }
-      }
-
-      if (groupId) {
-        const { data: currentPointsData } = await supabase
-          .from('user_points')
-          .select('points')
-          .eq('user_id', user.id)
-          .eq('group_id', groupId)
-          .maybeSingle();
-
-        const currentPoints = currentPointsData?.points || 0;
-
-        await supabase
-          .from('user_points')
-          .upsert({
-            user_id: user.id,
-            group_id: groupId,
-            points: currentPoints + points,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id,group_id'
-          });
-      }
+      // Fonte única de verdade para metas/pontos: trigger SQL no banco.
+      // Não realizar atualizações client-side para evitar dupla contabilização.
 
       const subjectName = subjects.find(s => s.id === normalizedSubjectId)?.name || 'Matéria Geral';
       const newSession: StudySession = {
