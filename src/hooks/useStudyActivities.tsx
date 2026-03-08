@@ -183,8 +183,7 @@ export const useStudyActivities = (groupId?: string) => {
     targetGroupId: string,
     photo: File,
     description: string,
-    subjectId?: string,
-    _points: number = 10
+    subjectId?: string
   ) => {
     if (!user) {
       console.error('❌ Erro: Usuário não autenticado');
