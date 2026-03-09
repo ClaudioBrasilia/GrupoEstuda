@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, X, Crown, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,19 +11,48 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
-import { PLAN_LIMITS, PLAN_NAMES, PLAN_PRICES, PlanType } from '@/config/planLimits';
+import { PLAN_NAMES, PLAN_PRICES, PlanType } from '@/config/planLimits';
 
 const Plans: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, updateUserPlan } = useAuth();
+  const { user } = useAuth();
   const [isYearly, setIsYearly] = useState(false);
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState<PlanType | null>(null);
 
-  const handleSubscribe = (planId: PlanType) => {
-    // In a real app, this would connect to Stripe
-    updateUserPlan(planId);
-    toast.success(`Você assinou o plano ${PLAN_NAMES[planId]}!`);
-    navigate('/my-plan');
+  const handleSubscribe = async (planId: PlanType) => {
+    if (planId === 'free') {
+      navigate('/my-plan');
+      return;
+    }
+
+    setIsCheckoutLoading(planId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          plan: planId,
+          billingCycle: isYearly ? 'yearly' : 'monthly',
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Falha ao iniciar checkout.');
+      }
+
+      if (!data?.checkoutUrl) {
+        throw new Error(
+          'Checkout indisponível no momento. Configure Stripe para habilitar assinatura premium.'
+        );
+      }
+
+      window.location.assign(data.checkoutUrl);
+    } catch (checkoutError) {
+      const message = checkoutError instanceof Error ? checkoutError.message : 'Erro ao iniciar assinatura';
+      toast.error(message);
+    } finally {
+      setIsCheckoutLoading(null);
+    }
   };
 
   const getPrice = (plan: PlanType) => {
@@ -74,21 +104,14 @@ const Plans: React.FC = () => {
       <div className="space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold">{t('plans.title')}</h1>
-          <p className="text-muted-foreground mt-2">
-            Escolha o plano ideal para alcançar seus objetivos
-          </p>
+          <p className="text-muted-foreground mt-2">Escolha o plano ideal para alcançar seus objetivos</p>
         </div>
 
-        {/* Billing Toggle */}
         <div className="flex items-center justify-center gap-4">
           <Label htmlFor="billing-toggle" className={!isYearly ? 'font-semibold' : 'text-muted-foreground'}>
             Mensal
           </Label>
-          <Switch
-            id="billing-toggle"
-            checked={isYearly}
-            onCheckedChange={setIsYearly}
-          />
+          <Switch id="billing-toggle" checked={isYearly} onCheckedChange={setIsYearly} />
           <Label htmlFor="billing-toggle" className={isYearly ? 'font-semibold' : 'text-muted-foreground'}>
             Anual
           </Label>
@@ -99,7 +122,6 @@ const Plans: React.FC = () => {
           )}
         </div>
 
-        {/* Plan Cards */}
         <div className="grid gap-6 md:grid-cols-3">
           {plans.map((plan) => {
             const isCurrent = user?.plan === plan.id;
@@ -107,19 +129,14 @@ const Plans: React.FC = () => {
             const isBasic = plan.id === 'basic';
 
             return (
-              <Card 
+              <Card
                 key={plan.id}
                 className={`relative overflow-hidden transition-all ${
                   isPremium ? 'border-amber-400 dark:border-amber-500 shadow-lg' : ''
                 } ${isBasic ? 'border-primary' : ''} ${isCurrent ? 'ring-2 ring-primary' : ''}`}
               >
-                {/* Top accent bar */}
-                <div className={`h-1 ${
-                  isPremium ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : 
-                  isBasic ? 'bg-primary' : 'bg-muted'
-                }`} />
+                <div className={`h-1 ${isPremium ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : isBasic ? 'bg-primary' : 'bg-muted'}`} />
 
-                {/* Popular/Premium badge */}
                 {isBasic && (
                   <div className="absolute top-4 right-4">
                     <Badge className="bg-primary">
@@ -138,18 +155,13 @@ const Plans: React.FC = () => {
                 )}
 
                 <CardHeader className="pt-8">
-                  <CardTitle className="flex items-center gap-2">
-                    {PLAN_NAMES[plan.id]}
-                    {isPremium && <Crown className="h-5 w-5 text-amber-500" />}
-                  </CardTitle>
+                  <CardTitle className="flex items-center gap-2">{PLAN_NAMES[plan.id]}</CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
-                  <div className="pt-4">
+                  <div>
                     <span className="text-3xl font-bold">{getPrice(plan.id)}</span>
                     <span className="text-muted-foreground text-sm">{getBillingText(plan.id)}</span>
                     {isYearly && plan.id !== 'free' && (
-                      <div className="text-sm text-green-600 dark:text-green-400 mt-1">
-                        Economize {getYearlySavings(plan.id)}%
-                      </div>
+                      <div className="text-sm text-green-600 dark:text-green-400 mt-1">Economize {getYearlySavings(plan.id)}%</div>
                     )}
                   </div>
                 </CardHeader>
@@ -159,7 +171,7 @@ const Plans: React.FC = () => {
                     {features.map((feature, index) => {
                       const value = feature[plan.id as keyof typeof feature];
                       const hasFeature = value === true || (typeof value === 'string' && value !== '');
-                      
+
                       return (
                         <li key={index} className="flex items-start gap-2">
                           {hasFeature ? (
@@ -182,26 +194,17 @@ const Plans: React.FC = () => {
                 <CardFooter>
                   <Button
                     className={`w-full ${
-                      isPremium 
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white' 
-                        : isBasic 
-                          ? 'bg-primary' 
+                      isPremium
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white'
+                        : isBasic
+                          ? 'bg-primary'
                           : ''
                     }`}
                     variant={plan.id === 'free' ? 'outline' : 'default'}
-                    disabled={isCurrent}
+                    disabled={isCurrent || isCheckoutLoading === plan.id}
                     onClick={() => handleSubscribe(plan.id)}
                   >
-                    {isCurrent ? (
-                      'Plano Atual'
-                    ) : plan.id === 'free' ? (
-                      'Começar Grátis'
-                    ) : (
-                      <>
-                        <Crown className="mr-2 h-4 w-4" />
-                        Assinar {PLAN_NAMES[plan.id]}
-                      </>
-                    )}
+                    {isCurrent ? 'Plano Atual' : plan.id === 'free' ? 'Começar Grátis' : `Assinar ${PLAN_NAMES[plan.id]}`}
                   </Button>
                 </CardFooter>
               </Card>
@@ -209,7 +212,6 @@ const Plans: React.FC = () => {
           })}
         </div>
 
-        {/* Features comparison table (mobile-friendly) */}
         <Card className="mt-8">
           <CardHeader>
             <CardTitle className="text-lg">Comparação Detalhada</CardTitle>
@@ -243,10 +245,7 @@ const Plans: React.FC = () => {
                         const value = feature[plan];
                         const isBasicCol = plan === 'basic';
                         return (
-                          <td 
-                            key={plan} 
-                            className={`text-center py-3 px-2 ${isBasicCol ? 'bg-primary/5' : ''}`}
-                          >
+                          <td key={plan} className={`text-center py-3 px-2 ${isBasicCol ? 'bg-primary/5' : ''}`}>
                             {value === true ? (
                               <Check className="h-4 w-4 text-green-500 mx-auto" />
                             ) : value === false ? (
@@ -259,23 +258,12 @@ const Plans: React.FC = () => {
                       })}
                     </tr>
                   ))}
-                  <tr className="border-t font-medium">
-                    <td className="py-3 px-2">Preço</td>
-                    <td className="text-center py-3 px-2">Grátis</td>
-                    <td className="text-center py-3 px-2 bg-primary/5">
-                      ${isYearly ? (PLAN_PRICES.basic.yearly / 12).toFixed(2) : PLAN_PRICES.basic.monthly}/mês
-                    </td>
-                    <td className="text-center py-3 px-2">
-                      ${isYearly ? (PLAN_PRICES.premium.yearly / 12).toFixed(2) : PLAN_PRICES.premium.monthly}/mês
-                    </td>
-                  </tr>
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
 
-        {/* FAQ or additional info */}
         <div className="text-center text-sm text-muted-foreground space-y-2">
           <p>Todos os planos pagos incluem 7 dias de garantia de reembolso.</p>
           <p>Cancele a qualquer momento, sem taxas adicionais.</p>

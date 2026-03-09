@@ -18,6 +18,8 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
 import Plans from "./pages/subscription/Plans";
 import MyPlan from "./pages/subscription/MyPlan";
 import TestGenerator from "./pages/premium/TestGenerator";
@@ -55,6 +57,8 @@ const App = () => {
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/terms" element={<TermsOfUse />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
                     <Route path="/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
