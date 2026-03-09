@@ -23,7 +23,7 @@ import { Separator } from '@/components/ui/separator';
 import { ThemeSelector } from '@/components/ui/theme-toggle';
 
 const ProfileSettings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUserPlan } = useAuth();
   const { t } = useTranslation();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');

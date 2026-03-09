@@ -92,8 +92,6 @@ export const useStudySessions = () => {
       setGroups(formattedGroups);
 
       const groupIds = formattedGroups.map(g => g.id);
-      let formattedSubjects: Subject[] = [];
-
       if (groupIds.length > 0) {
         const { data: subjectsData } = await supabase
           .from('subjects')
@@ -101,14 +99,14 @@ export const useStudySessions = () => {
           .in('group_id', groupIds)
           .order('name');
 
-        formattedSubjects = subjectsData?.map(subj => ({
+        const formattedSubjects = subjectsData?.map(subj => ({
           id: subj.id,
           name: subj.name,
           group_id: subj.group_id
         })) || [];
-      }
 
-      setSubjects(formattedSubjects);
+        setSubjects(formattedSubjects);
+      }
 
       const { data: sessionsData } = await supabase
         .from('study_sessions')
@@ -119,7 +117,7 @@ export const useStudySessions = () => {
       const formattedSessions = sessionsData?.map(session => ({
         id: session.id,
         subject_id: session.subject_id,
-        subject_name: formattedSubjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
+        subject_name: subjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
         duration_minutes: session.duration_minutes,
         pages: session.pages,
         exercises: session.exercises,
