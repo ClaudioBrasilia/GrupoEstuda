@@ -4,10 +4,6 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
-type RealtimeProfilePayload = {
-  water_goal_ml?: number;
-};
-
 export interface WaterStats {
   todayIntake: number;
   dailyGoal: number;
@@ -115,14 +111,12 @@ export function useWaterData() {
           table: 'profiles',
           filter: `id=eq.${user.id}`
         },
-        (payload: RealtimePostgresChangesPayload<RealtimeProfilePayload>) => {
-          const data = (payload.new ?? {}) as RealtimeProfilePayload;
-
-          if (typeof data.water_goal_ml === 'number') {
+        (payload: RealtimePostgresChangesPayload<{ water_goal_ml: number }>) => {
+          if (payload.new && payload.new.water_goal_ml) {
             console.log('📡 Meta de água atualizada');
             setWaterStats(prev => ({
               ...prev,
-              dailyGoal: data.water_goal_ml
+              dailyGoal: payload.new.water_goal_ml
             }));
           }
         }

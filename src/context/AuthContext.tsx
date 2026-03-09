@@ -21,6 +21,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ error: any }>;
   register: (name: string, email: string, password: string) => Promise<{ error: any }>;
   logout: () => Promise<void>;
+  updateUserPlan: (plan: PlanType) => Promise<void>;
 }
 
 const defaultAuthContext: AuthContextType = {
@@ -31,6 +32,7 @@ const defaultAuthContext: AuthContextType = {
   login: async () => ({ error: null }),
   register: async () => ({ error: null }),
   logout: async () => {},
+  updateUserPlan: async () => {},
 };
 
 export const AuthContext = createContext<AuthContextType>(defaultAuthContext);
@@ -252,6 +254,19 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     }
   };
 
+  const updateUserPlan = async (plan: PlanType) => {
+    if (!user || !session) return;
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ plan })
+      .eq('id', user.id);
+      
+    if (!error) {
+      setUser({ ...user, plan });
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -260,7 +275,8 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
       isAuthActionLoading,
       login, 
       register, 
-      logout
+      logout, 
+      updateUserPlan 
     }}>
       {children}
     </AuthContext.Provider>

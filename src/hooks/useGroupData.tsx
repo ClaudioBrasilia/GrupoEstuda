@@ -49,12 +49,6 @@ const POINTS_CONFIG = {
   time: 1        // 1 point per minute (already implemented in Timer.tsx)
 };
 
-
-type RealtimeUserPointsPayload = {
-  group_id?: string;
-  points?: number;
-};
-
 export const useGroupData = (groupId: string | undefined) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -279,12 +273,10 @@ export const useGroupData = (groupId: string | undefined) => {
           table: 'user_points',
           filter: `user_id=eq.${user.id}`
         },
-        (payload: RealtimePostgresChangesPayload<RealtimeUserPointsPayload>) => {
-          const data = (payload.new ?? {}) as RealtimeUserPointsPayload;
-
-          if (data.group_id === groupId && typeof data.points === 'number') {
+        (payload: RealtimePostgresChangesPayload<{ group_id: string; points: number }>) => {
+          if (payload.new && payload.new.group_id === groupId) {
             console.log('📡 Pontos do usuário atualizados');
-            setUserPoints(data.points);
+            setUserPoints(payload.new.points);
           }
         }
       )
