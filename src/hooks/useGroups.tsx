@@ -13,6 +13,7 @@ export interface Group {
   creator_id: string;
   created_at: string;
   isMember?: boolean;
+  isPremium?: boolean;
 }
 
 export const useGroups = () => {
@@ -64,7 +65,8 @@ export const useGroups = () => {
           return {
             ...group,
             members: count || 0,
-            isMember: !!membership
+            isMember: !!membership,
+            isPremium: group.type === 'premium'
           };
         })
       );

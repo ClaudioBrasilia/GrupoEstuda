@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Search, User, Users, Crown, AlertCircle, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
-import { useGroups } from '@/hooks/useGroups';
+import { Group, useGroups } from '@/hooks/useGroups';
 import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -147,7 +147,7 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleGroupClick = async (group: any) => {
+  const handleGroupClick = async (group: Group) => {
     // Premium gating for premium groups
     if (group.isPremium && user?.plan !== 'premium') {
       toast.error('Este é um grupo exclusivo para usuários Premium');
