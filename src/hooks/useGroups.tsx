@@ -13,6 +13,7 @@ export interface Group {
   creator_id: string;
   created_at: string;
   isMember?: boolean;
+  isPremium?: boolean;
 }
 
 export const useGroups = () => {

@@ -18,8 +18,8 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthActionLoading: boolean;
-  login: (email: string, password: string) => Promise<{ error: any }>;
-  register: (name: string, email: string, password: string) => Promise<{ error: any }>;
+  login: (email: string, password: string) => Promise<{ error: AuthError | { message: string } | null }>;
+  register: (name: string, email: string, password: string) => Promise<{ error: AuthError | { message: string } | null }>;
   logout: () => Promise<void>;
   updateUserPlan: (plan: PlanType) => Promise<void>;
 }

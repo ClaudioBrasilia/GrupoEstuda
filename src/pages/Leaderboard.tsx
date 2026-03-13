@@ -148,7 +148,7 @@ const Leaderboard: React.FC = () => {
                       <div>
                         <div className="font-medium flex items-center gap-1.5">
                           {user.name}
-                          {(user as any).plan === 'premium' && <PremiumBadge size="sm" />}
+                          {user.plan === 'premium' && <PremiumBadge size="sm" />}
                           {user.isCurrentUser && <span className="text-xs ml-1 text-primary">(Você)</span>}
                         </div>
                         <div className="text-xs text-muted-foreground">
