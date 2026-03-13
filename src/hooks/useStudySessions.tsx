@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/sonner';
 import type { Database } from '@/integrations/supabase/types';
 
 export interface StudySession {
@@ -25,6 +24,11 @@ interface StudySessionMetricsInput {
   exercises?: number | null;
 }
 
+interface GoalSnapshot {
+  id: string;
+  current: number;
+}
+
 export interface Subject {
   id: string;
   name: string;
@@ -45,7 +49,7 @@ export const useStudySessions = () => {
 
   useEffect(() => {
     if (!user) return;
-    
+
     fetchData();
 
     const channel = supabase
@@ -92,6 +96,8 @@ export const useStudySessions = () => {
       setGroups(formattedGroups);
 
       const groupIds = formattedGroups.map(g => g.id);
+      let formattedSubjects: Subject[] = [];
+
       if (groupIds.length > 0) {
         const { data: subjectsData } = await supabase
           .from('subjects')
@@ -99,14 +105,14 @@ export const useStudySessions = () => {
           .in('group_id', groupIds)
           .order('name');
 
-        const formattedSubjects = subjectsData?.map(subj => ({
+        formattedSubjects = subjectsData?.map(subj => ({
           id: subj.id,
           name: subj.name,
           group_id: subj.group_id
         })) || [];
-
-        setSubjects(formattedSubjects);
       }
+
+      setSubjects(formattedSubjects);
 
       const { data: sessionsData } = await supabase
         .from('study_sessions')
@@ -117,7 +123,7 @@ export const useStudySessions = () => {
       const formattedSessions = sessionsData?.map(session => ({
         id: session.id,
         subject_id: session.subject_id,
-        subject_name: subjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
+        subject_name: formattedSubjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
         duration_minutes: session.duration_minutes,
         pages: session.pages,
         exercises: session.exercises,
@@ -160,6 +166,26 @@ export const useStudySessions = () => {
       const insertUserId = metrics?.user_id ?? user.id;
       const insertSubjectId = metrics?.subject_id ?? normalizedSubjectId;
 
+      const { data: userPointsBefore } = groupId
+        ? await supabase
+            .from('user_points')
+            .select('points')
+            .eq('user_id', insertUserId)
+            .eq('group_id', groupId)
+            .maybeSingle()
+        : { data: null };
+
+      const goalsQuery = supabase
+        .from('goals')
+        .select('id,current')
+        .eq('type', 'time');
+
+      const scopedGoalsQuery = insertSubjectId
+        ? goalsQuery.eq('subject_id', insertSubjectId)
+        : goalsQuery.is('subject_id', null);
+
+      const { data: goalsBefore } = await scopedGoalsQuery;
+
       const sessionInsert: Database['public']['Tables']['study_sessions']['Insert'] = {
         user_id: insertUserId,
         subject_id: insertSubjectId,
@@ -179,8 +205,61 @@ export const useStudySessions = () => {
 
       if (error) throw error;
 
-      // Fonte única de verdade para metas/pontos: trigger SQL no banco.
-      // Não realizar atualizações client-side para evitar dupla contabilização.
+      // Fallback de consistência para ambientes sem trigger SQL aplicado.
+      if (groupId) {
+        const pointsBefore = userPointsBefore?.points ?? 0;
+        const { data: userPointsAfter } = await supabase
+          .from('user_points')
+          .select('points')
+          .eq('user_id', insertUserId)
+          .eq('group_id', groupId)
+          .maybeSingle();
+
+        const pointsAfter = userPointsAfter?.points ?? 0;
+        if (pointsAfter <= pointsBefore) {
+          await supabase
+            .from('user_points')
+            .upsert({
+              user_id: insertUserId,
+              group_id: groupId,
+              points: pointsBefore + points,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id,group_id'
+            });
+        }
+      }
+
+      const goalsBeforeMap = new Map<string, number>(
+        ((goalsBefore || []) as GoalSnapshot[]).map((goal) => [goal.id, goal.current || 0])
+      );
+
+      if (goalsBeforeMap.size > 0) {
+        const goalsAfterQuery = supabase
+          .from('goals')
+          .select('id,current')
+          .eq('type', 'time');
+
+        const scopedGoalsAfterQuery = insertSubjectId
+          ? goalsAfterQuery.eq('subject_id', insertSubjectId)
+          : goalsAfterQuery.is('subject_id', null);
+
+        const { data: goalsAfter } = await scopedGoalsAfterQuery;
+        const hasUpdatedGoalByTrigger = ((goalsAfter || []) as GoalSnapshot[])
+          .some((goal) => (goal.current || 0) > (goalsBeforeMap.get(goal.id) || 0));
+
+        if (!hasUpdatedGoalByTrigger) {
+          for (const [goalId, current] of goalsBeforeMap.entries()) {
+            await supabase
+              .from('goals')
+              .update({
+                current: current + durationMinutes,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', goalId);
+          }
+        }
+      }
 
       const subjectName = subjects.find(s => s.id === insertSubjectId)?.name || 'Matéria Geral';
       const newSession: StudySession = {

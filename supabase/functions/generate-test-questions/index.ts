@@ -97,7 +97,7 @@ Formato esperado:
     }
 
     const data = await response.json();
-    let content = data.choices[0]?.message?.content;
+    const content = data.choices[0]?.message?.content;
     
     if (!content) throw new Error('No content in AI response');
 

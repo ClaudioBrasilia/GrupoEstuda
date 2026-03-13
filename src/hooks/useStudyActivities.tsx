@@ -68,7 +68,7 @@ export const useStudyActivities = (groupId?: string) => {
             .getPublicUrl(activity.photo_path);
 
           const userLiked = activity.study_activity_likes.some(
-            (like: any) => like.user_id === user?.id
+            (like: { user_id: string }) => like.user_id === user?.id
           );
 
           return {
@@ -132,7 +132,7 @@ export const useStudyActivities = (groupId?: string) => {
             .getPublicUrl(activity.photo_path);
 
           const userLiked = activity.study_activity_likes.some(
-            (like: any) => like.user_id === user?.id
+            (like: { user_id: string }) => like.user_id === user?.id
           );
 
           return {
@@ -278,9 +278,9 @@ export const useStudyActivities = (groupId?: string) => {
       }
 
       return { success: true, data };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Erro completo ao criar atividade:', error);
-      const errorMessage = error.message || 'Erro desconhecido ao criar atividade';
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao criar atividade';
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {

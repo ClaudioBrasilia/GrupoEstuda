@@ -201,9 +201,9 @@ const TestGenerator: React.FC = () => {
 
       setGeneratedTest(data.questions);
       toast.success(t('aiTests.generatingSuccess'));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to generate test:', error);
-      toast.error(error.message || t('aiTests.generatingFailed'));
+      toast.error(error instanceof Error ? error.message : t('aiTests.generatingFailed'));
     } finally {
       setIsGenerating(false);
     }
