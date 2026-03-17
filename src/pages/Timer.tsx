@@ -75,6 +75,11 @@ const Timer: React.FC = () => {
       toast.error('Estude por pelo menos 1 minuto para registrar a sessão');
       return;
     }
+
+    if (!selectedSubject || !selectedGroup) {
+      toast.error('Por favor, selecione uma matéria e um grupo antes de salvar');
+      return;
+    }
     
     setIsRunning(false);
     
@@ -84,6 +89,7 @@ const Timer: React.FC = () => {
       toast.success(`Sessão de estudo concluída! Você ganhou ${result.points} pontos!`);
       resetTimer();
     } else {
+      console.error('Erro ao salvar sessão:', result.error);
       toast.error(result.error || 'Erro ao salvar sessão de estudo');
     }
   };

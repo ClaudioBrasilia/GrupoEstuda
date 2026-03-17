@@ -166,6 +166,11 @@ export const useStudySessions = () => {
       const insertUserId = metrics?.user_id ?? user.id;
       const insertSubjectId = metrics?.subject_id ?? normalizedSubjectId;
 
+      // Validação: garantir que pelo menos um grupo seja selecionado
+      if (!groupId && !selectedGroupId) {
+        return { success: false, error: 'Por favor, selecione um grupo antes de salvar a sessão' };
+      }
+
       const { data: userPointsBefore } = groupId
         ? await supabase
             .from('user_points')
@@ -279,7 +284,9 @@ export const useStudySessions = () => {
       return { success: true, points };
     } catch (error) {
       console.error('Error creating study session:', error);
-      return { success: false, error: 'Erro ao salvar sessão de estudo' };
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar sessão de estudo';
+      console.error('Detalhes do erro:', errorMessage);
+      return { success: false, error: errorMessage };
     }
   };
 
