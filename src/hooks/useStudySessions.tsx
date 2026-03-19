@@ -3,6 +3,8 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
+export const STUDY_SESSION_SAVED_EVENT = 'study-session-saved';
+
 export interface StudySession {
   id: string;
   subject_id: string | null;
@@ -209,6 +211,13 @@ export const useStudySessions = () => {
         .single();
 
       if (error) throw error;
+
+      window.dispatchEvent(new CustomEvent(STUDY_SESSION_SAVED_EVENT, {
+        detail: {
+          userId: insertUserId,
+          groupId
+        }
+      }));
 
       // Fallback de consistência para ambientes sem trigger SQL aplicado.
       if (groupId) {

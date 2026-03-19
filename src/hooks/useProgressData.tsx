@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { getLocalDayRange, getRangeStart, isInDateRange, ProgressRange, toLocalDateKey } from '@/lib/progressDateRange';
+import { STUDY_SESSION_SAVED_EVENT } from '@/hooks/useStudySessions';
 
 interface SessionSubject {
   name: string;
@@ -497,6 +498,17 @@ export function useProgressData(
   useEffect(() => {
     if (!user) return;
 
+    const handleStudySessionSaved = (event: Event) => {
+      const customEvent = event as CustomEvent<{ userId?: string; groupId?: string | null }>;
+      const savedUserId = customEvent.detail?.userId;
+      const savedGroupId = customEvent.detail?.groupId ?? null;
+
+      if (savedUserId !== user.id) return;
+      if (groupId && savedGroupId !== groupId) return;
+
+      scheduleRefresh();
+    };
+
     const channelName = `progress_realtime:${user.id}:${groupId || goalsScopeGroupId || 'all'}`;
     const channel = supabase.channel(channelName);
 
@@ -558,12 +570,14 @@ export function useProgressData(
     }
 
     channel.subscribe();
+    window.addEventListener(STUDY_SESSION_SAVED_EVENT, handleStudySessionSaved);
 
     return () => {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
         refreshTimeoutRef.current = null;
       }
+      window.removeEventListener(STUDY_SESSION_SAVED_EVENT, handleStudySessionSaved);
       supabase.removeChannel(channel);
     };
   }, [user, groupId, goalsScopeGroupId, scheduleRefresh]);
