@@ -280,6 +280,13 @@ export const useStudySessions = () => {
       };
 
       setStudySessions(prev => [newSession, ...prev]);
+      window.dispatchEvent(new CustomEvent('study-session-created', {
+        detail: {
+          sessionId: data.id,
+          userId: insertUserId,
+          groupId,
+        },
+      }));
 
       return { success: true, points };
     } catch (error) {

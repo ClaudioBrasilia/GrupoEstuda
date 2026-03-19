@@ -497,6 +497,28 @@ export function useProgressData(
   useEffect(() => {
     if (!user) return;
 
+    const handleStudySessionCreated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ userId?: string; groupId?: string | null }>;
+      const eventUserId = customEvent.detail?.userId;
+      const eventGroupId = customEvent.detail?.groupId;
+
+      if (eventUserId && eventUserId !== user.id) return;
+      if (groupId && eventGroupId && eventGroupId !== groupId) return;
+      if (groupId && !eventGroupId) return;
+
+      scheduleRefresh();
+    };
+
+    window.addEventListener('study-session-created', handleStudySessionCreated);
+
+    return () => {
+      window.removeEventListener('study-session-created', handleStudySessionCreated);
+    };
+  }, [user, groupId, goalsScopeGroupId, scheduleRefresh]);
+
+  useEffect(() => {
+    if (!user) return;
+
     const channelName = `progress_realtime:${user.id}:${groupId || goalsScopeGroupId || 'all'}`;
     const channel = supabase.channel(channelName);
 
