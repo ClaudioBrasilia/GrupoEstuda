@@ -87,6 +87,7 @@ const getSessionPages = (session: StudySessionWithSubject) => session.pages ?? M
 const getSessionExercises = (session: StudySessionWithSubject) => session.exercises ?? Math.floor(getSessionDuration(session) / 10);
 const getSessionStartedAt = (session: StudySessionWithSubject) => session.started_at ?? session.startedAt ?? session.start_time ?? null;
 const getSessionCompletedAt = (session: StudySessionWithSubject) => session.completed_at ?? session.completedAt ?? null;
+const getSessionPeriodAt = (session: StudySessionWithSubject) => getSessionCompletedAt(session) ?? getSessionStartedAt(session);
 
 const formatSessionTime = (value: string | null) => {
   if (!value) return '-';
@@ -137,11 +138,11 @@ export function useProgressData(
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
         const monthSessions = sessions.filter((session) => {
-          const startedAt = getSessionStartedAt(session);
-          if (!startedAt) return false;
-          const started = new Date(startedAt);
-          if (Number.isNaN(started.getTime())) return false;
-          const key = `${started.getFullYear()}-${String(started.getMonth() + 1).padStart(2, '0')}`;
+          const periodAt = getSessionPeriodAt(session);
+          if (!periodAt) return false;
+          const periodDate = new Date(periodAt);
+          if (Number.isNaN(periodDate.getTime())) return false;
+          const key = `${periodDate.getFullYear()}-${String(periodDate.getMonth() + 1).padStart(2, '0')}`;
           return key === monthKey;
         });
 
@@ -177,9 +178,9 @@ export function useProgressData(
       const dateStr = toLocalDateKey(date);
 
       const daySessions = sessions.filter((session) => {
-        const completedOrStartedAt = getSessionCompletedAt(session) ?? getSessionStartedAt(session);
-        if (!completedOrStartedAt) return false;
-        return toLocalDateKey(completedOrStartedAt) === dateStr;
+        const periodAt = getSessionPeriodAt(session);
+        if (!periodAt) return false;
+        return toLocalDateKey(periodAt) === dateStr;
       });
 
       const dayEvents = goalEvents.filter((event) => toLocalDateKey(event.created_at) === dateStr);
@@ -335,7 +336,7 @@ export function useProgressData(
 
     let streakQuery = supabase
       .from('study_sessions')
-      .select('started_at')
+      .select('started_at, completed_at')
       .eq('user_id', user.id)
       .not('completed_at', 'is', null)
       .order('started_at', { ascending: false });
@@ -351,7 +352,12 @@ export function useProgressData(
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
 
-    const studyDates = new Set(sessions.map(session => toLocalDateKey(session.started_at)));
+    const studyDates = new Set(
+      sessions
+        .map((session) => session.completed_at ?? session.started_at)
+        .filter((value): value is string => Boolean(value))
+        .map((value) => toLocalDateKey(value))
+    );
 
     if (!studyDates.has(toLocalDateKey(currentDate))) {
       currentDate.setDate(currentDate.getDate() - 1);
@@ -382,7 +388,7 @@ export function useProgressData(
           )
         `)
         .eq('user_id', user.id)
-        .gte('started_at', startDate.toISOString())
+        .gte('completed_at', startDate.toISOString())
         .not('completed_at', 'is', null);
 
       if (groupId) {
