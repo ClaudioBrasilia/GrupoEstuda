@@ -77,6 +77,23 @@ export const TimerProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [isRunning]);
 
+  // Protect in-progress sessions from accidental page exits before they are saved
+  useEffect(() => {
+    const hasPendingSession = seconds > 0;
+    if (!hasPendingSession) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [seconds]);
+
   const resetTimer = () => {
     setSeconds(0);
     setIsRunning(false);
