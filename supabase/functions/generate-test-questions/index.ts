@@ -1,11 +1,146 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAiKey = Deno.env.get('OPENAI_API_KEY');
+type Difficulty = 'easy' | 'medium' | 'hard';
+
+interface GenerateRequestBody {
+  topic?: string;
+  amount?: number;
+  difficulty?: Difficulty;
+  content?: string;
+  numQuestions?: number;
+  subjects?: string[];
+  fileUrl?: string;
+}
+
+interface GeneratedQuestion {
+  id: number;
+  context: string | null;
+  question: string;
+  options: string[];
+  answer: string;
+  explanation: string | null;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const DEFAULT_MODEL = Deno.env.get('OPENAI_MODEL') ?? 'gpt-4o-mini';
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+
+const normalizeDifficulty = (value?: string): Difficulty => {
+  if (value === 'easy' || value === 'medium' || value === 'hard') {
+    return value;
+  }
+
+  return 'medium';
+};
+
+const sanitizeAmount = (value?: number) => {
+  if (!value || Number.isNaN(value)) return 10;
+  return Math.min(Math.max(Math.trunc(value), 1), 30);
+};
+
+const extractTextFromFile = async (fileUrl?: string) => {
+  if (!fileUrl) return '';
+
+  const fileResponse = await fetch(fileUrl);
+  if (!fileResponse.ok) {
+    throw new Error('Não foi possível baixar o arquivo enviado para gerar as questões.');
+  }
+
+  const contentType = fileResponse.headers.get('content-type') ?? '';
+  if (contentType.includes('application/pdf')) {
+    return '';
+  }
+
+  const text = await fileResponse.text();
+  return text.trim().slice(0, 8000);
+};
+
+const buildPrompt = ({
+  topic,
+  amount,
+  difficulty,
+  content,
+  subjects,
+}: {
+  topic?: string;
+  amount: number;
+  difficulty: Difficulty;
+  content?: string;
+  subjects: string[];
+}) => {
+  const contextParts = [
+    topic ? `Tópico principal: ${topic}` : null,
+    subjects.length > 0 ? `Matérias de apoio: ${subjects.join(', ')}` : null,
+    content ? `Conteúdo base:\n${content}` : null,
+  ].filter(Boolean);
+
+  return [
+    `Gere exatamente ${amount} questões de múltipla escolha em português do Brasil.`,
+    `Dificuldade: ${difficulty}.`,
+    'Use linguagem clara, nível vestibular/ENEM e varie os enunciados.',
+    contextParts.length > 0 ? contextParts.join('\n\n') : 'Se não houver contexto, use conhecimentos gerais coerentes com o tema informado.',
+    'Responda somente em JSON válido no formato:',
+    '{"questions":[{"id":1,"context":"texto opcional","question":"enunciado","options":["A","B","C","D"],"answer":"A","explanation":"explicação curta"}]}',
+    'Cada questão deve ter 4 alternativas, exatamente 1 resposta correta e ids numéricos sequenciais.',
+    'O campo answer deve conter exatamente o texto de uma das alternativas enviadas em options.',
+  ].join('\n\n');
+};
+
+const normalizeQuestions = (payload: unknown, expectedAmount: number): GeneratedQuestion[] => {
+  const maybeQuestions = Array.isArray(payload)
+    ? payload
+    : (payload && typeof payload === 'object' && Array.isArray((payload as { questions?: unknown[] }).questions))
+      ? (payload as { questions: unknown[] }).questions
+      : [];
+
+  const normalized = maybeQuestions
+    .map((item, index) => {
+      if (!item || typeof item !== 'object') return null;
+
+      const question = item as Record<string, unknown>;
+      const options = Array.isArray(question.options)
+        ? question.options.filter((option): option is string => typeof option === 'string' && option.trim().length > 0)
+        : [];
+      const answer = typeof question.answer === 'string' ? question.answer.trim() : '';
+      const prompt = typeof question.question === 'string' ? question.question.trim() : '';
+
+      if (!prompt || options.length < 2 || !answer || !options.includes(answer)) {
+        return null;
+      }
+
+      return {
+        id: typeof question.id === 'number' ? question.id : index + 1,
+        context: typeof question.context === 'string' && question.context.trim().length > 0
+          ? question.context.trim()
+          : null,
+        question: prompt,
+        options,
+        answer,
+        explanation: typeof question.explanation === 'string' && question.explanation.trim().length > 0
+          ? question.explanation.trim()
+          : null,
+      } satisfies GeneratedQuestion;
+    })
+    .filter((question): question is GeneratedQuestion => question !== null)
+    .slice(0, expectedAmount)
+    .map((question, index) => ({ ...question, id: index + 1 }));
+
+  if (normalized.length === 0) {
+    throw new Error('A IA retornou questões em formato inválido.');
+  }
+
+  return normalized;
 };
 
 serve(async (req) => {
@@ -14,129 +149,78 @@ serve(async (req) => {
   }
 
   try {
-    if (!openAiKey) {
-      console.error('OPENAI_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ error: 'OpenAI API key not configured' }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!OPENAI_API_KEY) {
+      return jsonResponse({ error: 'OPENAI_API_KEY não configurada no ambiente da Edge Function.' }, 500);
     }
 
-    const { numQuestions, difficulty, subjects, topic, fileUrl } = await req.json();
-    
-    // Validação: exige algum contexto
-    if ((!subjects || subjects.length === 0) && !topic && !fileUrl) {
-      return new Response(
-        JSON.stringify({ error: 'Forneça um assunto, tópico ou arquivo para gerar as questões.' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const body = await req.json() as GenerateRequestBody;
+    const topic = body.topic?.trim();
+    const subjects = Array.isArray(body.subjects)
+      ? body.subjects.filter((subject): subject is string => typeof subject === 'string' && subject.trim().length > 0)
+      : [];
+    const amount = sanitizeAmount(body.amount ?? body.numQuestions);
+    const difficulty = normalizeDifficulty(body.difficulty);
+    const uploadedContent = await extractTextFromFile(body.fileUrl);
+    const content = body.content?.trim() || uploadedContent;
+
+    if (!topic && subjects.length === 0 && !content) {
+      return jsonResponse({ error: 'Envie topic, subjects ou content para gerar o teste.' }, 400);
     }
 
-    let extractedText = '';
-    if (fileUrl) {
-      console.log('Downloading file from:', fileUrl);
-      const fileResponse = await fetch(fileUrl);
-      if (fileResponse.ok) {
-        // Se for PDF, idealmente usaríamos um parser, mas como fallback/simplificação
-        // vamos tratar como texto se for .txt ou tentar extrair o que for possível.
-        // Nota: Para PDF real em Deno, costuma-se usar bibliotecas específicas.
-        extractedText = await fileResponse.text();
-        // Limitar tamanho do texto para o prompt
-        extractedText = extractedText.substring(0, 8000);
-      }
-    }
+    const prompt = buildPrompt({ topic, amount, difficulty, content, subjects });
 
-    const contextParts = [];
-    if (subjects && subjects.length > 0) contextParts.push(`Matérias: ${subjects.join(", ")}`);
-    if (topic) contextParts.push(`Tópico específico: ${topic}`);
-    if (extractedText) contextParts.push(`Conteúdo base: ${extractedText}`);
-
-    const prompt = `Crie exatamente ${numQuestions} questões de múltipla escolha baseadas no seguinte contexto:
-${contextParts.join("\n")}
-
-REGRAS:
-- Dificuldade: ${difficulty}
-- Estilo: ENEM/Vestibulares brasileiros recentes.
-- Responda APENAS com um array JSON puro.
-- NÃO use blocos de código markdown (\`\`\`json).
-- Cada questão deve ter: id, context (2-4 linhas), question, options (array com 5), answer (texto da correta), explanation.
-
-Formato esperado:
-[{"id":1,"context":"...","question":"...","options":["..."],"answer":"...","explanation":"..."}]`;
-
-    console.log('Calling OpenAI...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAiKey}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: DEFAULT_MODEL,
+        temperature: 0.4,
+        response_format: { type: 'json_object' },
         messages: [
           {
             role: 'system',
-            content: 'Você é um professor especialista em exames brasileiros. Responda apenas com JSON puro, sem markdown.'
+            content: 'Você é um professor brasileiro. Gere apenas JSON válido com questões objetivas.',
           },
           {
             role: 'user',
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
-        temperature: 0.5,
-        response_format: { type: "json_object" }
-      })
+      }),
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      return new Response(
-        JSON.stringify({ error: `OpenAI Error: ${errorData.error?.message || 'Unknown error'}` }), 
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      const errorPayload = await response.json().catch(() => null);
+      const message = errorPayload?.error?.message ?? 'Falha ao gerar questões com o provedor de IA.';
+      return jsonResponse({ error: message }, response.status);
     }
 
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
-    
-    if (!content) throw new Error('No content in AI response');
+    const completion = await response.json();
+    const contentText = completion?.choices?.[0]?.message?.content;
 
-    let parsedData;
-    try {
-      parsedData = JSON.parse(content);
-      if (!Array.isArray(parsedData) && parsedData.questions) {
-        parsedData = parsedData.questions;
-      }
-    } catch (e) {
-      console.error('Parsing error:', e, content);
-      return new Response(
-        JSON.stringify({ error: 'Erro ao processar JSON da IA' }), 
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (typeof contentText !== 'string' || !contentText.trim()) {
+      throw new Error('A resposta do provedor de IA veio vazia.');
     }
-    
-    const formattedQuestions = Array.isArray(parsedData) 
-      ? parsedData.map((q, index) => ({
-          id: q.id || index + 1,
-          context: q.context || null,
-          question: q.question || '',
-          options: Array.isArray(q.options) ? q.options : [],
-          answer: q.answer || '',
-          explanation: q.explanation || null
-        })).filter(q => q.question && q.options.length > 0)
-      : [];
 
-    return new Response(
-      JSON.stringify({ 
-        questions: formattedQuestions,
-        meta: { totalGenerated: formattedQuestions.length }
-      }), 
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    const parsedPayload = JSON.parse(contentText);
+    const questions = normalizeQuestions(parsedPayload, amount);
+
+    return jsonResponse({
+      questions,
+      meta: {
+        requestedAmount: amount,
+        returnedAmount: questions.length,
+        difficulty,
+        model: DEFAULT_MODEL,
+      },
+    });
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }), 
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error('generate-test-questions error:', error);
+    return jsonResponse({
+      error: error instanceof Error ? error.message : 'Erro interno ao gerar teste.',
+    }, 500);
   }
 });
