@@ -424,6 +424,86 @@ export type Database = {
           },
         ]
       }
+      test_attempt_answers: {
+        Row: {
+          attempt_id: string
+          created_at: string
+          id: string
+          is_correct: boolean
+          test_question_id: string
+          user_answer: string | null
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          test_question_id: string
+          user_answer?: string | null
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean
+          test_question_id?: string
+          user_answer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_attempt_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "test_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_attempt_answers_test_question_id_fkey"
+            columns: ["test_question_id"]
+            isOneToOne: false
+            referencedRelation: "test_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_attempts: {
+        Row: {
+          correct_answers: number
+          created_at: string
+          id: string
+          score_percentage: number
+          test_id: string
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          correct_answers: number
+          created_at?: string
+          id?: string
+          score_percentage: number
+          test_id: string
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          score_percentage?: number
+          test_id?: string
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_attempts_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tests: {
         Row: {
           created_at: string
