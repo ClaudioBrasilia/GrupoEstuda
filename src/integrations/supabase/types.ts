@@ -380,6 +380,89 @@ export type Database = {
         }
         Relationships: []
       }
+      test_questions: {
+        Row: {
+          answer: string
+          context: string | null
+          created_at: string
+          explanation: string | null
+          id: string
+          options: Json
+          position: number
+          question: string
+          test_id: string
+        }
+        Insert: {
+          answer: string
+          context?: string | null
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          options: Json
+          position: number
+          question: string
+          test_id: string
+        }
+        Update: {
+          answer?: string
+          context?: string | null
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          options?: Json
+          position?: number
+          question?: string
+          test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_questions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tests: {
+        Row: {
+          created_at: string
+          difficulty: string
+          id: string
+          questions_count: number
+          source_file_url: string | null
+          subject_names: string[]
+          title: string
+          topic: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty?: string
+          id?: string
+          questions_count?: number
+          source_file_url?: string | null
+          subject_names?: string[]
+          title: string
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string
+          id?: string
+          questions_count?: number
+          source_file_url?: string | null
+          subject_names?: string[]
+          title?: string
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_activities: {
         Row: {
           created_at: string
