@@ -1,5 +1,7 @@
 # StudyBoost: estrutura mínima para o gerador de questões
 
+> Versão final consolidada do PR: mantém `profiles`, `tests`, `test_questions`, RLS, trigger de profile e `study-materials` opcional.
+
 Este repositório já contém um schema maior, mas para portar o fluxo **Criar Teste / generate-test-questions** para o **StudyBoost** não é necessário copiar as 18 tabelas do projeto completo.
 
 ## O mínimo necessário

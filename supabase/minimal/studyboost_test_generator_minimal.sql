@@ -1,4 +1,5 @@
 -- Minimal Supabase structure required for the AI test generator flow.
+-- Final consolidated version for the PR conflict resolution.
 -- This script intentionally does NOT recreate the full GrupoEstuda schema.
 -- It only provides the pieces that the current "Criar Teste" flow actually uses:
 --   1) Supabase Auth users
