@@ -13,7 +13,7 @@ import { toast } from '@/components/ui/sonner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, XCircle, FileText, Upload } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 interface Subject {
   id: string;
@@ -42,6 +42,14 @@ interface TestResult {
   }>;
 }
 
+interface SavedTestSummary {
+  id: string;
+  title: string;
+  difficulty: string;
+  questions_count: number;
+  created_at: string;
+}
+
 const TestGenerator: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -53,6 +61,10 @@ const TestGenerator: React.FC = () => {
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [isCorrected, setIsCorrected] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
+  const [savedTests, setSavedTests] = useState<SavedTestSummary[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const [isSavingTest, setIsSavingTest] = useState<boolean>(false);
+  const [savedTestId, setSavedTestId] = useState<string | null>(null);
   
   // Novos estados para o modo personalizado
   const [topic, setTopic] = useState<string>('');
@@ -71,6 +83,122 @@ const TestGenerator: React.FC = () => {
     { id: 'english', name: t('groups.subjects.english'), selected: false },
     { id: 'essay', name: t('groups.subjects.essay'), selected: false },
   ]);
+
+  useEffect(() => {
+    if (user?.id && user.plan === 'premium') {
+      fetchSavedTests();
+    }
+  }, [user?.id, user?.plan]);
+
+  const fetchSavedTests = async () => {
+    if (!user) return;
+
+    setIsLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('tests')
+        .select('id, title, difficulty, questions_count, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setSavedTests(data || []);
+    } catch (error) {
+      console.error('Failed to load saved tests:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const buildTestTitle = (selectedSubjectNames: string[]) => {
+    if (topic.trim()) return topic.trim();
+    if (selectedSubjectNames.length > 0) return selectedSubjectNames.join(', ');
+    return 'Simulado personalizado';
+  };
+
+  const saveGeneratedTest = async (questions: GeneratedQuestion[], selectedSubjectNames: string[]) => {
+    if (!user || questions.length === 0) return null;
+
+    setIsSavingTest(true);
+    try {
+      const title = buildTestTitle(selectedSubjectNames);
+
+      const { data: test, error: testError } = await supabase
+        .from('tests')
+        .insert({
+          user_id: user.id,
+          title,
+          topic: topic.trim() || null,
+          difficulty,
+          subject_names: selectedSubjectNames,
+          source_file_url: fileUrl || null,
+          questions_count: questions.length,
+        })
+        .select('id')
+        .single();
+
+      if (testError) throw testError;
+
+      const { error: questionsError } = await supabase
+        .from('test_questions')
+        .insert(
+          questions.map((question, index) => ({
+            test_id: test.id,
+            position: index + 1,
+            context: question.context || null,
+            question: question.question,
+            options: question.options || [],
+            answer: question.answer || '',
+            explanation: question.explanation || null,
+          }))
+        );
+
+      if (questionsError) throw questionsError;
+
+      setSavedTestId(test.id);
+      await fetchSavedTests();
+      toast.success('Teste salvo no histórico!');
+      return test.id;
+    } catch (error) {
+      console.error('Failed to save generated test:', error);
+      toast.error('O teste foi gerado, mas não foi possível salvá-lo no histórico.');
+      return null;
+    } finally {
+      setIsSavingTest(false);
+    }
+  };
+
+  const loadSavedTest = async (testId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('test_questions')
+        .select('position, context, question, options, answer, explanation')
+        .eq('test_id', testId)
+        .order('position', { ascending: true });
+
+      if (error) throw error;
+
+      const restoredQuestions: GeneratedQuestion[] = (data || []).map((question) => ({
+        id: question.position,
+        context: question.context || undefined,
+        question: question.question,
+        options: Array.isArray(question.options) ? question.options.filter((item): item is string => typeof item === 'string') : [],
+        answer: question.answer,
+        explanation: question.explanation || undefined,
+      }));
+
+      setGeneratedTest(restoredQuestions);
+      setUserAnswers({});
+      setIsCorrected(false);
+      setTestResult(null);
+      setSavedTestId(testId);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.success('Teste carregado do histórico.');
+    } catch (error) {
+      console.error('Failed to load saved test:', error);
+      toast.error('Não foi possível carregar este teste salvo.');
+    }
+  };
   
   const toggleSubject = (id: string) => {
     setSubjects(subjects.map(subject => 
@@ -166,6 +294,7 @@ const TestGenerator: React.FC = () => {
     setUserAnswers({});
     setIsCorrected(false);
     setTestResult(null);
+    setSavedTestId(null);
     setTopic('');
     setFileUrl('');
   };
@@ -200,6 +329,8 @@ const TestGenerator: React.FC = () => {
       }
 
       setGeneratedTest(data.questions);
+      setSavedTestId(null);
+      await saveGeneratedTest(data.questions, selectedSubjectNames);
       toast.success(t('aiTests.generatingSuccess'));
     } catch (error: unknown) {
       console.error('Failed to generate test:', error);
@@ -229,6 +360,42 @@ const TestGenerator: React.FC = () => {
         {!generatedTest ? (
           <div className="space-y-6">
             <h1 className="text-2xl font-bold text-study-primary text-center">{t('aiTests.title')}</h1>
+
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-semibold text-lg">Histórico recente</h2>
+                    <p className="text-sm text-gray-600">Abra um teste salvo para revisar as questões depois.</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={fetchSavedTests} disabled={isLoadingHistory}>
+                    {isLoadingHistory ? 'Atualizando...' : 'Atualizar'}
+                  </Button>
+                </div>
+
+                {savedTests.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    {isLoadingHistory ? 'Carregando histórico...' : 'Nenhum teste salvo ainda.'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {savedTests.map((test) => (
+                      <div key={test.id} className="flex items-center justify-between rounded border p-3 gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{test.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {test.questions_count} questões • {t(`aiTests.difficulties.${test.difficulty}`)} • {new Date(test.created_at).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => loadSavedTest(test.id)}>
+                          Abrir
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
             
             <div className="space-y-4">
               <div>
@@ -307,9 +474,16 @@ const TestGenerator: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold text-study-primary">{t('aiTests.generatedTest')}</h1>
-              <Button onClick={handleCreateNewTest} variant="outline" size="sm">
-                Novo Simulado
-              </Button>
+              <div className="flex items-center gap-2">
+                {isSavingTest ? (
+                  <span className="text-sm text-gray-500">Salvando...</span>
+                ) : savedTestId ? (
+                  <span className="text-sm text-green-600">Salvo no histórico</span>
+                ) : null}
+                <Button onClick={handleCreateNewTest} variant="outline" size="sm">
+                  Novo Simulado
+                </Button>
+              </div>
             </div>
             
             {isCorrected && testResult && (

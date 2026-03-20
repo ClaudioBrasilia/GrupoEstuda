@@ -1,5 +1,7 @@
 # StudyBoost: estrutura mínima para o gerador de questões
 
+> Versão final consolidada do PR: mantém `profiles`, `tests`, `test_questions`, RLS, trigger de profile e `study-materials` opcional.
+
 Este repositório já contém um schema maior, mas para portar o fluxo **Criar Teste / generate-test-questions** para o **StudyBoost** não é necessário copiar as 18 tabelas do projeto completo.
 
 ## O mínimo necessário
@@ -10,10 +12,15 @@ Este repositório já contém um schema maior, mas para portar o fluxo **Criar T
   - `id uuid` referenciando `auth.users(id)`
   - `name text`
   - `plan text` com valores `free | basic | premium`
+- **`public.tests`** para salvar cada teste gerado
+- **`public.test_questions`** para salvar as questões de cada teste
 - **RLS em `public.profiles`**
   - leitura do próprio perfil
   - inserção do próprio perfil
   - atualização do próprio perfil
+- **RLS em `public.tests` e `public.test_questions`**
+  - cada teste pertence ao usuário autenticado
+  - cada questão pertence a um teste do usuário autenticado
 - **Trigger de criação automática de perfil** em `auth.users`
 - **Edge Function `generate-test-questions`**
   - com `verify_jwt = true`
@@ -33,6 +40,8 @@ Use o script:
 
 Ele cria apenas:
 - `public.profiles`
+- `public.tests`
+- `public.test_questions`
 - policies mínimas de RLS
 - trigger para auto-criação do profile
 - bucket opcional `study-materials`
@@ -64,7 +73,8 @@ As tabelas abaixo **não fazem parte do mínimo necessário** para o gerador fun
 O fluxo atual:
 - exige usuário autenticado
 - verifica se o usuário é premium via `profiles.plan`
-- gera e corrige as questões em memória na interface
-- **não salva testes, tentativas ou resultados em tabelas**
+- gera e corrige as questões na interface
+- agora pode persistir o **teste** e suas **questões** no Supabase
+- continua **sem** ranking, gamificação ou persistência de pontuação
 
-Por isso, criar tabelas extras para testes/resultados neste momento seria excesso de escopo.
+Por isso, criar tabelas extras além de `tests` e `test_questions` neste momento seria excesso de escopo.
