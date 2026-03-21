@@ -10,8 +10,6 @@ export interface StudySession {
   subject_id: string | null;
   subject_name: string;
   duration_minutes: number;
-  pages?: number | null;
-  exercises?: number | null;
   points: number;
   started_at: Date;
   completed_at: Date | null;
@@ -22,8 +20,6 @@ interface StudySessionMetricsInput {
   subject_id?: string | null;
   group_id?: string | null;
   duration_minutes?: number;
-  pages?: number | null;
-  exercises?: number | null;
 }
 
 interface GoalSnapshot {
@@ -127,8 +123,6 @@ export const useStudySessions = () => {
         subject_id: session.subject_id,
         subject_name: formattedSubjects.find(s => s.id === session.subject_id)?.name || 'Matéria Geral',
         duration_minutes: session.duration_minutes,
-        pages: session.pages,
-        exercises: session.exercises,
         points: Math.floor(session.duration_minutes),
         started_at: new Date(session.started_at),
         completed_at: session.completed_at ? new Date(session.completed_at) : null
@@ -198,8 +192,6 @@ export const useStudySessions = () => {
         subject_id: insertSubjectId,
         group_id: groupId,
         duration_minutes: durationMinutes,
-        pages: metrics?.pages ?? null,
-        exercises: metrics?.exercises ?? null,
         started_at: new Date(Date.now() - durationSeconds * 1000).toISOString(),
         completed_at: new Date().toISOString()
       };
@@ -281,8 +273,6 @@ export const useStudySessions = () => {
         subject_id: data.subject_id,
         subject_name: subjectName,
         duration_minutes: data.duration_minutes,
-        pages: data.pages,
-        exercises: data.exercises,
         points,
         started_at: new Date(data.started_at),
         completed_at: new Date(data.completed_at!)
