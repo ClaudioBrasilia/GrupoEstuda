@@ -70,6 +70,12 @@ const TestGenerator: React.FC = () => {
   const [isCorrected, setIsCorrected] = useState<boolean>(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [savedTests, setSavedTests] = useState<SavedTestSummary[]>([]);
+  const [performanceSummary, setPerformanceSummary] = useState<PerformanceSummary>({
+    overallAccuracy: null,
+    totalTestsTaken: 0,
+    bestSubject: null,
+    worstSubject: null,
+  });
   const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
   const [isSavingTest, setIsSavingTest] = useState<boolean>(false);
   const [savedTestId, setSavedTestId] = useState<string | null>(null);
@@ -104,6 +110,52 @@ const TestGenerator: React.FC = () => {
 
     setIsLoadingHistory(true);
     try {
+      const { data: allTestsData, error: allTestsError } = await supabase
+        .from('tests')
+        .select('id, subject_names');
+
+      if (allTestsError) throw allTestsError;
+
+      const { data: allAttemptsData, error: allAttemptsError } = await supabase
+        .from('test_attempts')
+        .select('test_id, correct_answers, total_questions, score_percentage');
+
+      if (allAttemptsError) throw allAttemptsError;
+
+      const testSubjects = new Map((allTestsData || []).map((test) => [
+        test.id,
+        test.subject_names && test.subject_names.length > 0 ? test.subject_names[0] : 'Sem matéria definida',
+      ]));
+
+      const attempts = allAttemptsData || [];
+      const totalQuestionsAnswered = attempts.reduce((sum, attempt) => sum + attempt.total_questions, 0);
+      const totalCorrectAnswers = attempts.reduce((sum, attempt) => sum + attempt.correct_answers, 0);
+      const subjectPerformance = new Map<string, { totalScore: number; count: number }>();
+
+      attempts.forEach((attempt) => {
+        const subject = testSubjects.get(attempt.test_id) || 'Sem matéria definida';
+        const current = subjectPerformance.get(subject) || { totalScore: 0, count: 0 };
+
+        subjectPerformance.set(subject, {
+          totalScore: current.totalScore + attempt.score_percentage,
+          count: current.count + 1,
+        });
+      });
+
+      const rankedSubjects = Array.from(subjectPerformance.entries())
+        .map(([subject, stats]) => ({
+          subject,
+          averageScore: stats.totalScore / stats.count,
+        }))
+        .sort((a, b) => b.averageScore - a.averageScore);
+
+      setPerformanceSummary({
+        overallAccuracy: totalQuestionsAnswered > 0 ? Math.round((totalCorrectAnswers / totalQuestionsAnswered) * 100) : null,
+        totalTestsTaken: attempts.length,
+        bestSubject: rankedSubjects[0]?.subject || null,
+        worstSubject: rankedSubjects[rankedSubjects.length - 1]?.subject || null,
+      });
+
       const { data, error } = await supabase
         .from('tests')
         .select('id, title, difficulty, questions_count, created_at, subject_names')
@@ -522,6 +574,32 @@ const TestGenerator: React.FC = () => {
         {!generatedTest ? (
           <div className="space-y-6">
             <h1 className="text-2xl font-bold text-study-primary text-center">{t('aiTests.title')}</h1>
+
+            <Card>
+              <CardContent className="pt-6">
+                <h2 className="font-semibold text-lg mb-4">Desempenho básico</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="rounded border p-3">
+                    <p className="text-gray-500">Acerto geral</p>
+                    <p className="font-semibold text-study-primary">
+                      {performanceSummary.overallAccuracy !== null ? `${performanceSummary.overallAccuracy}%` : '—'}
+                    </p>
+                  </div>
+                  <div className="rounded border p-3">
+                    <p className="text-gray-500">Total de testes feitos</p>
+                    <p className="font-semibold text-study-primary">{performanceSummary.totalTestsTaken}</p>
+                  </div>
+                  <div className="rounded border p-3">
+                    <p className="text-gray-500">Melhor matéria</p>
+                    <p className="font-semibold text-study-primary">{performanceSummary.bestSubject || '—'}</p>
+                  </div>
+                  <div className="rounded border p-3">
+                    <p className="text-gray-500">Pior matéria</p>
+                    <p className="font-semibold text-study-primary">{performanceSummary.worstSubject || '—'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardContent className="pt-6 space-y-3">
