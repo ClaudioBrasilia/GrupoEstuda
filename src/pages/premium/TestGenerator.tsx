@@ -58,13 +58,6 @@ interface SavedTestSummary {
   } | null;
 }
 
-interface PerformanceSummary {
-  overallAccuracy: number | null;
-  totalTestsTaken: number;
-  bestSubject: string | null;
-  worstSubject: string | null;
-}
-
 const TestGenerator: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
