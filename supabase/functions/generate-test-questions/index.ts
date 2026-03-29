@@ -202,20 +202,27 @@ serve(async (req) => {
       return jsonResponse({ error: 'Payload inválido. Envie um JSON válido.' }, 400);
     }
     const topic = body.topic?.trim();
+    const fileUrl = body.fileUrl?.trim();
     const subjects = Array.isArray(body.subjects)
-      ? body.subjects.filter((subject): subject is string => typeof subject === 'string' && subject.trim().length > 0)
+      ? body.subjects
+        .map((subject) => (typeof subject === 'string' ? subject.trim() : ''))
+        .filter((subject): subject is string => subject.length > 0)
       : [];
     const amount = sanitizeAmount(body.amount ?? body.numQuestions);
     const difficulty = normalizeDifficulty(body.difficulty);
     let uploadedContent = '';
     try {
-      uploadedContent = await extractTextFromFile(body.fileUrl);
+      uploadedContent = await extractTextFromFile(fileUrl);
     } catch {
       return jsonResponse({ error: 'Falha ao processar arquivo enviado.' }, 400);
     }
     const content = body.content?.trim() || uploadedContent;
+    const receivedSubjects = Array.isArray(body.subjects);
 
-    if (!topic && subjects.length === 0 && !content) {
+    if (!topic && subjects.length === 0 && !content && !fileUrl) {
+      if (receivedSubjects) {
+        return jsonResponse({ error: 'Nenhuma matéria válida foi recebida.' }, 400);
+      }
       return jsonResponse({ error: 'Envie topic, subjects ou content para gerar o teste.' }, 400);
     }
 

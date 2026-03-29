@@ -516,9 +516,13 @@ const TestGenerator: React.FC = () => {
     const selectedSubjects = subjects.filter(s => s.selected);
     const trimmedTopic = topic.trim();
     const normalizedFileUrl = fileUrl.trim();
+    const selectedSubjectNames = selectedSubjects
+      .map(({ name, id }) => (typeof name === 'string' && name.trim().length > 0 ? name : id))
+      .map((subject) => subject.trim())
+      .filter((subject) => subject.length > 0);
     
     // Validação: exige assunto ou arquivo
-    if (!trimmedTopic && !normalizedFileUrl && selectedSubjects.length === 0) {
+    if (!trimmedTopic && !normalizedFileUrl && selectedSubjectNames.length === 0) {
       toast.error("Forneça um assunto, arquivo ou selecione uma matéria.");
       return;
     }
@@ -526,7 +530,12 @@ const TestGenerator: React.FC = () => {
     setIsGenerating(true);
     
     try {
-      const selectedSubjectNames = selectedSubjects.map(s => s.name);
+      console.log('generate-test-questions payload debug', {
+        selectedSubjects,
+        selectedSubjectNames,
+        topic: trimmedTopic,
+        fileUrl: normalizedFileUrl,
+      });
       
       const { data, error } = await supabase.functions.invoke('generate-test-questions', {
         body: {
