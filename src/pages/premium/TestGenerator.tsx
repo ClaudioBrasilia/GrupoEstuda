@@ -514,9 +514,11 @@ const TestGenerator: React.FC = () => {
   
   const handleGenerateTest = async () => {
     const selectedSubjects = subjects.filter(s => s.selected);
+    const trimmedTopic = topic.trim();
+    const normalizedFileUrl = fileUrl.trim();
     
     // Validação: exige assunto ou arquivo
-    if (!topic && !fileUrl && selectedSubjects.length === 0) {
+    if (!trimmedTopic && !normalizedFileUrl && selectedSubjects.length === 0) {
       toast.error("Forneça um assunto, arquivo ou selecione uma matéria.");
       return;
     }
@@ -531,8 +533,8 @@ const TestGenerator: React.FC = () => {
           numQuestions,
           difficulty,
           subjects: selectedSubjectNames,
-          topic,
-          fileUrl
+          topic: trimmedTopic,
+          fileUrl: normalizedFileUrl
         }
       });
 
