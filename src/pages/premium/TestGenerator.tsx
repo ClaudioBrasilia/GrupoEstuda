@@ -548,7 +548,22 @@ const TestGenerator: React.FC = () => {
       toast.success(t('aiTests.generatingSuccess'));
     } catch (error: unknown) {
       console.error('Failed to generate test:', error);
-      toast.error(error instanceof Error ? error.message : t('aiTests.generatingFailed'));
+
+      let errorMessage = error instanceof Error ? error.message : t('aiTests.generatingFailed');
+      const maybeError = error as { context?: Response } | null;
+
+      if (maybeError?.context && typeof maybeError.context.json === 'function') {
+        try {
+          const payload = await maybeError.context.json() as { error?: string };
+          if (typeof payload?.error === 'string' && payload.error.trim()) {
+            errorMessage = payload.error;
+          }
+        } catch {
+          // mantém mensagem padrão quando não houver payload JSON
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }

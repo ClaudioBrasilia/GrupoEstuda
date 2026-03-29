@@ -195,14 +195,24 @@ serve(async (req) => {
       return jsonResponse({ error: 'Acesso permitido apenas para usuários Premium.' }, 403);
     }
 
-    const body = await req.json() as GenerateRequestBody;
+    let body: GenerateRequestBody;
+    try {
+      body = await req.json() as GenerateRequestBody;
+    } catch {
+      return jsonResponse({ error: 'Payload inválido. Envie um JSON válido.' }, 400);
+    }
     const topic = body.topic?.trim();
     const subjects = Array.isArray(body.subjects)
       ? body.subjects.filter((subject): subject is string => typeof subject === 'string' && subject.trim().length > 0)
       : [];
     const amount = sanitizeAmount(body.amount ?? body.numQuestions);
     const difficulty = normalizeDifficulty(body.difficulty);
-    const uploadedContent = await extractTextFromFile(body.fileUrl);
+    let uploadedContent = '';
+    try {
+      uploadedContent = await extractTextFromFile(body.fileUrl);
+    } catch {
+      return jsonResponse({ error: 'Falha ao processar arquivo enviado.' }, 400);
+    }
     const content = body.content?.trim() || uploadedContent;
 
     if (!topic && subjects.length === 0 && !content) {
@@ -236,7 +246,10 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => null);
-      const message = errorPayload?.error?.message ?? 'Falha ao gerar questões com o provedor de IA.';
+      const providerMessage = errorPayload?.error?.message;
+      const message = providerMessage
+        ? `Falha ao chamar o provedor de IA: ${providerMessage}`
+        : 'Falha ao chamar o provedor de IA.';
       return jsonResponse({ error: message }, response.status);
     }
 
