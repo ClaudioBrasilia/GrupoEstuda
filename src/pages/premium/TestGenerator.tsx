@@ -514,9 +514,11 @@ const TestGenerator: React.FC = () => {
   
   const handleGenerateTest = async () => {
     const selectedSubjects = subjects.filter(s => s.selected);
+    const trimmedTopic = topic.trim();
+    const normalizedFileUrl = fileUrl.trim();
     
     // Validação: exige assunto ou arquivo
-    if (!topic && !fileUrl && selectedSubjects.length === 0) {
+    if (!trimmedTopic && !normalizedFileUrl && selectedSubjects.length === 0) {
       toast.error("Forneça um assunto, arquivo ou selecione uma matéria.");
       return;
     }
@@ -531,8 +533,8 @@ const TestGenerator: React.FC = () => {
           numQuestions,
           difficulty,
           subjects: selectedSubjectNames,
-          topic,
-          fileUrl
+          topic: trimmedTopic,
+          fileUrl: normalizedFileUrl
         }
       });
 
@@ -548,7 +550,22 @@ const TestGenerator: React.FC = () => {
       toast.success(t('aiTests.generatingSuccess'));
     } catch (error: unknown) {
       console.error('Failed to generate test:', error);
-      toast.error(error instanceof Error ? error.message : t('aiTests.generatingFailed'));
+
+      let errorMessage = error instanceof Error ? error.message : t('aiTests.generatingFailed');
+      const maybeError = error as { context?: Response } | null;
+
+      if (maybeError?.context && typeof maybeError.context.json === 'function') {
+        try {
+          const payload = await maybeError.context.json() as { error?: string };
+          if (typeof payload?.error === 'string' && payload.error.trim()) {
+            errorMessage = payload.error;
+          }
+        } catch {
+          // mantém mensagem padrão quando não houver payload JSON
+        }
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }
