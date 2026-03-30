@@ -521,9 +521,9 @@ const TestGenerator: React.FC = () => {
       .map((subject) => subject.trim())
       .filter((subject) => subject.length > 0);
     
-    // Validação: assunto OU arquivo OU ao menos uma matéria
+    // Validação: exige assunto ou arquivo
     if (!trimmedTopic && !normalizedFileUrl && selectedSubjectNames.length === 0) {
-      toast.error("Informe um assunto, envie um arquivo ou selecione ao menos uma matéria.");
+      toast.error("Forneça um assunto, arquivo ou selecione uma matéria.");
       return;
     }
     

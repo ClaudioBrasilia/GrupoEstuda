@@ -217,9 +217,13 @@ serve(async (req) => {
       return jsonResponse({ error: 'Falha ao processar arquivo enviado.' }, 400);
     }
     const content = body.content?.trim() || uploadedContent;
+    const receivedSubjects = Array.isArray(body.subjects);
 
     if (!topic && subjects.length === 0 && !content && !fileUrl) {
-      return jsonResponse({ error: 'Informe um assunto, envie um arquivo ou selecione ao menos uma matéria.' }, 400);
+      if (receivedSubjects) {
+        return jsonResponse({ error: 'Nenhuma matéria válida foi recebida.' }, 400);
+      }
+      return jsonResponse({ error: 'Envie topic, subjects ou content para gerar o teste.' }, 400);
     }
 
     const prompt = buildPrompt({ topic, amount, difficulty, content, subjects });
