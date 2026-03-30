@@ -30,6 +30,7 @@ const corsHeaders = {
 
 const DEFAULT_MODEL = Deno.env.get('OPENAI_MODEL') ?? 'gpt-4o-mini';
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const FREE_PLAN_TEST_LIMIT = 3;
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -191,8 +192,24 @@ serve(async (req) => {
       throw profileError;
     }
 
-    if (profile?.plan !== 'premium') {
-      return jsonResponse({ error: 'Acesso permitido apenas para usuários Premium.' }, 403);
+    const plan = profile?.plan === 'premium' ? 'premium' : profile?.plan === 'free' ? 'free' : 'basic';
+
+    if (plan === 'free') {
+      const { count: generatedTestsCount, error: testsCountError } = await supabase
+        .from('tests')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', authData.user.id);
+
+      if (testsCountError) {
+        throw testsCountError;
+      }
+
+      if ((generatedTestsCount || 0) >= FREE_PLAN_TEST_LIMIT) {
+        return jsonResponse(
+          { error: `Plano Free permite até ${FREE_PLAN_TEST_LIMIT} testes gerados. Faça upgrade para continuar.` },
+          403,
+        );
+      }
     }
 
     let body: GenerateRequestBody;
@@ -217,9 +234,13 @@ serve(async (req) => {
       return jsonResponse({ error: 'Falha ao processar arquivo enviado.' }, 400);
     }
     const content = body.content?.trim() || uploadedContent;
+    const receivedSubjects = Array.isArray(body.subjects);
 
     if (!topic && subjects.length === 0 && !content && !fileUrl) {
-      return jsonResponse({ error: 'Informe um assunto, envie um arquivo ou selecione ao menos uma matéria.' }, 400);
+      if (receivedSubjects) {
+        return jsonResponse({ error: 'Nenhuma matéria válida foi recebida.' }, 400);
+      }
+      return jsonResponse({ error: 'Envie topic, subjects ou content para gerar o teste.' }, 400);
     }
 
     const prompt = buildPrompt({ topic, amount, difficulty, content, subjects });

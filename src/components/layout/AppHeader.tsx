@@ -36,6 +36,8 @@ const getPageTitle = (pathname: string, t: (key: string) => string): string => {
       return t('plans.title');
     case '/generate-test':
       return t('aiTests.title');
+    case '/train-mistakes':
+      return 'Treinar meus erros';
     default:
       if (pathname.startsWith('/group/')) {
         return t('groups.title');
