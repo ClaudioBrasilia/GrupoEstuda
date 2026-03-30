@@ -204,13 +204,61 @@ export const useStudySessions = () => {
         completed_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      console.info('[study_sessions] inserting session payload', {
+        user_id: sessionInsert.user_id,
+        subject_id: sessionInsert.subject_id,
+        group_id: sessionInsert.group_id,
+        duration_minutes: sessionInsert.duration_minutes,
+        pages: sessionInsert.pages,
+        exercises: sessionInsert.exercises,
+        started_at: sessionInsert.started_at,
+        completed_at: sessionInsert.completed_at
+      });
+
+      let { data, error } = await supabase
         .from('study_sessions')
         .insert(sessionInsert)
         .select()
         .single();
 
-      if (error) throw error;
+      // Compatibilidade com schemas antigos que não possuem group_id/pages/exercises.
+      if (error) {
+        const message = `${error.message || ''} ${error.details || ''}`.toLowerCase();
+        const isSchemaMismatch =
+          message.includes("column") &&
+          (message.includes("group_id") || message.includes("pages") || message.includes("exercises"));
+
+        if (isSchemaMismatch) {
+          const fallbackInsert = {
+            user_id: sessionInsert.user_id,
+            subject_id: sessionInsert.subject_id,
+            duration_minutes: sessionInsert.duration_minutes,
+            started_at: sessionInsert.started_at,
+            completed_at: sessionInsert.completed_at
+          };
+
+          console.warn('[study_sessions] retrying insert with legacy payload (schema compatibility)', fallbackInsert);
+
+          const fallbackResponse = await supabase
+            .from('study_sessions')
+            .insert(fallbackInsert)
+            .select()
+            .single();
+
+          data = fallbackResponse.data;
+          error = fallbackResponse.error;
+        }
+      }
+
+      if (error) {
+        console.error('[study_sessions] supabase insert error', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        throw error;
+      }
 
       window.dispatchEvent(new CustomEvent(STUDY_SESSION_SAVED_EVENT, {
         detail: {
