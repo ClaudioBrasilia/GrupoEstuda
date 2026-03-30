@@ -221,22 +221,38 @@ const Groups: React.FC = () => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  onClick={() => {
-                    if (user?.plan !== 'premium') {
-                      toast.error('Recurso exclusivo para usuários Premium');
-                      navigate('/plans');
-                      return;
-                    }
-                    navigate('/generate-test');
-                  }}
-                  variant="outline"
-                  className="flex items-center gap-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-950"
-                >
-                  <FileText size={18} />
-                  <span>Criar Teste IA</span>
-                  <Crown size={14} className="text-yellow-500" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => {
+                      if (user?.plan !== 'premium') {
+                        toast.error('Recurso exclusivo para usuários Premium');
+                        navigate('/plans');
+                        return;
+                      }
+                      navigate('/generate-test');
+                    }}
+                    variant="outline"
+                    className="flex items-center gap-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-950"
+                  >
+                    <FileText size={18} />
+                    <span>Criar Teste IA</span>
+                    <Crown size={14} className="text-yellow-500" />
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (user?.plan !== 'premium') {
+                        toast.error('Recurso exclusivo para usuários Premium');
+                        navigate('/plans');
+                        return;
+                      }
+                      navigate('/train-mistakes');
+                    }}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    Treinar erros
+                  </Button>
+                </div>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Gere testes personalizados com Inteligência Artificial</p>
