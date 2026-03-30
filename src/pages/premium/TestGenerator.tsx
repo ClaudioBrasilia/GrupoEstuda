@@ -516,17 +516,26 @@ const TestGenerator: React.FC = () => {
     const selectedSubjects = subjects.filter(s => s.selected);
     const trimmedTopic = topic.trim();
     const normalizedFileUrl = fileUrl.trim();
+    const selectedSubjectNames = selectedSubjects
+      .map(({ name, id }) => (typeof name === 'string' && name.trim().length > 0 ? name : id))
+      .map((subject) => subject.trim())
+      .filter((subject) => subject.length > 0);
     
-    // Validação: exige assunto ou arquivo
-    if (!trimmedTopic && !normalizedFileUrl && selectedSubjects.length === 0) {
-      toast.error("Forneça um assunto, arquivo ou selecione uma matéria.");
+    // Validação: assunto OU arquivo OU ao menos uma matéria
+    if (!trimmedTopic && !normalizedFileUrl && selectedSubjectNames.length === 0) {
+      toast.error("Informe um assunto, envie um arquivo ou selecione ao menos uma matéria.");
       return;
     }
     
     setIsGenerating(true);
     
     try {
-      const selectedSubjectNames = selectedSubjects.map(s => s.name);
+      console.log('generate-test-questions payload debug', {
+        selectedSubjects,
+        selectedSubjectNames,
+        topic: trimmedTopic,
+        fileUrl: normalizedFileUrl,
+      });
       
       const { data, error } = await supabase.functions.invoke('generate-test-questions', {
         body: {
@@ -538,7 +547,26 @@ const TestGenerator: React.FC = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        let backendMessage = '';
+        const errorWithContext = error as { context?: Response };
+
+        if (errorWithContext?.context) {
+          try {
+            const payload = await errorWithContext.context.clone().json() as { error?: string; message?: string };
+            backendMessage = payload?.error?.trim() || payload?.message?.trim() || '';
+          } catch {
+            try {
+              const textPayload = await errorWithContext.context.clone().text();
+              backendMessage = textPayload.trim();
+            } catch {
+              backendMessage = '';
+            }
+          }
+        }
+
+        throw new Error(backendMessage || error.message || t('aiTests.generatingFailed'));
+      }
       if (!data || !Array.isArray(data.questions)) {
         throw new Error('Resposta inválida do servidor');
       }
@@ -551,19 +579,7 @@ const TestGenerator: React.FC = () => {
     } catch (error: unknown) {
       console.error('Failed to generate test:', error);
 
-      let errorMessage = error instanceof Error ? error.message : t('aiTests.generatingFailed');
-      const maybeError = error as { context?: Response } | null;
-
-      if (maybeError?.context && typeof maybeError.context.json === 'function') {
-        try {
-          const payload = await maybeError.context.json() as { error?: string };
-          if (typeof payload?.error === 'string' && payload.error.trim()) {
-            errorMessage = payload.error;
-          }
-        } catch {
-          // mantém mensagem padrão quando não houver payload JSON
-        }
-      }
+      const errorMessage = error instanceof Error ? error.message : t('aiTests.generatingFailed');
 
       toast.error(errorMessage);
     } finally {
