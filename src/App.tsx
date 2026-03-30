@@ -21,6 +21,7 @@ import Register from "./pages/auth/Register";
 import Plans from "./pages/subscription/Plans";
 import MyPlan from "./pages/subscription/MyPlan";
 import TestGenerator from "./pages/premium/TestGenerator";
+import TrainMistakes from "./pages/premium/TrainMistakes";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ProfileSettings from "./components/profile/ProfileSettings";
@@ -71,6 +72,7 @@ const App = () => {
                     <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
                     <Route path="/my-plan" element={<ProtectedRoute><MyPlan /></ProtectedRoute>} />
                     <Route path="/generate-test" element={<ProtectedRoute><TestGenerator /></ProtectedRoute>} />
+                    <Route path="/train-mistakes" element={<ProtectedRoute><TrainMistakes /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>
