@@ -587,7 +587,26 @@ const TestGenerator: React.FC = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        let backendMessage = '';
+        const errorWithContext = error as { context?: Response };
+
+        if (errorWithContext?.context) {
+          try {
+            const payload = await errorWithContext.context.clone().json() as { error?: string; message?: string };
+            backendMessage = payload?.error?.trim() || payload?.message?.trim() || '';
+          } catch {
+            try {
+              const textPayload = await errorWithContext.context.clone().text();
+              backendMessage = textPayload.trim();
+            } catch {
+              backendMessage = '';
+            }
+          }
+        }
+
+        throw new Error(backendMessage || error.message || t('aiTests.generatingFailed'));
+      }
       if (!data || !Array.isArray(data.questions)) {
         throw new Error('Resposta inválida do servidor');
       }
@@ -600,19 +619,7 @@ const TestGenerator: React.FC = () => {
     } catch (error: unknown) {
       console.error('Failed to generate test:', error);
 
-      let errorMessage = error instanceof Error ? error.message : t('aiTests.generatingFailed');
-      const maybeError = error as { context?: Response } | null;
-
-      if (maybeError?.context && typeof maybeError.context.json === 'function') {
-        try {
-          const payload = await maybeError.context.json() as { error?: string };
-          if (typeof payload?.error === 'string' && payload.error.trim()) {
-            errorMessage = payload.error;
-          }
-        } catch {
-          // mantém mensagem padrão quando não houver payload JSON
-        }
-      }
+      const errorMessage = error instanceof Error ? error.message : t('aiTests.generatingFailed');
 
       toast.error(errorMessage);
     } finally {
