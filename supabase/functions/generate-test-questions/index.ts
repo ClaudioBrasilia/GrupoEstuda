@@ -30,6 +30,7 @@ const corsHeaders = {
 
 const DEFAULT_MODEL = Deno.env.get('OPENAI_MODEL') ?? 'gpt-4o-mini';
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const FREE_PLAN_TEST_LIMIT = 3;
 
 const jsonResponse = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -191,8 +192,24 @@ serve(async (req) => {
       throw profileError;
     }
 
-    if (profile?.plan !== 'premium') {
-      return jsonResponse({ error: 'Acesso permitido apenas para usuários Premium.' }, 403);
+    const plan = profile?.plan === 'premium' ? 'premium' : profile?.plan === 'free' ? 'free' : 'basic';
+
+    if (plan === 'free') {
+      const { count: generatedTestsCount, error: testsCountError } = await supabase
+        .from('tests')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', authData.user.id);
+
+      if (testsCountError) {
+        throw testsCountError;
+      }
+
+      if ((generatedTestsCount || 0) >= FREE_PLAN_TEST_LIMIT) {
+        return jsonResponse(
+          { error: `Plano Free permite até ${FREE_PLAN_TEST_LIMIT} testes gerados. Faça upgrade para continuar.` },
+          403,
+        );
+      }
     }
 
     let body: GenerateRequestBody;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
@@ -61,7 +60,6 @@ interface SavedTestSummary {
 const TestGenerator: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [numQuestions, setNumQuestions] = useState<number>(10);
   const [difficulty, setDifficulty] = useState<string>('medium');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -511,6 +509,48 @@ const TestGenerator: React.FC = () => {
     setTopic('');
     setFileUrl('');
   };
+
+  const handleRetrySavedTest = () => {
+    if (!generatedTest) return;
+
+    setUserAnswers({});
+    setIsCorrected(false);
+    setTestResult(null);
+    setLoadedAttemptId(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast.success('Pronto! Você pode refazer o teste com as mesmas questões.');
+  };
+
+  const handleTrainErrors = async () => {
+    if (!generatedTest || !testResult) return;
+
+    const wrongQuestionIds = new Set(
+      testResult.details.filter((detail) => !detail.isCorrect).map((detail) => detail.questionId),
+    );
+    const wrongQuestions = generatedTest.filter((question) => wrongQuestionIds.has(question.id));
+
+    if (wrongQuestions.length === 0) {
+      toast.success('Parabéns! Você não teve erros para treinar.');
+      return;
+    }
+
+    const retryQuestions = wrongQuestions.map((question, index) => ({
+      ...question,
+      id: index + 1,
+    }));
+
+    setGeneratedTest(retryQuestions);
+    setUserAnswers({});
+    setIsCorrected(false);
+    setTestResult(null);
+    setLoadedAttemptId(null);
+    setSavedTestId(null);
+
+    const selectedSubjectNames = subjects.filter((subject) => subject.selected).map((subject) => subject.name);
+    await saveGeneratedTest(retryQuestions, selectedSubjectNames);
+    toast.success(`Treino criado com ${wrongQuestions.length} questão(ões) com erro.`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   
   const handleGenerateTest = async () => {
     const selectedSubjects = subjects.filter(s => s.selected);
@@ -579,20 +619,6 @@ const TestGenerator: React.FC = () => {
       setIsGenerating(false);
     }
   };
-  
-  if (user?.plan !== 'premium') {
-    return (
-      <PageLayout>
-        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-          <h2 className="text-2xl font-bold text-study-primary mb-4">{t('aiTests.premiumFeature')}</h2>
-          <p className="mb-8 text-gray-600">Esta funcionalidade está disponível apenas para assinantes Premium.</p>
-          <Button onClick={() => navigate('/plans')} className="bg-study-primary">
-            {t('aiTests.upgrade')}
-          </Button>
-        </div>
-      </PageLayout>
-    );
-  }
   
   return (
     <PageLayout>
@@ -756,6 +782,14 @@ const TestGenerator: React.FC = () => {
                 <Button onClick={handleCreateNewTest} variant="outline" size="sm">
                   Novo Simulado
                 </Button>
+                <Button onClick={handleRetrySavedTest} variant="outline" size="sm">
+                  Refazer teste
+                </Button>
+                {isCorrected && (
+                  <Button onClick={handleTrainErrors} variant="outline" size="sm">
+                    Treinar erros
+                  </Button>
+                )}
               </div>
             </div>
             
