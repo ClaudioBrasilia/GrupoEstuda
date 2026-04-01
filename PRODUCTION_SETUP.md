@@ -116,3 +116,34 @@ Para dúvidas sobre a publicação:
 ## ⚡ Status: PRONTO PARA PRODUÇÃO ✅
 
 O aplicativo está completamente funcional e pronto para ser publicado nas lojas de aplicativos.
+## 💳 Configuração obrigatória de Stripe (assinaturas)
+
+Para liberar assinatura paga com segurança, configure os secrets abaixo no Supabase (Project Settings → Edge Functions Secrets):
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_BASIC_MONTHLY`
+- `STRIPE_PRICE_BASIC_YEARLY`
+- `STRIPE_PRICE_PREMIUM_MONTHLY`
+- `STRIPE_PRICE_PREMIUM_YEARLY`
+- `SITE_URL` (ex.: `https://app.seudominio.com`)
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+### Funções Edge criadas
+
+- `create-checkout-session`: cria sessão de checkout no backend (frontend não atualiza plano diretamente)
+- `stripe-webhook`: recebe eventos Stripe e sincroniza assinatura/plano no banco
+
+### Endpoint de webhook Stripe
+
+No painel Stripe, cadastre o webhook apontando para:
+
+`https://<PROJECT-REF>.supabase.co/functions/v1/stripe-webhook`
+
+Eventos recomendados:
+
+- `checkout.session.completed`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+
+> Sem esses secrets/eventos configurados, o checkout fica indisponível e **nenhum usuário recebe Premium gratuitamente**.
