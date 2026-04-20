@@ -5,11 +5,14 @@ import type { Database } from './types';
 const runtimeSupabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const runtimeSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-const fallbackSupabaseUrl = 'https://nwtodahupgqbatxeluat.supabase.co';
-const fallbackSupabasePublishableKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53dG9kYWh1cGdxYmF0eGVsdWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzE3NDMsImV4cCI6MjA3NDIwNzc0M30.FH3qU9RKH5KzEuDPWqFXqOVtUzwgb_vRCqcgl6_ydhM';
+// Se não houver variáveis de ambiente, o app mostrará erro de conexão.
+// É necessário configurar VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env
+const SUPABASE_URL = runtimeSupabaseUrl || '';
+const SUPABASE_PUBLISHABLE_KEY = runtimeSupabaseAnonKey || '';
 
-const SUPABASE_URL = runtimeSupabaseUrl || fallbackSupabaseUrl;
-const SUPABASE_PUBLISHABLE_KEY = runtimeSupabaseAnonKey || fallbackSupabasePublishableKey;
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  console.warn('Supabase URL ou Anon Key não configurados. Verifique seu arquivo .env');
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

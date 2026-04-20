@@ -23,18 +23,35 @@ The only requirement is having Node.js & npm installed - [install with nvm](http
 Follow these steps:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Passo 1: Clone o repositório
+git clone https://github.com/ClaudioBrasilia/GrupoEstuda.git
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Passo 2: Entre no diretório do projeto
+cd GrupoEstuda
 
-# Step 3: Install the necessary dependencies.
+# Passo 3: Configure as variáveis de ambiente
+# Copie o arquivo de exemplo e preencha com suas chaves do Supabase
+cp .env.example .env
+
+# Passo 4: Instale as dependências
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Passo 5: Inicie o servidor de desenvolvimento
 npm run dev
 ```
+
+### ⚠️ Configuração Importante: Supabase
+
+Para que a autenticação e o banco de dados funcionem, você deve configurar as variáveis de ambiente no arquivo `.env`:
+
+1. Crie um projeto no [Supabase](https://supabase.com/).
+2. Vá em **Project Settings > API**.
+3. Copie a **Project URL** e a **anon public API key**.
+4. Cole-as no seu arquivo `.env`:
+   ```env
+   VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+   VITE_SUPABASE_ANON_KEY=sua-chave-anon-aqui
+   ```
 
 **Edit a file directly in GitHub**
 
