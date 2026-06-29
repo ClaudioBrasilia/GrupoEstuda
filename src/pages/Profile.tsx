@@ -16,6 +16,7 @@ import { useProfileData } from '@/hooks/useProfileData';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { AchievementsGrid } from '@/components/profile/AchievementsGrid';
+import ChallengeBadges from '@/components/profile/ChallengeBadges';
 import { useAuth } from '@/context/AuthContext';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
@@ -141,6 +142,8 @@ const Profile: React.FC = () => {
         </CardContent>
       </Card>
       
+      <ChallengeBadges userId={user?.id} />
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center">

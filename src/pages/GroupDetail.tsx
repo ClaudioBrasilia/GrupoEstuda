@@ -13,6 +13,7 @@ import GroupMembersTab from '@/components/group/GroupMembersTab';
 import GroupMessagesTab from '@/components/group/GroupMessagesTab';
 import GroupFilesTab from '@/components/group/GroupFilesTab';
 import GroupGoalsTab from '@/components/group/GroupGoalsTab';
+import GroupChallengesTab from '@/components/group/GroupChallengesTab';
 
 const GroupDetail: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
@@ -84,6 +85,7 @@ const GroupDetail: React.FC = () => {
           <TabsTrigger value="messages">Mensagens</TabsTrigger>
           <TabsTrigger value="files">Arquivos</TabsTrigger>
           <TabsTrigger value="goals">Metas</TabsTrigger>
+          <TabsTrigger value="challenges">Desafios</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">
@@ -151,6 +153,9 @@ const GroupDetail: React.FC = () => {
             handleDeleteGoal={handleDeleteGoal}
             handleIncreaseGoalTarget={handleIncreaseGoalTarget}
           />
+        </TabsContent>
+        <TabsContent value="challenges">
+          <GroupChallengesTab groupId={groupId || ''} isAdmin={currentUserIsAdmin} />
         </TabsContent>
       </Tabs>
     </PageLayout>
