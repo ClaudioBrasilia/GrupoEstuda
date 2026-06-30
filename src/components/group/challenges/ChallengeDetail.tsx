@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowLeft, Trophy, Users, Clock, Target, Crown } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, Clock, Target, Crown, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useChallengeDetail } from '@/hooks/useChallenges';
 import { useAuth } from '@/context/AuthContext';
 import WinnerOverlay from './WinnerOverlay';
+import InviteMembersDialog from './InviteMembersDialog';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Props {
@@ -43,8 +44,8 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [showWinner, setShowWinner] = useState(false);
   const [winnerName, setWinnerName] = useState('');
+  const [inviteOpen, setInviteOpen] = useState(false);
 
-  // Busca nomes dos participantes
   useEffect(() => {
     const userIds = ranking.map(r => r.user_id).filter(Boolean);
     if (userIds.length === 0) return;
@@ -61,7 +62,6 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
       });
   }, [ranking]);
 
-  // Exibe overlay quando desafio termina
   useEffect(() => {
     if (challenge?.status === 'finished' && challenge.winner_user_id) {
       setWinnerName(memberNames[challenge.winner_user_id] || 'Vencedor');
@@ -139,11 +139,17 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
         )}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {challenge.status === 'active' && !isParticipant && (
           <Button onClick={() => joinChallenge.mutate()} disabled={joinChallenge.isPending}>
             <Users className="h-4 w-4 mr-2" />
             {joinChallenge.isPending ? 'Entrando...' : 'Participar'}
+          </Button>
+        )}
+        {isAdmin && challenge.status === 'active' && (
+          <Button variant="outline" onClick={() => setInviteOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Convidar membros
           </Button>
         )}
         {isAdmin && challenge.status === 'active' && (
@@ -152,6 +158,15 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
           </Button>
         )}
       </div>
+
+      <InviteMembersDialog
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        groupId={challenge.group_id}
+        challengeId={challengeId}
+        challengeTitle={challenge.title}
+        excludeUserIds={participants.map(p => p.user_id)}
+      />
 
       <Card>
         <CardHeader className="pb-3">
