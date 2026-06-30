@@ -56,6 +56,7 @@ export interface ChallengeBadge {
 
 export function useChallenges(groupId: string) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ['challenges', groupId],
@@ -71,7 +72,6 @@ export function useChallenges(groupId: string) {
     enabled: !!groupId,
   });
 
-  // Realtime: re-fetch quando challenges ou participants mudarem
   useEffect(() => {
     if (!groupId) return;
     const channel = supabase
@@ -99,7 +99,7 @@ export function useChallenges(groupId: string) {
       const { teams, ...challengeData } = payload;
       const { data: challenge, error } = await supabase
         .from('challenges')
-        .insert({ ...challengeData, group_id: groupId, status: 'active' })
+        .insert({ ...challengeData, group_id: groupId, status: 'active', created_by: user!.id })
         .select()
         .single();
       if (error) throw error;
@@ -196,7 +196,6 @@ export function useChallengeDetail(challengeId: string) {
     },
   });
 
-  // Realtime: atualiza ranking quando estudo registrado
   useEffect(() => {
     if (!challengeId || challenge?.status !== 'active') return;
     const channel = supabase
