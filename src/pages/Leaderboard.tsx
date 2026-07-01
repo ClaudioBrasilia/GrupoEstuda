@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
 import { useLeaderboardData } from '@/hooks/useLeaderboardData';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
+import SeasonBanner from '@/components/leaderboard/SeasonBanner';
 
 const Leaderboard: React.FC = () => {
   const { t } = useTranslation();
@@ -36,6 +37,7 @@ const Leaderboard: React.FC = () => {
   
   return (
     <PageLayout>
+      <SeasonBanner />
       <div className="mb-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">{t('leaderboard.title')}</h2>
