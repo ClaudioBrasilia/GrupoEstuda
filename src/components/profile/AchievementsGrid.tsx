@@ -15,7 +15,8 @@ export function AchievementsGrid({ achievements }: AchievementsGridProps) {
     { key: 'points', label: 'Pontos' },
     { key: 'groups', label: 'Grupos' },
     { key: 'sessions', label: 'Sessões' },
-    { key: 'water', label: 'Hidratação' }
+    { key: 'water', label: 'Hidratação' },
+    { key: 'streak', label: 'Sequência' }
   ];
 
   return (

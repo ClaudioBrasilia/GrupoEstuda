@@ -382,7 +382,13 @@
     "hydrationMaster": "Hydration Master",
     "hydrationMasterDesc": "Keep water goal for 7 days",
     "waterChampion": "Water Champion",
-    "waterChampionDesc": "Keep water goal for 30 days"
+    "waterChampionDesc": "Keep water goal for 30 days",
+    "streak7": "On Fire",
+    "streak7Desc": "Study 7 days in a row",
+    "streak30": "Steady Flame",
+    "streak30Desc": "Study 30 days in a row",
+    "streak100": "Streak Legend",
+    "streak100Desc": "Study 100 days in a row"
   },
   "invitations": {
     "title": "Invitations",
