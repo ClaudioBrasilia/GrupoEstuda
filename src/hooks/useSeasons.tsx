@@ -58,6 +58,53 @@ export function usePeriodLeaderboard(startsAt: string | null, endsAt: string | n
   });
 }
 
+export function useSeason(seasonId?: string) {
+  return useQuery({
+    queryKey: ['season', seasonId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('seasons')
+        .select('*')
+        .eq('id', seasonId!)
+        .single();
+      if (error) throw error;
+      return data as Season;
+    },
+    enabled: !!seasonId,
+  });
+}
+
+export function usePastSeasons() {
+  return useQuery({
+    queryKey: ['past-seasons'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('seasons')
+        .select('*')
+        .eq('status', 'finished')
+        .order('starts_at', { ascending: false });
+      if (error) throw error;
+      return data as Season[];
+    },
+  });
+}
+
+export function useSeasonBadgesForSeason(seasonId?: string) {
+  return useQuery({
+    queryKey: ['season-badges-for-season', seasonId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('season_badges')
+        .select('*')
+        .eq('season_id', seasonId!)
+        .order('kind');
+      if (error) throw error;
+      return data as SeasonBadge[];
+    },
+    enabled: !!seasonId,
+  });
+}
+
 export function useSeasonBadges(userId?: string) {
   return useQuery({
     queryKey: ['season-badges', userId],
