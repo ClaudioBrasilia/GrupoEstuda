@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next';
 import { useLeaderboardData } from '@/hooks/useLeaderboardData';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 import SeasonBanner from '@/components/leaderboard/SeasonBanner';
+import LeagueLeaderboard from '@/components/leaderboard/LeagueLeaderboard';
+import { Shield } from 'lucide-react';
 
 const Leaderboard: React.FC = () => {
   const { t } = useTranslation();
@@ -55,7 +57,7 @@ const Leaderboard: React.FC = () => {
         
         <div className="flex justify-between items-center mb-4">
           <Tabs value={leaderboardType} onValueChange={setLeaderboardType} className="w-auto">
-            <TabsList className="grid grid-cols-2 h-9">
+            <TabsList className="grid grid-cols-3 h-9">
               <TabsTrigger value="global" className="flex items-center">
                 <Trophy size={14} className="mr-1" />
                 <span>{t('leaderboard.global')}</span>
@@ -64,18 +66,24 @@ const Leaderboard: React.FC = () => {
                 <Users size={14} className="mr-1" />
                 <span>{t('leaderboard.group')}</span>
               </TabsTrigger>
+              <TabsTrigger value="league" className="flex items-center">
+                <Shield size={14} className="mr-1" />
+                <span>Liga</span>
+              </TabsTrigger>
             </TabsList>
           </Tabs>
-          
-          <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
-            <TabsList className="grid grid-cols-3 h-9">
-              <TabsTrigger value="week" className="text-xs px-2">{t('leaderboard.week')}</TabsTrigger>
-              <TabsTrigger value="month" className="text-xs px-2">{t('leaderboard.month')}</TabsTrigger>
-              <TabsTrigger value="all" className="text-xs px-2">{t('leaderboard.allTime')}</TabsTrigger>
-            </TabsList>
-          </Tabs>
+
+          {leaderboardType !== 'league' && (
+            <Tabs value={timeRange} onValueChange={setTimeRange} className="w-auto">
+              <TabsList className="grid grid-cols-3 h-9">
+                <TabsTrigger value="week" className="text-xs px-2">{t('leaderboard.week')}</TabsTrigger>
+                <TabsTrigger value="month" className="text-xs px-2">{t('leaderboard.month')}</TabsTrigger>
+                <TabsTrigger value="all" className="text-xs px-2">{t('leaderboard.allTime')}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
         </div>
-        
+
         {leaderboardType === 'group' && groupLeaderboards.length > 0 && (
           <div className="mb-4">
             <Select value={selectedGroup} onValueChange={setSelectedGroup}>
@@ -92,6 +100,9 @@ const Leaderboard: React.FC = () => {
         )}
       </div>
       
+      {leaderboardType === 'league' ? (
+        <LeagueLeaderboard />
+      ) : (
       <div className="space-y-2">
         {loading ? (
           // Loading skeletons
@@ -176,6 +187,7 @@ const Leaderboard: React.FC = () => {
           })
         )}
       </div>
+      )}
     </PageLayout>
   );
 };

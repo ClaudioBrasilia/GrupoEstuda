@@ -19,6 +19,7 @@ import { AchievementsGrid } from '@/components/profile/AchievementsGrid';
 import ChallengeBadges from '@/components/profile/ChallengeBadges';
 import XpLevelCard from '@/components/profile/XpLevelCard';
 import SeasonBadges from '@/components/profile/SeasonBadges';
+import LeagueCard from '@/components/profile/LeagueCard';
 import { useAuth } from '@/context/AuthContext';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
@@ -135,8 +136,9 @@ const Profile: React.FC = () => {
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 space-y-3">
         <XpLevelCard userId={user?.id} />
+        <LeagueCard userId={user?.id} />
       </div>
 
       <Card className="mb-6">
