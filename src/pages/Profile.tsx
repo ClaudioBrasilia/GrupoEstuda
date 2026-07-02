@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -19,6 +18,8 @@ import ChallengeBadges from '@/components/profile/ChallengeBadges';
 import XpLevelCard from '@/components/profile/XpLevelCard';
 import SeasonBadges from '@/components/profile/SeasonBadges';
 import LeagueCard from '@/components/profile/LeagueCard';
+import AvatarWithFrame from '@/components/profile/AvatarWithFrame';
+import AvatarShop from '@/components/profile/AvatarShop';
 import { useAuth } from '@/context/AuthContext';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
@@ -64,11 +65,7 @@ const Profile: React.FC = () => {
       <div className="text-center mb-8">
         <div className="flex items-center justify-between mb-4">
           <div></div>
-          <Avatar className="h-24 w-24">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-              {profileStats?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarWithFrame userId={user?.id} name={profileStats?.name} size="lg" />
           <Button
             variant="ghost"
             size="icon"
@@ -125,6 +122,10 @@ const Profile: React.FC = () => {
       <div className="mb-6 space-y-3">
         <XpLevelCard userId={user?.id} />
         <LeagueCard userId={user?.id} />
+      </div>
+
+      <div className="mb-6">
+        <AvatarShop userId={user?.id} />
       </div>
 
       <Card className="mb-6">
