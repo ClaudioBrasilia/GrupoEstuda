@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -89,8 +88,6 @@ const Profile: React.FC = () => {
             Premium
           </Badge>
         )}
-        <div className="text-muted-foreground mb-2">{t('profile.level')} {profileStats?.level || 1} {t('profile.scholar')}</div>
-        
         <div className="flex items-center justify-center space-x-3 mb-4">
           <div className="flex items-center">
             <Trophy size={16} className="text-primary mr-1" />
@@ -102,18 +99,7 @@ const Profile: React.FC = () => {
             <span>{t('profile.rank')} #{profileStats?.rank || '--'}</span>
           </div>
         </div>
-        
-        <div className="max-w-xs mx-auto mb-1 flex justify-between text-xs">
-          <span>{t('profile.level')} {profileStats?.level || 1}</span>
-          <span>{t('profile.level')} {(profileStats?.level || 1) + 1}</span>
-        </div>
-        <div className="max-w-xs mx-auto mb-1">
-          <Progress value={profileStats?.progress || 0} className="h-2" />
-        </div>
-        <div className="text-xs text-muted-foreground mb-4">
-          {profileStats?.pointsToNextLevel || 100} {t('profile.toNextLevel')}
-        </div>
-        
+
         <div className="flex justify-center space-x-2">
           <Button 
             variant="outline" 
