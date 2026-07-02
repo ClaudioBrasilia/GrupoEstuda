@@ -78,7 +78,7 @@ const GroupDetail: React.FC = () => {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full mb-6 flex flex-wrap gap-2 justify-start">
+        <TabsList className="w-full h-auto mb-6 flex flex-wrap gap-2 justify-start">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="subjects">Matérias</TabsTrigger>
           <TabsTrigger value="members">Membros</TabsTrigger>
