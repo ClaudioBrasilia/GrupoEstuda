@@ -1,6 +1,7 @@
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAvatarItems, useEquippedAvatar } from '@/hooks/useAvatarItems';
+import AvatarItemIcon from './AvatarItemIcon';
 
 interface Props {
   userId?: string;
@@ -14,7 +15,7 @@ export default function AvatarWithFrame({ userId, name, size = 'lg' }: Props) {
 
   const equippedItem = items.find(i => i.id === equippedItemId);
   const dimension = size === 'lg' ? 'h-24 w-24' : 'h-10 w-10';
-  const iconSize = size === 'lg' ? 'text-3xl -bottom-1 -right-1' : 'text-base -bottom-1 -right-1';
+  const iconDimension = size === 'lg' ? 'h-10 w-10 -bottom-1 -right-1' : 'h-5 w-5 -bottom-1 -right-1';
 
   return (
     <div className="relative inline-block">
@@ -24,7 +25,7 @@ export default function AvatarWithFrame({ userId, name, size = 'lg' }: Props) {
         </AvatarFallback>
       </Avatar>
       {equippedItem && (
-        <span className={`absolute ${iconSize} drop-shadow`}>{equippedItem.icon}</span>
+        <AvatarItemIcon name={equippedItem.name} className={`absolute ${iconDimension} drop-shadow-lg`} />
       )}
     </div>
   );
