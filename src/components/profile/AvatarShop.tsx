@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAvatarItems, useUserAvatarItems, useEquippedAvatar } from '@/hooks/useAvatarItems';
 import { useToast } from '@/hooks/use-toast';
+import AvatarItemIcon from './AvatarItemIcon';
 
 interface Props {
   userId?: string;
@@ -32,7 +33,7 @@ export default function AvatarShop({ userId }: Props) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          🎨 Loja de Avatares
+          Loja de Avatares
           <span className="text-muted-foreground font-normal text-sm">({ownedIds.size}/{items.length})</span>
         </CardTitle>
       </CardHeader>
@@ -65,7 +66,7 @@ export default function AvatarShop({ userId }: Props) {
                     <Lock className="h-3 w-3" />
                   </span>
                 )}
-                <span className="text-3xl">{item.icon}</span>
+                <AvatarItemIcon name={item.name} className={`h-10 w-10 ${!isOwned ? 'grayscale' : ''}`} />
                 <span className="text-xs font-medium text-center">{item.name}</span>
                 {!isOwned && (
                   <span className="text-[10px] text-muted-foreground text-center">{item.requirement_label}</span>
