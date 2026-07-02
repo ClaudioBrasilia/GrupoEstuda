@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useSeasonBadges, SeasonBadge } from '@/hooks/useSeasons';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   userId?: string;
@@ -25,14 +26,18 @@ const KIND_CONFIG = {
 
 function BadgeItem({ badge }: { badge: SeasonBadge }) {
   const config = KIND_CONFIG[badge.kind];
+  const navigate = useNavigate();
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${config.bg} cursor-default`}>
+          <button
+            onClick={() => navigate(`/season/${badge.season_id}`)}
+            className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${config.bg} cursor-pointer hover:opacity-80 transition-opacity`}
+          >
             {config.icon}
             <span className="text-xs font-medium">{config.label}</span>
-          </div>
+          </button>
         </TooltipTrigger>
         <TooltipContent>
           <p className="font-semibold">{badge.seasons?.title || 'Temporada'}</p>

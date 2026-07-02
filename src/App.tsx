@@ -14,6 +14,7 @@ import Progress from "./pages/Progress";
 import Timer from "./pages/Timer";
 import Water from "./pages/Water";
 import Leaderboard from "./pages/Leaderboard";
+import SeasonDashboard from "./pages/SeasonDashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -67,6 +68,8 @@ const App = () => {
                     <Route path="/timer" element={<ProtectedRoute><Timer /></ProtectedRoute>} />
                     <Route path="/water" element={<ProtectedRoute><Water /></ProtectedRoute>} />
                     <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+                    <Route path="/season" element={<ProtectedRoute><SeasonDashboard /></ProtectedRoute>} />
+                    <Route path="/season/:seasonId" element={<ProtectedRoute><SeasonDashboard /></ProtectedRoute>} />
                     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                     <Route path="/profile/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />
                     <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
