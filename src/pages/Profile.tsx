@@ -17,6 +17,8 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { AchievementsGrid } from '@/components/profile/AchievementsGrid';
 import ChallengeBadges from '@/components/profile/ChallengeBadges';
+import XpLevelCard from '@/components/profile/XpLevelCard';
+import SeasonBadges from '@/components/profile/SeasonBadges';
 import { useAuth } from '@/context/AuthContext';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
 
@@ -132,7 +134,11 @@ const Profile: React.FC = () => {
           </Button>
         </div>
       </div>
-      
+
+      <div className="mb-6">
+        <XpLevelCard userId={user?.id} />
+      </div>
+
       <Card className="mb-6">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">{t('profile.achievements')} ({earnedAchievements.length}/{totalAchievements})</CardTitle>
@@ -142,7 +148,10 @@ const Profile: React.FC = () => {
         </CardContent>
       </Card>
       
-      <ChallengeBadges userId={user?.id} />
+      <div className="space-y-6 mb-6">
+        <SeasonBadges userId={user?.id} />
+        <ChallengeBadges userId={user?.id} />
+      </div>
 
       <Card>
         <CardHeader className="pb-2">

@@ -233,7 +233,13 @@
     "hydrationMaster": "Mestre da Hidratação",
     "hydrationMasterDesc": "Mantenha a meta de água por 7 dias",
     "waterChampion": "Campeão da Água",
-    "waterChampionDesc": "Mantenha a meta de água por 30 dias"
+    "waterChampionDesc": "Mantenha a meta de água por 30 dias",
+    "streak7": "Sequência de Fogo",
+    "streak7Desc": "Estude 7 dias seguidos",
+    "streak30": "Chama Constante",
+    "streak30Desc": "Estude 30 dias seguidos",
+    "streak100": "Lenda da Sequência",
+    "streak100Desc": "Estude 100 dias seguidos"
   },
   "profile": {
     "title": "Perfil",
