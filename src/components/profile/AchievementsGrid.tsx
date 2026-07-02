@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { Lock } from 'lucide-react';
+import AchievementIcon from './AchievementIcon';
 
 interface AchievementsGridProps {
   achievements: Achievement[];
@@ -45,7 +46,10 @@ export function AchievementsGrid({ achievements }: AchievementsGridProps) {
                   )}
                   
                   <div className="flex items-start gap-3">
-                    <div className="text-4xl">{achievement.icon}</div>
+                    <AchievementIcon
+                      name={achievement.name_key}
+                      className={`h-10 w-10 flex-shrink-0 ${!achievement.earned ? 'grayscale' : ''}`}
+                    />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-foreground truncate">
                         {t(`achievements.${achievement.name_key}`, achievement.name_key)}
