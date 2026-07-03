@@ -216,12 +216,12 @@ const Groups: React.FC = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {/* Botão Criar Teste IA - COM GATE PREMIUM */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button 
                     onClick={() => {
                       if (user?.plan !== 'premium') {
