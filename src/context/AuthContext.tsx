@@ -198,9 +198,20 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         if (isInvalidCredentials) {
           return { error: { message: 'Email ou senha inválidos. Confira os dados e tente novamente.' } };
         }
+
+        return { error: result.error };
       }
 
-      return { error: result.error };
+      // Busca o perfil aqui, diretamente, em vez de depender só do listener
+      // assíncrono onAuthStateChange. Isso evita a tela ficar presa no login
+      // quando esse evento demora (comum em WebView/Capacitor): o toast de
+      // sucesso aparecia mas a navegação (que depende de `user`) só viria
+      // depois que o listener disparasse, às vezes nunca.
+      if (result.data.user) {
+        await fetchUserProfile(result.data.user.id, result.data.user.email!);
+      }
+
+      return { error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao fazer login';
 
