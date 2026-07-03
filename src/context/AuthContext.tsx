@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthError, Session } from '@supabase/supabase-js';
@@ -108,17 +107,14 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   }, []);
 
   const fetchUserProfile = async (userId: string, email: string) => {
+    const fallbackName = email.split('@')[0];
+
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
 
       if (profile) {
         setUser({
@@ -127,9 +123,38 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
           name: profile.name,
           plan: profile.plan as PlanType
         });
+        return;
       }
+
+      // Perfil ausente (trigger de criação pode ter falhado) ou erro ao buscar:
+      // tenta criar o registro para corrigir o problema na raiz.
+      if (error?.code === 'PGRST116') {
+        const { data: created, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, name: fallbackName })
+          .select()
+          .single();
+
+        if (created && !insertError) {
+          setUser({
+            id: created.id,
+            email,
+            name: created.name,
+            plan: created.plan as PlanType
+          });
+          return;
+        }
+        console.error('Error creating missing profile:', insertError);
+      } else if (error) {
+        console.error('Error fetching profile:', error);
+      }
+
+      // Nunca deixa o usuário travado na tela de login: garante um usuário
+      // funcional mesmo que a tabela profiles esteja temporariamente inacessível.
+      setUser({ id: userId, email, name: fallbackName, plan: 'free' });
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+      setUser({ id: userId, email, name: fallbackName, plan: 'free' });
     }
   };
 
