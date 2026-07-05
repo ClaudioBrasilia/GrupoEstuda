@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GlobalActivityFeed } from '@/components/group/GlobalActivityFeed';
 import { FloatingActionButton } from '@/components/group/FloatingActionButton';
 import { CreateActivityDialog } from '@/components/group/CreateActivityDialog';
+import GlobalActiveChallengeBanner from '@/components/group/GlobalActiveChallengeBanner';
 
 // Fixed group ID for Vestibular Brasil
 const VESTIBULAR_GROUP_ID = 'b47ac10b-58cc-4372-a567-0e02b2c3d479';
@@ -278,6 +279,8 @@ const Groups: React.FC = () => {
           </Dialog>
         </div>
       </div>
+
+      <GlobalActiveChallengeBanner groups={groups} />
 
       {/* Atividades Recentes */}
       <div className="mb-6">
