@@ -15,6 +15,7 @@ import GroupFilesTab from '@/components/group/GroupFilesTab';
 import GroupGoalsTab from '@/components/group/GroupGoalsTab';
 import GroupChallengesTab from '@/components/group/GroupChallengesTab';
 import ActiveChallengeHighlight from '@/components/group/ActiveChallengeHighlight';
+import { useChallenges } from '@/hooks/useChallenges';
 
 const GroupDetail: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
@@ -22,6 +23,8 @@ const GroupDetail: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [openChallenge, setOpenChallenge] = useState<{ id: string; token: number } | null>(null);
+  const { challenges } = useChallenges(groupId || '');
+  const activeChallengesCount = challenges.filter(c => c.status === 'active').length;
   
   const {
     subjects,
@@ -95,7 +98,14 @@ const GroupDetail: React.FC = () => {
           <TabsTrigger value="messages">Mensagens</TabsTrigger>
           <TabsTrigger value="files">Arquivos</TabsTrigger>
           <TabsTrigger value="goals">Metas</TabsTrigger>
-          <TabsTrigger value="challenges">Desafios</TabsTrigger>
+          <TabsTrigger value="challenges" className="relative">
+            Desafios
+            {activeChallengesCount > 0 && (
+              <span className="ml-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                {activeChallengesCount}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">
