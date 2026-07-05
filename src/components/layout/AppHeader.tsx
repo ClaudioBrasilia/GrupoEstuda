@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LanguagesIcon, UserIcon } from 'lucide-react';
+import { UserIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -53,10 +53,14 @@ const AppHeader: React.FC = () => {
   const { user, logout } = useAuth();
   
   const title = getPageTitle(location.pathname, t);
-  
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-  };
+
+  // Sem seletor de idioma: garante que o app sempre abre em português,
+  // mesmo que o navegador do usuário esteja configurado em outro idioma.
+  useEffect(() => {
+    if (i18n.language !== 'pt') {
+      i18n.changeLanguage('pt');
+    }
+  }, [i18n]);
   
   return (
     <header className="bg-gradient-to-r from-background via-background to-primary/5 border-b border-border/50 backdrop-blur-sm py-4 px-6 sticky top-0 z-10 flex items-center justify-between shadow-elegant">
@@ -68,21 +72,6 @@ const AppHeader: React.FC = () => {
         <ThemeToggle />
         
         {user && <NotificationBell />}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/10 transition-smooth">
-              <LanguagesIcon size={20} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => changeLanguage('en')}>
-              {t('language.english')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => changeLanguage('pt')}>
-              {t('language.portuguese')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
         
         {user ? (
           <DropdownMenu>
