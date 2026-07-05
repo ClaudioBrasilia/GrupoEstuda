@@ -155,7 +155,23 @@
     "profile": "Perfil",
     "notifications": "Notificações",
     "language": "Idioma",
-    "logout": "Sair"
+    "logout": "Sair",
+    "appearance": "Aparência",
+    "cancel": "Cancelar",
+    "changePassword": "Alterar Senha",
+    "confirmPassword": "Confirmar Senha",
+    "currentPassword": "Senha Atual",
+    "newPassword": "Nova Senha",
+    "passwordChanged": "Senha alterada com sucesso!",
+    "passwordError": "Erro ao alterar senha",
+    "privacyPolicy": "Política de Privacidade",
+    "profileUpdated": "Perfil atualizado com sucesso!",
+    "save": "Salvar",
+    "security": "Segurança",
+    "subscription": "Assinatura",
+    "termsOfUse": "Termos de Uso",
+    "waterGoal": "Meta de Água (ml)",
+    "waterGoalUpdated": "Meta de água atualizada!"
   },
   "timer": {
     "title": "Cronômetro de Estudo",
@@ -188,7 +204,9 @@
     "delete": "Excluir",
     "confirmDelete": "Tem certeza que deseja excluir este arquivo?",
     "deleteSuccess": "Arquivo excluído com sucesso!",
-    "deleteError": "Erro ao excluir arquivo"
+    "deleteError": "Erro ao excluir arquivo",
+    "size": "Tamanho",
+    "uploadedBy": "Enviado por"
   },
   "goals": {
     "title": "Metas do Grupo",
@@ -205,7 +223,13 @@
       "exercises": "Exercícios",
       "pages": "Páginas",
       "time": "Tempo (minutos)"
-    }
+    },
+    "createGoal": "Criar Meta",
+    "deleteGoal": "Excluir Meta",
+    "editGoal": "Editar Meta",
+    "goalCreated": "Meta criada com sucesso!",
+    "goalDeleted": "Meta excluída com sucesso!",
+    "goalUpdated": "Meta atualizada com sucesso!"
   },
   "achievements": {
     "studyWarrior": "Guerreiro do Estudo",
@@ -239,7 +263,10 @@
     "streak30": "Chama Constante",
     "streak30Desc": "Estude 30 dias seguidos",
     "streak100": "Lenda da Sequência",
-    "streak100Desc": "Estude 100 dias seguidos"
+    "streak100Desc": "Estude 100 dias seguidos",
+    "title": "Conquistas",
+    "earned": "Conquistada",
+    "locked": "Bloqueada"
   },
   "profile": {
     "title": "Perfil",
@@ -265,7 +292,7 @@
     "logout": "Sair",
     "settings": {
       "profile": "Perfil",
-      "security": "Segurança", 
+      "security": "Segurança",
       "subscription": "Assinatura",
       "name": "Nome",
       "email": "Email",
@@ -296,7 +323,12 @@
     "goal": "Meta",
     "weeklyIntake": "Consumo Semanal de Água",
     "addWater": "Adicionar Água",
-    "todaysIntake": "Consumo de Hoje"
+    "todaysIntake": "Consumo de Hoje",
+    "completed": "Meta concluída!",
+    "cups": "copos",
+    "ml": "ml",
+    "of": "de",
+    "remaining": "restante"
   },
   "leaderboard": {
     "title": "Ranking",
@@ -307,9 +339,12 @@
     "allTime": "Todo Período",
     "selectGroup": "Selecionar grupo",
     "you": "Você",
-    "points": "pontos"
+    "points": "pontos",
+    "loading": "Carregando ranking...",
+    "noData": "Ainda não há dados de ranking",
+    "rank": "Posição"
   },
-"progress": {
+  "progress": {
     "title": "Progresso",
     "pagesRead": "Páginas Lidas",
     "studyTime": "Tempo de Estudo",
@@ -345,7 +380,8 @@
     "remaining": "{{count}} restantes",
     "goalMet": "Meta alcançada!",
     "noSubject": "Sem matéria",
-    "noDataForSubject": "Nenhum dado de {{metric}} para exibir"
+    "noDataForSubject": "Nenhum dado de {{metric}} para exibir",
+    "selectGroup": "Selecionar grupo"
   },
   "group": {
     "members": "Membros do Grupo",
@@ -355,11 +391,48 @@
   },
   "days": {
     "mon": "Seg",
-    "tue": "Ter", 
+    "tue": "Ter",
     "wed": "Qua",
     "thu": "Qui",
     "fri": "Sex",
     "sat": "Sáb",
     "sun": "Dom"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Ocorreu um erro",
+    "retry": "Tentar novamente",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "search": "Buscar",
+    "noResults": "Nenhum resultado encontrado",
+    "confirm": "Confirmar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior"
+  },
+  "invitations": {
+    "accept": "Aceitar",
+    "accepted": "Convite aceito!",
+    "decline": "Recusar",
+    "declined": "Convite recusado",
+    "enterEmail": "Digite o endereço de e-mail",
+    "error": "Erro ao enviar convite",
+    "expired": "Expirado",
+    "inviteByEmail": "Convidar por e-mail",
+    "noInvitations": "Nenhum convite pendente",
+    "pending": "Convites Pendentes",
+    "send": "Enviar Convite",
+    "sent": "Convite enviado!",
+    "title": "Convites"
+  },
+  "notifications": {
+    "markAllRead": "Marcar todas como lidas",
+    "markRead": "Marcar como lida",
+    "noNotifications": "Nenhuma notificação",
+    "title": "Notificações"
   }
 }
