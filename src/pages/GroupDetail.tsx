@@ -14,12 +14,14 @@ import GroupMessagesTab from '@/components/group/GroupMessagesTab';
 import GroupFilesTab from '@/components/group/GroupFilesTab';
 import GroupGoalsTab from '@/components/group/GroupGoalsTab';
 import GroupChallengesTab from '@/components/group/GroupChallengesTab';
+import ActiveChallengeHighlight from '@/components/group/ActiveChallengeHighlight';
 
 const GroupDetail: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [openChallenge, setOpenChallenge] = useState<{ id: string; token: number } | null>(null);
   
   const {
     subjects,
@@ -77,6 +79,14 @@ const GroupDetail: React.FC = () => {
         </div>
       </div>
       
+      <ActiveChallengeHighlight
+        groupId={groupId || ''}
+        onOpenChallenge={(challengeId) => {
+          setOpenChallenge({ id: challengeId, token: Date.now() });
+          setActiveTab('challenges');
+        }}
+      />
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full h-auto mb-6 flex flex-wrap gap-2 justify-start">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
@@ -155,7 +165,7 @@ const GroupDetail: React.FC = () => {
           />
         </TabsContent>
         <TabsContent value="challenges">
-          <GroupChallengesTab groupId={groupId || ''} isAdmin={currentUserIsAdmin} />
+          <GroupChallengesTab groupId={groupId || ''} isAdmin={currentUserIsAdmin} openChallenge={openChallenge} />
         </TabsContent>
       </Tabs>
     </PageLayout>
