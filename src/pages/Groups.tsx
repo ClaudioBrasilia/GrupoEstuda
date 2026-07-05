@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, User, Users, Crown, AlertCircle, FileText } from 'lucide-react';
+import { Plus, Search, User, Users, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Group, useGroups } from '@/hooks/useGroups';
@@ -218,45 +218,27 @@ const Groups: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          {/* Botão Criar Teste IA - COM GATE PREMIUM */}
+          {/* Botão Treinar Erros - COM GATE PREMIUM */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex flex-wrap gap-2">
-                  <Button 
-                    onClick={() => {
-                      if (user?.plan !== 'premium') {
-                        toast.error('Recurso exclusivo para usuários Premium');
-                        navigate('/plans');
-                        return;
-                      }
-                      navigate('/generate-test');
-                    }}
-                    variant="outline"
-                    className="flex items-center gap-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-950"
-                  >
-                    <FileText size={18} />
-                    <span>Criar Teste IA</span>
-                    <Crown size={14} className="text-yellow-500" />
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      if (user?.plan !== 'premium') {
-                        toast.error('Recurso exclusivo para usuários Premium');
-                        navigate('/plans');
-                        return;
-                      }
-                      navigate('/train-mistakes');
-                    }}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    Treinar erros
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => {
+                    if (user?.plan !== 'premium') {
+                      toast.error('Recurso exclusivo para usuários Premium');
+                      navigate('/plans');
+                      return;
+                    }
+                    navigate('/train-mistakes');
+                  }}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  Treinar erros
+                </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Gere testes personalizados com Inteligência Artificial</p>
+                <p>Revise as questões que você errou</p>
                 <p className="text-xs text-yellow-600 dark:text-yellow-500">🔒 Exclusivo Premium</p>
               </TooltipContent>
             </Tooltip>
