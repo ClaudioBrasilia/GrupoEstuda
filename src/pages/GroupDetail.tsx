@@ -24,7 +24,38 @@ const GroupDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [openChallenge, setOpenChallenge] = useState<{ id: string; token: number } | null>(null);
   const { challenges } = useChallenges(groupId || '');
-  const activeChallengesCount = challenges.filter(c => c.status === 'active').length;
+
+  const seenKey = `seen_challenges_${groupId || ''}`;
+  const [seenChallengeIds, setSeenChallengeIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(seenKey);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const activeChallengesCount = challenges.filter(
+    c => c.status === 'active' && !seenChallengeIds.includes(c.id)
+  ).length;
+
+  // Marca os desafios ativos como vistos assim que o usuário abre a aba Desafios,
+  // fazendo a badge vermelha sumir.
+  useEffect(() => {
+    if (activeTab !== 'challenges') return;
+    const activeIds = challenges.filter(c => c.status === 'active').map(c => c.id);
+    if (activeIds.length === 0) return;
+    setSeenChallengeIds(prev => {
+      const merged = Array.from(new Set([...prev, ...activeIds]));
+      try {
+        localStorage.setItem(seenKey, JSON.stringify(merged));
+      } catch {
+        // localStorage indisponível (modo privado, etc.) — segue sem persistir
+      }
+      return merged;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, challenges]);
 
   // Abre direto o desafio quando o usuário vem do banner da tela de Grupos (?challenge=ID)
   useEffect(() => {
