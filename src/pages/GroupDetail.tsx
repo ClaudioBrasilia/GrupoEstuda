@@ -14,6 +14,7 @@ import GroupMessagesTab from '@/components/group/GroupMessagesTab';
 import GroupFilesTab from '@/components/group/GroupFilesTab';
 import GroupGoalsTab from '@/components/group/GroupGoalsTab';
 import GroupChallengesTab from '@/components/group/GroupChallengesTab';
+import GroupWelcomeCard from '@/components/group/GroupWelcomeCard';
 import { useChallenges } from '@/hooks/useChallenges';
 
 const GroupDetail: React.FC = () => {
@@ -122,6 +123,8 @@ const GroupDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <GroupWelcomeCard groupId={groupId || ''} groupName={groupName} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full h-auto mb-6 flex flex-wrap gap-2 justify-start">
