@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -218,32 +217,6 @@ const Groups: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          {/* Botão Treinar Erros - COM GATE PREMIUM */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={() => {
-                    if (user?.plan !== 'premium') {
-                      toast.error('Recurso exclusivo para usuários Premium');
-                      navigate('/plans');
-                      return;
-                    }
-                    navigate('/train-mistakes');
-                  }}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  Treinar erros
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Revise as questões que você errou</p>
-                <p className="text-xs text-yellow-600 dark:text-yellow-500">🔒 Exclusivo Premium</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
           {/* Botão Criar Grupo */}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
