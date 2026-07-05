@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/layout/PageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,17 +14,27 @@ import GroupMessagesTab from '@/components/group/GroupMessagesTab';
 import GroupFilesTab from '@/components/group/GroupFilesTab';
 import GroupGoalsTab from '@/components/group/GroupGoalsTab';
 import GroupChallengesTab from '@/components/group/GroupChallengesTab';
-import ActiveChallengeHighlight from '@/components/group/ActiveChallengeHighlight';
 import { useChallenges } from '@/hooks/useChallenges';
 
 const GroupDetail: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [openChallenge, setOpenChallenge] = useState<{ id: string; token: number } | null>(null);
   const { challenges } = useChallenges(groupId || '');
   const activeChallengesCount = challenges.filter(c => c.status === 'active').length;
+
+  // Abre direto o desafio quando o usuário vem do banner da tela de Grupos (?challenge=ID)
+  useEffect(() => {
+    const challengeId = searchParams.get('challenge');
+    if (challengeId) {
+      setOpenChallenge({ id: challengeId, token: Date.now() });
+      setActiveTab('challenges');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const {
     subjects,
@@ -82,14 +92,6 @@ const GroupDetail: React.FC = () => {
         </div>
       </div>
       
-      <ActiveChallengeHighlight
-        groupId={groupId || ''}
-        onOpenChallenge={(challengeId) => {
-          setOpenChallenge({ id: challengeId, token: Date.now() });
-          setActiveTab('challenges');
-        }}
-      />
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full h-auto mb-6 flex flex-wrap gap-2 justify-start">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
