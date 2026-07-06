@@ -255,7 +255,7 @@ const ProfileSettings: React.FC = () => {
             <div>
               <h3 className="font-medium">{t('profile.settings.currentPlan')}</h3>
               <p className="text-sm mt-1 capitalize font-semibold text-study-primary">
-                {user?.plan === 'premium' ? t('profile.settings.premium') : user?.plan === 'basic' ? t('profile.settings.basic') : t('profile.settings.free')}
+                {user?.plan === 'premium' ? t('profile.settings.premium') : t('profile.settings.free')}
               </p>
               
               {user?.plan !== 'premium' && (

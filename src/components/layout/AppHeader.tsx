@@ -85,9 +85,7 @@ const AppHeader: React.FC = () => {
                 {user.name}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/plans')}>
-                {user.plan === 'free' ? t('plans.free.name') : 
-                 user.plan === 'basic' ? t('plans.basic.name') : 
-                 t('plans.premium.name')}
+                {user.plan === 'free' ? t('plans.free.name') : t('plans.premium.name')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 logout();

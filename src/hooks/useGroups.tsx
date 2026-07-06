@@ -93,7 +93,7 @@ export const useGroups = () => {
       const maxGroups = PLAN_LIMITS[userPlan].maxGroups;
       
       if (maxGroups !== null && groupCount !== null && groupCount >= maxGroups) {
-        const upgradeText = userPlan === 'free' ? ' Faça upgrade para Basic ou Premium.' : userPlan === 'basic' ? ' Faça upgrade para Premium.' : '';
+        const upgradeText = userPlan === 'free' ? ' Faça upgrade para Premium.' : '';
         return { 
           success: false, 
           error: `Limite de ${maxGroups} grupo(s) atingido.${upgradeText}` 

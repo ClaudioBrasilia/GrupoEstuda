@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { AuthError, Session } from '@supabase/supabase-js';
 import { withTimeout } from '@/lib/authUtils';
 
-export type PlanType = 'free' | 'basic' | 'premium';
+export type PlanType = 'free' | 'premium';
 
 interface UserProfile {
   id: string;

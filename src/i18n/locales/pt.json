@@ -63,37 +63,11 @@
   "plans": {
     "title": "Escolha Seu Plano",
     "free": {
-      "name": "Gratuito",
-      "price": "Grátis",
-      "features": [
-        "Participar de grupos de estudo",
-        "Acompanhar atividades básicas",
-        "Controle de água",
-        "Acesso limitado ao ranking"
-      ]
-    },
-    "basic": {
-      "name": "Básico",
-      "price": "R$ 19,90/mês",
-      "features": [
-        "Todos os recursos gratuitos",
-        "Sem anúncios",
-        "Acompanhamento avançado de progresso",
-        "Criação de grupos personalizados"
-      ]
+      "name": "Gratuito"
     },
     "premium": {
-      "name": "Premium",
-      "price": "R$ 39,90/mês",
-      "features": [
-        "Todos os recursos básicos",
-        "Geração de testes com IA",
-        "Grupos ilimitados",
-        "Análises avançadas"
-      ]
-    },
-    "subscribe": "Assinar",
-    "current": "Seu plano atual"
+      "name": "Premium"
+    }
   },
   "aiTests": {
     "title": "Gerar Teste",
