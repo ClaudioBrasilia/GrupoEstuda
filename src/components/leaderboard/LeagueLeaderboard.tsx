@@ -55,6 +55,15 @@ export default function LeagueLeaderboard() {
       </div>
 
       <div className="space-y-2">
+        {ranking.length === 0 && (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                A semana começou agora — ainda não há atividade registrada. Continue estudando para aparecer no ranking! 💪
+              </p>
+            </CardContent>
+          </Card>
+        )}
         {ranking.map(row => {
           const isPromotion = row.rank <= promoteCutoff && tierIndex < LEAGUE_ORDER.length - 1;
           const isDemotion = row.rank > ranking.length - demoteCutoff && tierIndex > 0;
