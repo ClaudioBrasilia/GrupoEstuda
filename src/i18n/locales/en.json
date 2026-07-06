@@ -67,7 +67,8 @@
     },
     "premium": {
       "name": "Premium"
-    }
+    },
+    "unlimited": "Unlimited"
   },
   "aiTests": {
     "title": "Generate Test",
@@ -144,7 +145,32 @@
       "email": "Email",
       "currentPassword": "Current Password",
       "newPassword": "New Password",
-      "confirmPassword": "Confirm Password"
+      "confirmPassword": "Confirm Password",
+      "accountSecurity": "Account Security",
+      "appearance": "Appearance",
+      "changePassword": "Change Password",
+      "changePasswordDescription": "Enter your current password and the desired new password.",
+      "changePasswordTitle": "Change Password",
+      "changing": "Changing...",
+      "currentPlan": "Current Plan",
+      "description": "Manage your account and preferences",
+      "free": "Free",
+      "managePlans": "View Plans",
+      "managePrivacy": "Manage your privacy settings",
+      "manageSecuritySettings": "Manage your account security",
+      "manageSubscription": "Manage Subscription",
+      "passwordChanged": "Password changed successfully!",
+      "passwordsNotMatch": "Passwords do not match",
+      "premium": "Premium",
+      "privacy": "Privacy",
+      "profileUpdated": "Profile updated successfully!",
+      "theme": "Theme",
+      "themeDescription": "Choose the interface theme",
+      "title": "Settings",
+      "updateProfile": "Update Profile",
+      "updating": "Updating...",
+      "upgradeMessage": "Upgrade to Premium and unlock exclusive features.",
+      "viewPrivacyPolicy": "View Privacy Policy"
     },
     "achievementNames": {
       "studyWarrior": "Study Warrior",
@@ -221,7 +247,12 @@
     "members": "Group Members",
     "inviteMember": "Invite Member",
     "admin": "Admin",
-    "addSubject": "Add Subject"
+    "addSubject": "Add Subject",
+    "addNewSubject": "Add New Subject",
+    "addVestibularDescription": "This will add all the standard entrance-exam subjects to your group.",
+    "availableSubjects": "Available Subjects",
+    "deleteSubjectConfirmation": "Are you sure you want to delete this subject? This action cannot be undone.",
+    "enterSubjectName": "Enter the subject name"
   },
   "days": {
     "mon": "Mon",
@@ -258,7 +289,12 @@
     "waterGoal": "Water Goal (ml)",
     "waterGoalUpdated": "Water goal updated!",
     "privacyPolicy": "Privacy Policy",
-    "termsOfUse": "Terms of Use"
+    "termsOfUse": "Terms of Use",
+    "theme": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System"
+    }
   },
   "files": {
     "title": "Group Files",
@@ -275,7 +311,9 @@
     "deleteSuccess": "File deleted successfully!",
     "deleteError": "Error deleting file",
     "uploadedBy": "Uploaded by",
-    "size": "Size"
+    "size": "Size",
+    "selectedFile": "Selected file",
+    "yourFile": "Your file"
   },
   "goals": {
     "title": "Group Goals",
@@ -298,7 +336,13 @@
     "deleteGoal": "Delete Goal",
     "goalCreated": "Goal created successfully!",
     "goalUpdated": "Goal updated successfully!",
-    "goalDeleted": "Goal deleted successfully!"
+    "goalDeleted": "Goal deleted successfully!",
+    "enterAmountPlaceholder": "Enter the amount",
+    "enterTarget": "Enter the target",
+    "invalidAmount": "Enter a valid amount",
+    "saveProgress": "Save Progress",
+    "selectSubject": "Select the subject",
+    "selectType": "Select the goal type"
   },
   "water": {
     "title": "Water Intake",
@@ -400,5 +444,10 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous"
+  },
+  "groupMessages": {
+    "messageHistory": "Message History",
+    "placeholder": "Type your message...",
+    "send": "Send"
   }
 }
