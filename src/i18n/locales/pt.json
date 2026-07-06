@@ -67,7 +67,8 @@
     },
     "premium": {
       "name": "Premium"
-    }
+    },
+    "unlimited": "Ilimitado"
   },
   "aiTests": {
     "title": "Gerar Teste",
@@ -145,7 +146,12 @@
     "subscription": "Assinatura",
     "termsOfUse": "Termos de Uso",
     "waterGoal": "Meta de Água (ml)",
-    "waterGoalUpdated": "Meta de água atualizada!"
+    "waterGoalUpdated": "Meta de água atualizada!",
+    "theme": {
+      "dark": "Escuro",
+      "light": "Claro",
+      "system": "Sistema"
+    }
   },
   "timer": {
     "title": "Cronômetro de Estudo",
@@ -180,7 +186,9 @@
     "deleteSuccess": "Arquivo excluído com sucesso!",
     "deleteError": "Erro ao excluir arquivo",
     "size": "Tamanho",
-    "uploadedBy": "Enviado por"
+    "uploadedBy": "Enviado por",
+    "selectedFile": "Arquivo selecionado",
+    "yourFile": "Seu arquivo"
   },
   "goals": {
     "title": "Metas do Grupo",
@@ -203,7 +211,13 @@
     "editGoal": "Editar Meta",
     "goalCreated": "Meta criada com sucesso!",
     "goalDeleted": "Meta excluída com sucesso!",
-    "goalUpdated": "Meta atualizada com sucesso!"
+    "goalUpdated": "Meta atualizada com sucesso!",
+    "enterAmountPlaceholder": "Digite a quantidade",
+    "enterTarget": "Digite a meta",
+    "invalidAmount": "Digite uma quantidade válida",
+    "saveProgress": "Salvar Progresso",
+    "selectSubject": "Selecione a matéria",
+    "selectType": "Selecione o tipo de meta"
   },
   "achievements": {
     "studyWarrior": "Guerreiro do Estudo",
@@ -272,7 +286,32 @@
       "email": "Email",
       "currentPassword": "Senha Atual",
       "newPassword": "Nova Senha",
-      "confirmPassword": "Confirmar Senha"
+      "confirmPassword": "Confirmar Senha",
+      "accountSecurity": "Segurança da Conta",
+      "appearance": "Aparência",
+      "changePassword": "Alterar Senha",
+      "changePasswordDescription": "Digite sua senha atual e a nova senha desejada.",
+      "changePasswordTitle": "Alterar Senha",
+      "changing": "Alterando...",
+      "currentPlan": "Plano Atual",
+      "description": "Gerencie sua conta e preferências",
+      "free": "Gratuito",
+      "managePlans": "Ver Planos",
+      "managePrivacy": "Gerencie suas configurações de privacidade",
+      "manageSecuritySettings": "Gerencie a segurança da sua conta",
+      "manageSubscription": "Gerenciar Assinatura",
+      "passwordChanged": "Senha alterada com sucesso!",
+      "passwordsNotMatch": "As senhas não coincidem",
+      "premium": "Premium",
+      "privacy": "Privacidade",
+      "profileUpdated": "Perfil atualizado com sucesso!",
+      "theme": "Tema",
+      "themeDescription": "Escolha o tema da interface",
+      "title": "Configurações",
+      "updateProfile": "Atualizar Perfil",
+      "updating": "Atualizando...",
+      "upgradeMessage": "Faça upgrade para o Premium e desbloqueie recursos exclusivos.",
+      "viewPrivacyPolicy": "Ver Política de Privacidade"
     },
     "achievementNames": {
       "studyWarrior": "Guerreiro do Estudo",
@@ -361,7 +400,12 @@
     "members": "Membros do Grupo",
     "inviteMember": "Convidar Membro",
     "admin": "Admin",
-    "addSubject": "Adicionar Matéria"
+    "addSubject": "Adicionar Matéria",
+    "addNewSubject": "Adicionar Nova Matéria",
+    "addVestibularDescription": "Isso adicionará todas as matérias padrão do vestibular ao seu grupo.",
+    "availableSubjects": "Matérias Disponíveis",
+    "deleteSubjectConfirmation": "Tem certeza que deseja excluir esta matéria? Esta ação não pode ser desfeita.",
+    "enterSubjectName": "Digite o nome da matéria"
   },
   "days": {
     "mon": "Seg",
@@ -408,5 +452,10 @@
     "markRead": "Marcar como lida",
     "noNotifications": "Nenhuma notificação",
     "title": "Notificações"
+  },
+  "groupMessages": {
+    "messageHistory": "Histórico de Mensagens",
+    "placeholder": "Digite sua mensagem...",
+    "send": "Enviar"
   }
 }
