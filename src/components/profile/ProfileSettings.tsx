@@ -37,6 +37,7 @@ const ProfileSettings: React.FC = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      setEmail(user.email || '');
     }
   }, [user]);
 
@@ -67,8 +68,8 @@ const ProfileSettings: React.FC = () => {
     try {
       if (!user) throw new Error('No user found');
 
-      const goalValue = parseInt(waterGoal);
-      if (goalValue < 500 || goalValue > 5000) {
+      const goalValue = parseInt(waterGoal, 10);
+      if (isNaN(goalValue) || goalValue < 500 || goalValue > 5000) {
         toast.error('Meta de água deve estar entre 500ml e 5000ml');
         setIsUpdating(false);
         return;
@@ -96,7 +97,12 @@ const ProfileSettings: React.FC = () => {
   
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!currentPassword) {
+      toast.error('Digite sua senha atual');
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       toast.error(t('profile.settings.passwordsNotMatch'));
       return;
@@ -110,6 +116,22 @@ const ProfileSettings: React.FC = () => {
     setIsUpdating(true);
     
     try {
+      if (!user?.email) throw new Error('Usuário sem e-mail associado');
+
+      // Confirma que a senha atual está correta antes de permitir a troca —
+      // sem isso, qualquer pessoa com a sessão aberta poderia mudar a senha
+      // sem realmente saber a senha atual.
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (reauthError) {
+        toast.error('Senha atual incorreta');
+        setIsUpdating(false);
+        return;
+      }
+
       // Update password in Supabase Auth
       const { error } = await supabase.auth.updateUser({
         password: newPassword
