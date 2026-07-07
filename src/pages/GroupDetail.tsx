@@ -174,6 +174,7 @@ const GroupDetail: React.FC = () => {
           <GroupMembersTab
             members={members}
             groupId={groupId || ''}
+            groupName={groupName}
             isAdmin={currentUserIsAdmin}
           />
         </TabsContent>
