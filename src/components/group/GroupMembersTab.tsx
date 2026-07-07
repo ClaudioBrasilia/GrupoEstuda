@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -12,10 +11,11 @@ import { supabase } from '@/integrations/supabase/client';
 interface GroupMembersTabProps {
   members: Member[];
   groupId: string;
+  groupName?: string;
   isAdmin?: boolean;
 }
 
-const GroupMembersTab: React.FC<GroupMembersTabProps> = ({ members, groupId, isAdmin = false }) => {
+const GroupMembersTab: React.FC<GroupMembersTabProps> = ({ members, groupId, groupName, isAdmin = false }) => {
   const { t } = useTranslation();
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [memberPlans, setMemberPlans] = useState<Record<string, string>>({});
@@ -81,6 +81,7 @@ const GroupMembersTab: React.FC<GroupMembersTabProps> = ({ members, groupId, isA
         open={inviteDialogOpen}
         onOpenChange={setInviteDialogOpen}
         groupId={groupId}
+        groupName={groupName}
       />
     </div>
   );
