@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAvatarItems, useUserAvatarItems, useEquippedAvatar } from '@/hooks/useAvatarItems';
 import { useToast } from '@/hooks/use-toast';
 import AvatarItemIcon from './AvatarItemIcon';
+import { getErrorMessage } from '@/lib/utils';
 
 interface Props {
   userId?: string;
@@ -24,8 +25,8 @@ export default function AvatarShop({ userId }: Props) {
     if (!isOwned) return;
     try {
       await equip.mutateAsync(equippedItemId === itemId ? null : itemId);
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' });
     }
   };
 

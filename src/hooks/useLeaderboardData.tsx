@@ -18,6 +18,13 @@ export interface GroupLeaderboard {
   members: LeaderboardUser[];
 }
 
+// Formato retornado pelo RPC period_leaderboard (ainda ausente dos tipos gerados)
+interface PeriodLeaderboardRow {
+  user_id: string;
+  score: number;
+  rank: number;
+}
+
 async function fetchProfiles(userIds: string[]) {
   if (userIds.length === 0) return [];
   const { data } = await supabase.from('profiles').select('id, name, plan').in('id', userIds);
@@ -65,9 +72,9 @@ export function useLeaderboardData(timeRange: string = 'week') {
           _ends_at: range.endsAt,
           _group_id: null,
         });
-        const rows = (periodData || []).slice(0, 50);
-        const profiles = await fetchProfiles(rows.map((r: any) => r.user_id));
-        globalUsers = rows.map((row: any) => {
+        const rows = ((periodData || []) as PeriodLeaderboardRow[]).slice(0, 50);
+        const profiles = await fetchProfiles(rows.map((r) => r.user_id));
+        globalUsers = rows.map((row) => {
           const profile = profiles.find(p => p.id === row.user_id);
           return {
             id: row.user_id,
@@ -118,9 +125,9 @@ export function useLeaderboardData(timeRange: string = 'week') {
               _ends_at: range.endsAt,
               _group_id: groupId,
             });
-            const rows = periodData || [];
-            const profiles = await fetchProfiles(rows.map((r: any) => r.user_id));
-            members = rows.map((row: any) => {
+            const rows = (periodData || []) as PeriodLeaderboardRow[];
+            const profiles = await fetchProfiles(rows.map((r) => r.user_id));
+            members = rows.map((row) => {
               const profile = profiles.find(p => p.id === row.user_id);
               return {
                 id: row.user_id,

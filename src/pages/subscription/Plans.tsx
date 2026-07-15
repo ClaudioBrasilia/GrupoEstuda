@@ -18,11 +18,17 @@ const Plans: React.FC = () => {
   const { user, updateUserPlan } = useAuth();
   const [isYearly, setIsYearly] = useState(false);
 
-  const handleSubscribe = (planId: PlanType) => {
-    // Em um app real, isso conectaria com o Stripe
-    updateUserPlan(planId);
-    toast.success(`Você assinou o plano ${PLAN_NAMES[planId]}!`);
-    navigate('/my-plan');
+  const handleSubscribe = async (planId: PlanType) => {
+    if (planId === 'free') {
+      await updateUserPlan(planId);
+      toast.success(`Você agora está no plano ${PLAN_NAMES[planId]}.`);
+      navigate('/my-plan');
+      return;
+    }
+
+    // O upgrade para Premium será liberado quando a integração de pagamento
+    // estiver ativa. O banco também bloqueia upgrades feitos pelo cliente.
+    toast.info('A assinatura Premium estará disponível em breve. Estamos finalizando a integração de pagamento.');
   };
 
   const formatPrice = (value: number) => value.toFixed(2).replace('.', ',');

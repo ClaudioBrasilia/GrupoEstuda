@@ -33,6 +33,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     flowType: 'pkce',
     // Evita travamento do signInWithPassword após F5 no modo privado / WebView.
     // O lock padrão usa navigator.locks e pode ficar preso entre reloads.
-    lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
+    lock: async <R,>(_name: string, _acquireTimeout: number, fn: () => Promise<R>) => fn(),
   },
 });

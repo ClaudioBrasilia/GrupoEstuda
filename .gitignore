@@ -1,1 +1,21 @@
+# Dependências
 node_modules/
+
+# Build
+dist/
+dist-ssr/
+
+# Variáveis de ambiente (nunca commitar chaves)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editores / SO
+.DS_Store
+.idea/
+*.suo
+*.sln

@@ -10,6 +10,7 @@ import { useChallenges, Challenge } from '@/hooks/useChallenges';
 import ChallengeCreateModal from './challenges/ChallengeCreateModal';
 import ChallengeDetail from './challenges/ChallengeDetail';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/utils';
 
 interface Props {
   groupId: string;
@@ -83,8 +84,8 @@ export default function GroupChallengesTab({ groupId, isAdmin, openChallenge }: 
     try {
       await finishChallenge.mutateAsync(challengeId);
       toast({ title: 'Desafio encerrado!', description: 'Badges concedidos aos participantes.' });
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' });
     }
   };
 

@@ -55,7 +55,6 @@ const GroupDetail: React.FC = () => {
       }
       return merged;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, challenges]);
 
   // Abre direto o desafio quando o usuário vem do banner da tela de Grupos (?challenge=ID)
@@ -65,7 +64,6 @@ const GroupDetail: React.FC = () => {
       setOpenChallenge({ id: challengeId, token: Date.now() });
       setActiveTab('challenges');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   const {

@@ -11,6 +11,7 @@ import { useChallengeDetail, Challenge } from '@/hooks/useChallenges';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import type { Group } from '@/hooks/useGroups';
+import { getErrorMessage } from '@/lib/utils';
 
 interface Props {
   groups: Group[];
@@ -81,8 +82,8 @@ export default function GlobalActiveChallengeBanner({ groups }: Props) {
     try {
       await joinChallenge.mutateAsync(undefined);
       toast({ title: 'Você entrou no desafio!', description: 'Boa sorte 🔥' });
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' });
     }
   };
 

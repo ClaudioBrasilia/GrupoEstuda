@@ -7,6 +7,7 @@ import { differenceInDays, differenceInHours } from 'date-fns';
 import { useChallenges, useChallengeDetail } from '@/hooks/useChallenges';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/utils';
 
 interface Props {
   groupId: string;
@@ -62,8 +63,8 @@ export default function ActiveChallengeHighlight({ groupId, onOpenChallenge }: P
     try {
       await joinChallenge.mutateAsync(undefined);
       toast({ title: 'Você entrou no desafio!', description: 'Boa sorte 🔥' });
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' });
     }
   };
 

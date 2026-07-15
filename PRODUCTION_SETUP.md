@@ -2,7 +2,7 @@
 
 ## 📱 Preparação para App Stores
 
-Este aplicativo está **100% pronto** para publicação na Google Play Store e App Store. Siga os passos abaixo:
+O aplicativo está funcional e configurado para builds Android/iOS, **mas há um pré-requisito pendente antes de publicar cobrando: a integração de pagamento** (veja "Pendências" abaixo). Siga os passos abaixo:
 
 ### 🔧 Configurações Realizadas
 
@@ -79,7 +79,7 @@ npx cap run ios --target production
 - ✅ Gerador de testes (Premium)
 - ✅ Armazenamento de arquivos
 - ✅ Sistema de notificações
-- ✅ Planos Premium via Stripe
+- ⚠️ Planos Premium — **pagamento ainda não integrado** (botão exibe "em breve")
 
 ### 🛡️ Permissões Necessárias
 
@@ -98,6 +98,15 @@ npx cap run ios --target production
 <string>Para selecionar fotos do perfil</string>
 ```
 
+### ⚠️ Pendências antes de publicar
+
+1. **Integração de pagamento (bloqueador para cobrar Premium)**
+   - Apps nas lojas: Google Play Billing / Apple In-App Purchase são **obrigatórios** para assinaturas digitais (Stripe puro pode causar rejeição do app)
+   - Web: Stripe Checkout + webhook em Edge Function
+   - A concessão do plano deve ser feita pelo servidor (service role) — o banco já bloqueia upgrades vindos do cliente
+2. **Configurar secrets das Edge Functions**: `OPENAI_API_KEY` e `CRON_SECRET` (os crons de `water-reminder` e `check-leaderboard-changes` devem enviar o header `x-cron-secret`)
+3. **Aplicar as migrations pendentes** no projeto Supabase (`supabase db push`), incluindo a proteção da coluna `plan`
+
 ### 💡 Próximos Passos
 
 1. **Testar em dispositivos reais** antes da publicação
@@ -113,6 +122,6 @@ Para dúvidas sobre a publicação:
 
 ---
 
-## ⚡ Status: PRONTO PARA PRODUÇÃO ✅
+## ⚡ Status: FUNCIONAL — PENDENTE INTEGRAÇÃO DE PAGAMENTO ⚠️
 
-O aplicativo está completamente funcional e pronto para ser publicado nas lojas de aplicativos.
+O aplicativo está completamente funcional. Antes de publicar nas lojas cobrando o plano Premium, conclua a integração de pagamento e as pendências listadas acima.

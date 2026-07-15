@@ -1,90 +1,62 @@
-# Welcome to your Lovable project
+# Grupo Estuda
 
-## Project info
+App de grupos de estudo com competição: crie grupos, defina metas, participe de desafios e ligas, acompanhe seu progresso e mantenha-se motivado.
 
-**URL**: https://lovable.dev/projects/ef41847b-ab77-4d5d-a37f-0e39334293cb
+## Funcionalidades
 
-## How can I edit this code?
+- 👥 Grupos de estudo colaborativos com arquivos e convites
+- 🏆 Desafios, ranking, ligas, temporadas e sistema de XP
+- ⏱️ Timer de estudo (Pomodoro) com registro de sessões
+- 💧 Controle de hidratação com lembretes
+- 📊 Estatísticas de progresso (básicas e avançadas no Premium)
+- 📝 Gerador de testes com IA (Premium)
+- 🌐 i18n (pt/en), tema claro/escuro, PWA e apps nativos via Capacitor
 
-There are several ways of editing your application.
+## Stack
 
-**Use Lovable**
+- Vite + React 18 + TypeScript
+- Tailwind CSS + shadcn/ui
+- Supabase (auth, banco com RLS, storage, edge functions)
+- Capacitor (Android/iOS)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ef41847b-ab77-4d5d-a37f-0e39334293cb) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Rodando localmente
 
 ```sh
-# Passo 1: Clone o repositório
 git clone https://github.com/ClaudioBrasilia/GrupoEstuda.git
-
-# Passo 2: Entre no diretório do projeto
 cd GrupoEstuda
 
-# Passo 3: Configure as variáveis de ambiente
-# Copie o arquivo de exemplo e preencha com suas chaves do Supabase
+# Configure as variáveis de ambiente
 cp .env.example .env
+# preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (Project Settings > API no Supabase)
 
-# Passo 4: Instale as dependências
-npm i
-
-# Passo 5: Inicie o servidor de desenvolvimento
+npm install
 npm run dev
 ```
 
-### ⚠️ Configuração Importante: Supabase
+### Scripts
 
-Para que a autenticação e o banco de dados funcionem, você deve configurar as variáveis de ambiente no arquivo `.env`:
+| Comando | Descrição |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção (gera `dist/`) |
+| `npm run lint` | ESLint |
+| `npm run preview` | Serve o build localmente |
 
-1. Crie um projeto no [Supabase](https://supabase.com/).
-2. Vá em **Project Settings > API**.
-3. Copie a **Project URL** e a **anon public API key**.
-4. Cole-as no seu arquivo `.env`:
-   ```env
-   VITE_SUPABASE_URL=https://seu-projeto.supabase.co
-   VITE_SUPABASE_ANON_KEY=sua-chave-anon-aqui
-   ```
+## Supabase
 
-**Edit a file directly in GitHub**
+As migrations estão em `supabase/migrations/` e as edge functions em `supabase/functions/`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Secrets necessários nas edge functions:
 
-**Use GitHub Codespaces**
+- `OPENAI_API_KEY` — usada por `generate-test-questions` (gerador de testes Premium)
+- `CRON_SECRET` — exigida por `water-reminder` e `check-leaderboard-changes`; os jobs de cron devem enviar o mesmo valor no header `x-cron-secret`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+A coluna `plan` da tabela `profiles` é protegida por trigger: upgrades só podem ser feitos pelo servidor (service role). Usuários podem apenas voltar ao plano `free`.
 
-## What technologies are used for this project?
+## Status do Premium / pagamento
 
-This project is built with:
+⚠️ A integração de pagamento **ainda não está implementada**. O botão de assinatura Premium exibe um aviso de "em breve". Antes de publicar cobrando, é preciso integrar um provedor de cobrança (billing nativo das lojas para apps móveis e/ou Stripe para web) e conceder o plano via webhook no servidor.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Builds nativos
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/ef41847b-ab77-4d5d-a37f-0e39334293cb) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Veja `android-build-instructions.md` e `ios-build-instructions.md`. Instruções gerais de publicação em `PRODUCTION_SETUP.md`.

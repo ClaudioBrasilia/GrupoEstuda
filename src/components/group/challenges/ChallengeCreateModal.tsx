@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Trash2 } from 'lucide-react';
 import { useChallenges, ChallengeMetric, ChallengeMode } from '@/hooks/useChallenges';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/utils';
 
 interface Props {
   open: boolean;
@@ -69,8 +70,8 @@ export default function ChallengeCreateModal({ open, onClose, groupId }: Props) 
       toast({ title: 'Desafio criado!', description: 'O desafio foi criado com sucesso.' });
       reset();
       onClose();
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' });
     }
   };
 

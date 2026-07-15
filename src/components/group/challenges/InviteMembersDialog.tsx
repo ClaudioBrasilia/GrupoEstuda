@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/utils';
 
 interface Props {
   open: boolean;
@@ -45,7 +46,10 @@ export default function InviteMembersDialog({
       .then(({ data, error }) => {
         if (!error && data) {
           const options = data
-            .map((m: any) => ({ id: m.user_id, name: m.profiles?.name || 'Usuário' }))
+            .map((m: { user_id: string; profiles: { id: string; name: string | null } | null }) => ({
+              id: m.user_id,
+              name: m.profiles?.name || 'Usuário',
+            }))
             .filter((m) => !excludeUserIds.includes(m.id));
           setMembers(options);
         }
@@ -78,8 +82,8 @@ export default function InviteMembersDialog({
       toast({ title: 'Convites enviados!', description: `${selected.size} membro(s) convidado(s).` });
       setSelected(new Set());
       onClose();
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err) {
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' });
     } finally {
       setSending(false);
     }
