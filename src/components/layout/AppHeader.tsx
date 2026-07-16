@@ -76,12 +76,13 @@ const AppHeader: React.FC = () => {
         {user && (
           <Button
             variant="ghost"
-            size="icon"
-            className="text-foreground hover:bg-primary/10 transition-smooth"
+            size="sm"
+            className="text-foreground hover:bg-primary/10 transition-smooth gap-1.5 px-2"
             onClick={() => navigate('/feed')}
             aria-label={t('navigation.feed')}
           >
-            <Flame size={20} />
+            <Flame size={18} />
+            <span>{t('navigation.feed')}</span>
           </Button>
         )}
 
