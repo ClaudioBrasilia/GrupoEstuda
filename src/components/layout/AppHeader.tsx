@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { UserIcon } from 'lucide-react';
+import { UserIcon, Flame } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import NotificationBell from '@/components/NotificationBell';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -20,6 +20,8 @@ const getPageTitle = (pathname: string, t: (key: string) => string): string => {
       return t('app.name');
     case '/groups':
       return t('navigation.groups');
+    case '/feed':
+      return t('navigation.feed');
     case '/progress':
       return t('navigation.progress');
     case '/water':
@@ -70,7 +72,19 @@ const AppHeader: React.FC = () => {
       
       <div className="flex items-center gap-2 flex-1 justify-end">
         <ThemeToggle />
-        
+
+        {user && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-foreground hover:bg-primary/10 transition-smooth"
+            onClick={() => navigate('/feed')}
+            aria-label={t('navigation.feed')}
+          >
+            <Flame size={20} />
+          </Button>
+        )}
+
         {user && <NotificationBell />}
         
         {user ? (

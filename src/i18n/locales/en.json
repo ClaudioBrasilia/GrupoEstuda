@@ -10,7 +10,8 @@
     "water": "Water",
     "leaders": "Leaders",
     "profile": "Profile",
-    "timer": "Timer"
+    "timer": "Timer",
+    "feed": "Feed"
   },
   "home": {
     "getStarted": "Get Started"
