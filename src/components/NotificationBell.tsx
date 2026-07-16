@@ -16,9 +16,17 @@ import { ptBR } from 'date-fns/locale';
 
 const NotificationBell: React.FC = () => {
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, refreshNotifications } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, refreshNotifications } = useNotifications();
 
   const recentNotifications = notifications.slice(0, 5);
+
+  // When the user opens the bell, pull the latest and then clear the unread
+  // badge — viewing the notifications counts as reading them.
+  const handleOpenChange = async (open: boolean) => {
+    if (!open) return;
+    await refreshNotifications();
+    await markAllAsRead();
+  };
 
   const handleNotificationClick = (notification: typeof notifications[0]) => {
     markAsRead(notification.id);
@@ -39,7 +47,7 @@ const NotificationBell: React.FC = () => {
   };
 
   return (
-    <DropdownMenu onOpenChange={(open) => { if (open) refreshNotifications(); }}>
+    <DropdownMenu onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
