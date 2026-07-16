@@ -4,9 +4,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { UserIcon, Flame } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useNewActivities } from '@/hooks/useNewActivities';
 import NotificationBell from '@/components/NotificationBell';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,8 +55,16 @@ const AppHeader: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  
+  const { newCount, markActivitiesSeen } = useNewActivities();
+
   const title = getPageTitle(location.pathname, t);
+
+  // Clear the "new activities" badge once the user is viewing the feed.
+  useEffect(() => {
+    if (location.pathname === '/feed') {
+      void markActivitiesSeen();
+    }
+  }, [location.pathname, markActivitiesSeen]);
 
   // Sem seletor de idioma: garante que o app sempre abre em português,
   // mesmo que o navegador do usuário esteja configurado em outro idioma.
@@ -77,12 +87,20 @@ const AppHeader: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="text-foreground hover:bg-primary/10 transition-smooth gap-1.5 px-2"
+            className="relative text-foreground hover:bg-primary/10 transition-smooth gap-1.5 px-2"
             onClick={() => navigate('/feed')}
             aria-label={t('navigation.feed')}
           >
             <Flame size={18} />
             <span>{t('navigation.feed')}</span>
+            {newCount > 0 && location.pathname !== '/feed' && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 px-1 text-xs"
+              >
+                {newCount > 9 ? '9+' : newCount}
+              </Badge>
+            )}
           </Button>
         )}
 

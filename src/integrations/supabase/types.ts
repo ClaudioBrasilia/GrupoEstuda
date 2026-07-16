@@ -355,6 +355,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activities_seen_at: string
           created_at: string
           id: string
           name: string
@@ -363,6 +364,7 @@ export type Database = {
           water_goal_ml: number
         }
         Insert: {
+          activities_seen_at?: string
           created_at?: string
           id: string
           name: string
@@ -371,6 +373,7 @@ export type Database = {
           water_goal_ml?: number
         }
         Update: {
+          activities_seen_at?: string
           created_at?: string
           id?: string
           name?: string
