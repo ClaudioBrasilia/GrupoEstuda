@@ -16,8 +16,8 @@ import { ptBR } from 'date-fns/locale';
 
 const NotificationBell: React.FC = () => {
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead } = useNotifications();
-  
+  const { notifications, unreadCount, markAsRead, refreshNotifications } = useNotifications();
+
   const recentNotifications = notifications.slice(0, 5);
 
   const handleNotificationClick = (notification: typeof notifications[0]) => {
@@ -39,7 +39,7 @@ const NotificationBell: React.FC = () => {
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => { if (open) refreshNotifications(); }}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
