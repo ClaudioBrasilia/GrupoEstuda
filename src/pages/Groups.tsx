@@ -15,9 +15,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { GlobalActivityFeed } from '@/components/group/GlobalActivityFeed';
-import { FloatingActionButton } from '@/components/group/FloatingActionButton';
-import { CreateActivityDialog } from '@/components/group/CreateActivityDialog';
 import GlobalActiveChallengeBanner from '@/components/group/GlobalActiveChallengeBanner';
 
 // Fixed group ID for Vestibular Brasil
@@ -127,7 +124,6 @@ const Groups: React.FC = () => {
   const { groups, loading, createGroup, joinGroup } = useGroups();
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
-  const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
 
   const handleCreateGroup = async (name: string, description: string) => {
     const result = await createGroup(name, description);
@@ -237,12 +233,6 @@ const Groups: React.FC = () => {
 
       <GlobalActiveChallengeBanner groups={groups} />
 
-      {/* Atividades Recentes */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">🔥 Atividades Recentes</h2>
-        <GlobalActivityFeed />
-      </div>
-
       {/* Lista de Grupos */}
       <div className="mb-4">
         <h2 className="text-xl font-semibold mb-4">📚 Grupos Disponíveis</h2>
@@ -285,18 +275,6 @@ const Groups: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Floating Action Button */}
-      <FloatingActionButton onClick={() => setIsActivityDialogOpen(true)} />
-
-      {/* Create Activity Dialog */}
-      <CreateActivityDialog
-        open={isActivityDialogOpen}
-        onOpenChange={setIsActivityDialogOpen}
-        userGroups={groups
-          .filter(g => g.isMember)
-          .map(g => ({ id: g.id, name: g.name }))}
-      />
     </PageLayout>
   );
 };

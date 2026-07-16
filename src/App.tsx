@@ -9,6 +9,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { TimerProvider } from "./context/TimerContext";
 import Home from "./pages/Home";
 import Groups from "./pages/Groups";
+import Feed from "./pages/Feed";
 import GroupDetail from "./pages/GroupDetail";
 import Progress from "./pages/Progress";
 import Timer from "./pages/Timer";
@@ -60,6 +61,7 @@ const App = () => {
                     <Route path="/terms" element={<TermsOfUse />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
                     <Route path="/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
+                    <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
                     <Route path="/group/:groupId" element={<ProtectedRoute><GroupDetail /></ProtectedRoute>} />
                     <Route path="/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
                     <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
