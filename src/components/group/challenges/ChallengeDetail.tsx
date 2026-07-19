@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowLeft, Trophy, Users, Clock, Target, Crown, UserPlus, Info, Plus } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, Clock, Target, Crown, UserPlus, Info, Plus, Pencil } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,6 +71,10 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
   const [progressOpen, setProgressOpen] = useState(false);
   const [progressValue, setProgressValue] = useState('');
   const [savingProgress, setSavingProgress] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editGoal, setEditGoal] = useState('');
+  const [editDeadline, setEditDeadline] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     const userIds = ranking.map(r => r.user_id).filter(Boolean);
@@ -177,6 +181,44 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
     }
   };
 
+  const openEdit = () => {
+    setEditGoal(challenge.goal_value ? String(challenge.goal_value) : '');
+    // datetime-local espera "yyyy-MM-ddTHH:mm" no fuso local
+    setEditDeadline(challenge.ends_at ? format(new Date(challenge.ends_at), "yyyy-MM-dd'T'HH:mm") : '');
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    const goal = parseInt(editGoal, 10);
+    if (editGoal !== '' && (Number.isNaN(goal) || goal <= 0)) {
+      toast.error('A meta deve ser um número maior que zero (ou vazia para disputa livre)');
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from('challenges')
+        .update({
+          goal_value: editGoal === '' ? null : goal,
+          ends_at: editDeadline ? new Date(editDeadline).toISOString() : null,
+        })
+        .eq('id', challengeId);
+
+      if (error) throw error;
+
+      toast.success('Desafio atualizado!');
+      setEditOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['challenge', challengeId] });
+      queryClient.invalidateQueries({ queryKey: ['challenge-ranking', challengeId] });
+    } catch (err) {
+      console.error('Erro ao editar desafio:', err);
+      toast.error('Não foi possível salvar. Apenas o admin do grupo pode editar o desafio.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="h-4 w-4 text-yellow-500" />;
     if (rank === 2) return <span className="text-gray-400 font-bold text-sm">2º</span>;
@@ -280,6 +322,12 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
           </Button>
         )}
         {isAdmin && challenge.status === 'active' && (
+          <Button variant="outline" onClick={openEdit}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+        )}
+        {isAdmin && challenge.status === 'active' && (
           <Button variant="outline" onClick={() => setInviteOpen(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Convidar membros
@@ -312,6 +360,49 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
               </DialogDescription>
             </DialogHeader>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de edição do desafio (admin) */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar desafio</DialogTitle>
+            <DialogDescription className="text-left">
+              Ajuste a meta e o prazo. As mudanças valem para todos os participantes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-goal">Meta — quantidade de {unit} a atingir</Label>
+              <Input
+                id="edit-goal"
+                type="number"
+                min="1"
+                inputMode="numeric"
+                placeholder="Vazio = disputa livre (vence quem tiver mais)"
+                value={editGoal}
+                onChange={(e) => setEditGoal(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-deadline">Prazo</Label>
+              <Input
+                id="edit-deadline"
+                type="datetime-local"
+                value={editDeadline}
+                onChange={(e) => setEditDeadline(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
