@@ -113,11 +113,12 @@ export function useWaterData() {
           filter: `id=eq.${user.id}`
         },
         (payload: RealtimePostgresChangesPayload<{ water_goal_ml: number }>) => {
-          if (payload.new && payload.new.water_goal_ml) {
+          const updated = payload.new as { water_goal_ml?: number };
+          if (updated && updated.water_goal_ml) {
             console.log('📡 Meta de água atualizada');
             setWaterStats(prev => ({
               ...prev,
-              dailyGoal: payload.new.water_goal_ml
+              dailyGoal: updated.water_goal_ml as number
             }));
           }
         }

@@ -141,7 +141,7 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
 
       <div className="flex gap-2 flex-wrap">
         {challenge.status === 'active' && !isParticipant && (
-          <Button onClick={() => joinChallenge.mutate()} disabled={joinChallenge.isPending}>
+          <Button onClick={() => joinChallenge.mutate(undefined)} disabled={joinChallenge.isPending}>
             <Users className="h-4 w-4 mr-2" />
             {joinChallenge.isPending ? 'Entrando...' : 'Participar'}
           </Button>
