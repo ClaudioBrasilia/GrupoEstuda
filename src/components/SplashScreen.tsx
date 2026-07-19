@@ -61,7 +61,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinished }) => {
             transition={{ delay: 0.6, duration: 0.5 }}
             className="text-white opacity-90"
           >
-            Estude em grupo, alcance seus objetivos
+            Estude, compita e alcance seus objetivos
           </motion.p>
         </motion.div>
       )}
