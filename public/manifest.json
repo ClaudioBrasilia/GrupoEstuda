@@ -1,10 +1,13 @@
-
 {
-  "name": "Grupo Estuda - Estude em grupo",
+  "name": "Grupo Estuda - Estude, compita e alcance seus objetivos",
   "short_name": "Grupo Estuda",
   "description": "Estude em grupo, dispute rankings e desafios e alcance seus objetivos acadêmicos",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
+  "lang": "pt-BR",
+  "categories": ["education", "productivity"],
   "background_color": "#ffffff",
   "theme_color": "#9b87f5",
   "icons": [
@@ -12,13 +15,25 @@
       "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
