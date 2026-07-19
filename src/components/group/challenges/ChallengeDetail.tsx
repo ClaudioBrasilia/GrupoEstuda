@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowLeft, Trophy, Users, Clock, Target, Crown, UserPlus } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, Clock, Target, Crown, UserPlus, Info, Plus } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useChallengeDetail } from '@/hooks/useChallenges';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 import WinnerOverlay from './WinnerOverlay';
 import InviteMembersDialog from './InviteMembersDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +43,13 @@ const MODE_LABELS = {
   teams: 'Por equipes',
 };
 
+// Rótulo do campo a preencher ao registrar progresso, por métrica.
+const PROGRESS_INPUT_LABELS = {
+  study_minutes: 'Minutos estudados',
+  exercises_solved: 'Exercícios resolvidos',
+  pages_read: 'Páginas lidas',
+};
+
 const STATUS_COLORS = {
   draft: 'secondary',
   active: 'default',
@@ -38,13 +57,20 @@ const STATUS_COLORS = {
   cancelled: 'destructive',
 } as const;
 
+type InfoField = 'mode' | 'metric' | 'goal' | 'deadline';
+
 export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish }: Props) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { challenge, ranking, participants, teams, isParticipant, joinChallenge } = useChallengeDetail(challengeId);
   const [memberNames, setMemberNames] = useState<Record<string, string>>({});
   const [showWinner, setShowWinner] = useState(false);
   const [winnerName, setWinnerName] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [infoField, setInfoField] = useState<InfoField | null>(null);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [progressValue, setProgressValue] = useState('');
+  const [savingProgress, setSavingProgress] = useState(false);
 
   useEffect(() => {
     const userIds = ranking.map(r => r.user_id).filter(Boolean);
@@ -74,12 +100,125 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
   const maxProgress = Math.max(...ranking.map(r => r.progress), challenge.goal_value ?? 1, 1);
   const unit = METRIC_LABELS[challenge.metric];
 
+  // Explicações contextuais mostradas ao tocar em cada card de informação.
+  const getInfoContent = (field: InfoField): { title: string; description: string } => {
+    switch (field) {
+      case 'mode': {
+        const descByMode = {
+          first_to_goal: `Vence quem for o primeiro a atingir a meta${
+            challenge.goal_value ? ` de ${challenge.goal_value} ${unit}` : ''
+          }.`,
+          deadline: `O desafio vale até o prazo final. Quando o tempo acabar, vence quem tiver o maior total de ${unit}.`,
+          teams: `Os participantes competem em equipes. Vence a equipe com o maior total de ${unit} somando seus membros.`,
+        };
+        return { title: `Modo: ${MODE_LABELS[challenge.mode]}`, description: descByMode[challenge.mode] };
+      }
+      case 'metric': {
+        const descByMetric = {
+          study_minutes:
+            'O ranking conta os minutos de estudo. Registre pelo cronômetro ou aqui no botão "Registrar progresso".',
+          exercises_solved:
+            'O ranking conta os exercícios resolvidos. Registre pelo cronômetro (informando exercícios) ou aqui no botão "Registrar progresso".',
+          pages_read:
+            'O ranking conta as páginas lidas. Registre pelo cronômetro (informando páginas) ou aqui no botão "Registrar progresso".',
+        };
+        return { title: `Métrica: ${unit}`, description: descByMetric[challenge.metric] };
+      }
+      case 'goal':
+        return {
+          title: 'Meta',
+          description: `Objetivo do desafio: ${challenge.goal_value} ${unit}. As barras do ranking mostram o quanto cada participante já alcançou.`,
+        };
+      case 'deadline':
+        return {
+          title: 'Prazo',
+          description:
+            'Data e hora limite do desafio. O progresso registrado depois do prazo não conta para o ranking.',
+        };
+    }
+  };
+
+  const handleRegisterProgress = async () => {
+    if (!user) return;
+    const value = parseInt(progressValue, 10);
+    if (Number.isNaN(value) || value <= 0) {
+      toast.error('Informe um número maior que zero');
+      return;
+    }
+
+    setSavingProgress(true);
+    try {
+      const now = new Date();
+      const startedAt =
+        challenge.metric === 'study_minutes'
+          ? new Date(now.getTime() - value * 60000).toISOString()
+          : now.toISOString();
+
+      const { error } = await supabase.from('study_sessions').insert({
+        user_id: user.id,
+        group_id: challenge.group_id,
+        subject_id: null,
+        duration_minutes: challenge.metric === 'study_minutes' ? value : 0,
+        pages: challenge.metric === 'pages_read' ? value : null,
+        exercises: challenge.metric === 'exercises_solved' ? value : null,
+        started_at: startedAt,
+        completed_at: now.toISOString(),
+      });
+
+      if (error) throw error;
+
+      toast.success(`+${value} ${unit} registrado no desafio!`);
+      setProgressValue('');
+      setProgressOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['challenge-ranking', challengeId] });
+    } catch (err) {
+      console.error('Erro ao registrar progresso do desafio:', err);
+      toast.error('Não foi possível registrar o progresso');
+    } finally {
+      setSavingProgress(false);
+    }
+  };
+
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="h-4 w-4 text-yellow-500" />;
     if (rank === 2) return <span className="text-gray-400 font-bold text-sm">2º</span>;
     if (rank === 3) return <span className="text-amber-600 font-bold text-sm">3º</span>;
     return <span className="text-muted-foreground text-sm">{rank}º</span>;
   };
+
+  // Card de informação clicável: abre o diálogo explicativo do campo.
+  const InfoCard = ({
+    field,
+    icon,
+    label,
+    value,
+  }: {
+    field: InfoField;
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+  }) => (
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={() => setInfoField(field)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setInfoField(field);
+        }
+      }}
+      className="p-3 cursor-pointer transition-colors hover:bg-accent focus:bg-accent focus:outline-none relative"
+    >
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+        {icon} {label}
+        <Info className="h-3 w-3 ml-auto opacity-50" />
+      </div>
+      <p className="font-medium text-sm">{value}</p>
+    </Card>
+  );
+
+  const infoContent = infoField ? getInfoContent(infoField) : null;
 
   return (
     <div className="space-y-4">
@@ -107,35 +246,33 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
       )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="p-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Target className="h-4 w-4" /> Modo
-          </div>
-          <p className="font-medium text-sm">{MODE_LABELS[challenge.mode]}</p>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Trophy className="h-4 w-4" /> Métrica
-          </div>
-          <p className="font-medium text-sm">{METRIC_LABELS[challenge.metric]}</p>
-        </Card>
+        <InfoCard
+          field="mode"
+          icon={<Target className="h-4 w-4" />}
+          label="Modo"
+          value={MODE_LABELS[challenge.mode]}
+        />
+        <InfoCard
+          field="metric"
+          icon={<Trophy className="h-4 w-4" />}
+          label="Métrica"
+          value={METRIC_LABELS[challenge.metric]}
+        />
         {challenge.goal_value && (
-          <Card className="p-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <Target className="h-4 w-4" /> Meta
-            </div>
-            <p className="font-medium text-sm">{challenge.goal_value} {unit}</p>
-          </Card>
+          <InfoCard
+            field="goal"
+            icon={<Target className="h-4 w-4" />}
+            label="Meta"
+            value={`${challenge.goal_value} ${unit}`}
+          />
         )}
         {challenge.ends_at && (
-          <Card className="p-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <Clock className="h-4 w-4" /> Prazo
-            </div>
-            <p className="font-medium text-sm">
-              {format(new Date(challenge.ends_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-            </p>
-          </Card>
+          <InfoCard
+            field="deadline"
+            icon={<Clock className="h-4 w-4" />}
+            label="Prazo"
+            value={format(new Date(challenge.ends_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+          />
         )}
       </div>
 
@@ -144,6 +281,12 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
           <Button onClick={() => joinChallenge.mutate(undefined)} disabled={joinChallenge.isPending}>
             <Users className="h-4 w-4 mr-2" />
             {joinChallenge.isPending ? 'Entrando...' : 'Participar'}
+          </Button>
+        )}
+        {challenge.status === 'active' && isParticipant && (
+          <Button onClick={() => setProgressOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Registrar progresso
           </Button>
         )}
         {isAdmin && challenge.status === 'active' && (
@@ -167,6 +310,54 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
         challengeTitle={challenge.title}
         excludeUserIds={participants.map(p => p.user_id)}
       />
+
+      {/* Diálogo explicativo dos cards de informação */}
+      <Dialog open={infoField !== null} onOpenChange={(open) => !open && setInfoField(null)}>
+        <DialogContent>
+          {infoContent && (
+            <DialogHeader>
+              <DialogTitle>{infoContent.title}</DialogTitle>
+              <DialogDescription className="pt-2 text-left">
+                {infoContent.description}
+              </DialogDescription>
+            </DialogHeader>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de registro de progresso do desafio */}
+      <Dialog open={progressOpen} onOpenChange={(open) => { setProgressOpen(open); if (!open) setProgressValue(''); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar progresso</DialogTitle>
+            <DialogDescription className="text-left">
+              Informe quanto você avançou. O valor é somado ao seu total no ranking deste desafio.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="challenge-progress">{PROGRESS_INPUT_LABELS[challenge.metric]}</Label>
+            <Input
+              id="challenge-progress"
+              type="number"
+              min="1"
+              inputMode="numeric"
+              autoFocus
+              placeholder="0"
+              value={progressValue}
+              onChange={(e) => setProgressValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRegisterProgress(); }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setProgressOpen(false); setProgressValue(''); }}>
+              Cancelar
+            </Button>
+            <Button onClick={handleRegisterProgress} disabled={savingProgress}>
+              {savingProgress ? 'Registrando...' : 'Registrar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader className="pb-3">
