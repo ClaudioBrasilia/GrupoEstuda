@@ -53,6 +53,8 @@ export default function ChallengeCreateModal({ open, onClose, groupId }: Props) 
   });
 
   const mode = watch('mode');
+  const metric = watch('metric');
+  const metricUnit = metric === 'study_minutes' ? 'minutos' : metric === 'exercises_solved' ? 'exercícios' : 'páginas';
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -128,12 +130,17 @@ export default function ChallengeCreateModal({ open, onClose, groupId }: Props) 
             </RadioGroup>
           </div>
 
-          {(mode === 'first_to_goal' || mode === 'teams') && (
-            <div>
-              <Label>Meta (valor a atingir)</Label>
-              <Input type="number" min={1} {...register('goal_value')} placeholder="Ex: 120 (minutos)" />
-            </div>
-          )}
+          <div>
+            <Label>Meta — quantidade de {metricUnit} a atingir</Label>
+            <Input type="number" min={1} {...register('goal_value')} placeholder={`Ex: 100 ${metricUnit}`} />
+            <p className="text-xs text-muted-foreground mt-1">
+              {mode === 'first_to_goal'
+                ? `Vence quem alcançar ${metricUnit} primeiro.`
+                : mode === 'teams'
+                ? `Quantidade de ${metricUnit} que a equipe deve alcançar.`
+                : `Quantidade de ${metricUnit} a alcançar até o prazo. Opcional — deixe em branco para uma disputa livre (vence quem tiver mais).`}
+            </p>
+          </div>
 
           {(mode === 'deadline' || mode === 'teams') && (
             <div>

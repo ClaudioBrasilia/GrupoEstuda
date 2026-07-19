@@ -57,7 +57,7 @@ const STATUS_COLORS = {
   cancelled: 'destructive',
 } as const;
 
-type InfoField = 'mode' | 'metric' | 'goal' | 'deadline';
+type InfoField = 'mode' | 'metric' | 'deadline';
 
 export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish }: Props) {
   const { user } = useAuth();
@@ -114,21 +114,19 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
         return { title: `Modo: ${MODE_LABELS[challenge.mode]}`, description: descByMode[challenge.mode] };
       }
       case 'metric': {
-        const descByMetric = {
-          study_minutes:
-            'O ranking conta os minutos de estudo. Registre pelo cronômetro ou aqui no botão "Registrar progresso".',
-          exercises_solved:
-            'O ranking conta os exercícios resolvidos. Registre pelo cronômetro (informando exercícios) ou aqui no botão "Registrar progresso".',
-          pages_read:
-            'O ranking conta as páginas lidas. Registre pelo cronômetro (informando páginas) ou aqui no botão "Registrar progresso".',
+        const countByMetric = {
+          study_minutes: 'os minutos de estudo',
+          exercises_solved: 'os exercícios resolvidos',
+          pages_read: 'as páginas lidas',
         };
-        return { title: `Métrica: ${unit}`, description: descByMetric[challenge.metric] };
-      }
-      case 'goal':
+        const goalText = challenge.goal_value
+          ? ` A meta é atingir ${challenge.goal_value} ${unit}.`
+          : ' Não há meta fixa: vence quem tiver o maior total.';
         return {
-          title: 'Meta',
-          description: `Objetivo do desafio: ${challenge.goal_value} ${unit}. As barras do ranking mostram o quanto cada participante já alcançou.`,
+          title: `Métrica: ${unit}`,
+          description: `O ranking conta ${countByMetric[challenge.metric]}.${goalText} Registre pelo cronômetro ou aqui no botão "Registrar progresso".`,
         };
+      }
       case 'deadline':
         return {
           title: 'Prazo',
@@ -256,16 +254,8 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
           field="metric"
           icon={<Trophy className="h-4 w-4" />}
           label="Métrica"
-          value={METRIC_LABELS[challenge.metric]}
+          value={challenge.goal_value ? `${challenge.goal_value} ${unit}` : unit}
         />
-        {challenge.goal_value && (
-          <InfoCard
-            field="goal"
-            icon={<Target className="h-4 w-4" />}
-            label="Meta"
-            value={`${challenge.goal_value} ${unit}`}
-          />
-        )}
         {challenge.ends_at && (
           <InfoCard
             field="deadline"
