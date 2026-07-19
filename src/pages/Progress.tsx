@@ -14,6 +14,9 @@ import { useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import AdvancedStatsCard from '@/components/progress/AdvancedStatsCard';
+import { UpgradePrompt } from '@/components/premium/UpgradePrompt';
 
 const ProgressPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState('week');
@@ -24,6 +27,7 @@ const ProgressPage: React.FC = () => {
   const [subjectMetric, setSubjectMetric] = useState<SubjectMetric>('time');
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { limits } = usePlanLimits();
   const params = useParams();
   const routeGroupId = params?.groupId;
   const { toast } = useToast();
@@ -721,6 +725,17 @@ const ProgressPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Estatísticas Avançadas — exclusivo do plano Premium */}
+        {limits.hasAdvancedStats ? (
+          <AdvancedStatsCard userId={user?.id} groupId={view === 'group' ? groupId : undefined} />
+        ) : (
+          <UpgradePrompt
+            feature="Estatísticas Avançadas"
+            description="Veja seu padrão de estudo por dia da semana, tendência dos últimos 6 meses, comparação com a média do grupo e exporte seu histórico completo."
+            requiredPlan="premium"
+          />
         )}
       </div>
     </PageLayout>

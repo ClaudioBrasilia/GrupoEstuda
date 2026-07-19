@@ -6,6 +6,7 @@ import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { useTimer } from '@/context/TimerContext';
 import { useStudySessions } from '@/hooks/useStudySessions';
@@ -30,7 +31,9 @@ const Timer: React.FC = () => {
     resetTimer
   } = useTimer();
   const { studySessions, subjects, groups, loading, createStudySession, getSubjectsByGroup } = useStudySessions();
-  
+  const [pagesRead, setPagesRead] = React.useState('');
+  const [exercisesSolved, setExercisesSolved] = React.useState('');
+
   // Format time display (HH:MM:SS)
   const formatTime = (totalSeconds: number) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -82,11 +85,18 @@ const Timer: React.FC = () => {
     }
     
     setIsRunning(false);
-    
-    const result = await createStudySession(selectedSubject, seconds, selectedGroup);
-    
+
+    const parsedPages = parseInt(pagesRead, 10);
+    const parsedExercises = parseInt(exercisesSolved, 10);
+    const result = await createStudySession(selectedSubject, seconds, selectedGroup, {
+      pages: Number.isNaN(parsedPages) ? null : parsedPages,
+      exercises: Number.isNaN(parsedExercises) ? null : parsedExercises
+    });
+
     if (result.success) {
       toast.success(`Sessão de estudo concluída! Você ganhou ${result.points} pontos!`);
+      setPagesRead('');
+      setExercisesSolved('');
       resetTimer();
     } else {
       console.error('Erro ao salvar sessão:', result.error);
@@ -174,8 +184,33 @@ const Timer: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">{t('timer.pagesRead')}</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    placeholder={t('timer.optional')}
+                    value={pagesRead}
+                    onChange={(e) => setPagesRead(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">{t('timer.exercisesSolved')}</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    placeholder={t('timer.optional')}
+                    value={exercisesSolved}
+                    onChange={(e) => setExercisesSolved(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-            
+
             <div className="flex justify-center gap-2 mt-6">
               {!isRunning ? (
                 <Button onClick={handleStart} className="bg-green-500 hover:bg-green-600 flex items-center gap-2">

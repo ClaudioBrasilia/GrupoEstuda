@@ -4,6 +4,9 @@ const config: CapacitorConfig = {
   appId: 'com.grupoestuda.app',
   appName: 'Grupo Estuda',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,

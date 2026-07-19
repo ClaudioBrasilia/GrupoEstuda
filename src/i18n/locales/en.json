@@ -1,4 +1,3 @@
-
 {
   "app": {
     "name": "Grupo Estuda",
@@ -11,7 +10,8 @@
     "water": "Water",
     "leaders": "Leaders",
     "profile": "Profile",
-    "timer": "Timer"
+    "timer": "Timer",
+    "feed": "Feed"
   },
   "home": {
     "getStarted": "Get Started"
@@ -64,37 +64,12 @@
   "plans": {
     "title": "Choose Your Plan",
     "free": {
-      "name": "Free",
-      "price": "Free",
-      "features": [
-        "Join study groups",
-        "Track basic activities",
-        "Water tracker",
-        "Limited leaderboard access"
-      ]
-    },
-    "basic": {
-      "name": "Basic",
-      "price": "$4.99/month",
-      "features": [
-        "All free features",
-        "No ads",
-        "Advanced progress tracking",
-        "Custom group creation"
-      ]
+      "name": "Free"
     },
     "premium": {
-      "name": "Premium",
-      "price": "$9.99/month",
-      "features": [
-        "All basic features",
-        "AI test generation",
-        "Unlimited groups",
-        "Advanced analytics"
-      ]
+      "name": "Premium"
     },
-    "subscribe": "Subscribe",
-    "current": "Your current plan"
+    "unlimited": "Unlimited"
   },
   "aiTests": {
     "title": "Generate Test",
@@ -166,16 +141,41 @@
     "settings": {
       "profile": "Profile",
       "security": "Security",
-      "subscription": "Subscription", 
+      "subscription": "Subscription",
       "name": "Name",
       "email": "Email",
       "currentPassword": "Current Password",
       "newPassword": "New Password",
-      "confirmPassword": "Confirm Password"
+      "confirmPassword": "Confirm Password",
+      "accountSecurity": "Account Security",
+      "appearance": "Appearance",
+      "changePassword": "Change Password",
+      "changePasswordDescription": "Enter your current password and the desired new password.",
+      "changePasswordTitle": "Change Password",
+      "changing": "Changing...",
+      "currentPlan": "Current Plan",
+      "description": "Manage your account and preferences",
+      "free": "Free",
+      "managePlans": "View Plans",
+      "managePrivacy": "Manage your privacy settings",
+      "manageSecuritySettings": "Manage your account security",
+      "manageSubscription": "Manage Subscription",
+      "passwordChanged": "Password changed successfully!",
+      "passwordsNotMatch": "Passwords do not match",
+      "premium": "Premium",
+      "privacy": "Privacy",
+      "profileUpdated": "Profile updated successfully!",
+      "theme": "Theme",
+      "themeDescription": "Choose the interface theme",
+      "title": "Settings",
+      "updateProfile": "Update Profile",
+      "updating": "Updating...",
+      "upgradeMessage": "Upgrade to Premium and unlock exclusive features.",
+      "viewPrivacyPolicy": "View Privacy Policy"
     },
     "achievementNames": {
       "studyWarrior": "Study Warrior",
-      "knowledgeSeeker": "Knowledge Seeker", 
+      "knowledgeSeeker": "Knowledge Seeker",
       "groupLeader": "Group Leader",
       "problemSolver": "Problem Solver",
       "hydrationMaster": "Hydration Master",
@@ -185,7 +185,7 @@
       "studyWarrior": "Earn 100 study points",
       "knowledgeSeeker": "Earn 500 study points",
       "groupLeader": "Join at least 1 study group",
-      "problemSolver": "Earn 1000 study points", 
+      "problemSolver": "Earn 1000 study points",
       "hydrationMaster": "Stay hydrated for 7 days",
       "dedicationStar": "Reach level 10"
     }
@@ -195,7 +195,7 @@
     "english": "English",
     "portuguese": "Portuguese"
   },
-"progress": {
+  "progress": {
     "title": "Progress",
     "pagesRead": "Pages Read",
     "studyTime": "Study Time",
@@ -223,7 +223,8 @@
     "noSessionsToday": "No study sessions recorded today",
     "startSessionHint": "Start a session in the Timer to begin!",
     "complete": "complete",
-    "percentage": "Percentage"
+    "percentage": "Percentage",
+    "selectGroup": "Select group"
   },
   "timer": {
     "title": "Timer",
@@ -231,7 +232,7 @@
     "points": "points",
     "pointsPerMinute": "point per minute",
     "selectGroup": "Select Group",
-    "selectSubject": "Select Subject", 
+    "selectSubject": "Select Subject",
     "start": "Start",
     "resume": "Resume",
     "pause": "Pause",
@@ -241,17 +242,25 @@
     "subject": "Subject",
     "duration": "Duration",
     "date": "Date",
-    "noSessions": "No study sessions yet"
+    "noSessions": "No study sessions yet",
+    "pagesRead": "Pages read",
+    "exercisesSolved": "Exercises solved",
+    "optional": "Optional"
   },
   "group": {
     "members": "Group Members",
     "inviteMember": "Invite Member",
     "admin": "Admin",
-    "addSubject": "Add Subject"
+    "addSubject": "Add Subject",
+    "addNewSubject": "Add New Subject",
+    "addVestibularDescription": "This will add all the standard entrance-exam subjects to your group.",
+    "availableSubjects": "Available Subjects",
+    "deleteSubjectConfirmation": "Are you sure you want to delete this subject? This action cannot be undone.",
+    "enterSubjectName": "Enter the subject name"
   },
-"days": {
+  "days": {
     "mon": "Mon",
-    "tue": "Tue", 
+    "tue": "Tue",
     "wed": "Wed",
     "thu": "Thu",
     "fri": "Fri",
@@ -284,7 +293,12 @@
     "waterGoal": "Water Goal (ml)",
     "waterGoalUpdated": "Water goal updated!",
     "privacyPolicy": "Privacy Policy",
-    "termsOfUse": "Terms of Use"
+    "termsOfUse": "Terms of Use",
+    "theme": {
+      "dark": "Dark",
+      "light": "Light",
+      "system": "System"
+    }
   },
   "files": {
     "title": "Group Files",
@@ -301,7 +315,9 @@
     "deleteSuccess": "File deleted successfully!",
     "deleteError": "Error deleting file",
     "uploadedBy": "Uploaded by",
-    "size": "Size"
+    "size": "Size",
+    "selectedFile": "Selected file",
+    "yourFile": "Your file"
   },
   "goals": {
     "title": "Group Goals",
@@ -324,7 +340,13 @@
     "deleteGoal": "Delete Goal",
     "goalCreated": "Goal created successfully!",
     "goalUpdated": "Goal updated successfully!",
-    "goalDeleted": "Goal deleted successfully!"
+    "goalDeleted": "Goal deleted successfully!",
+    "enterAmountPlaceholder": "Enter the amount",
+    "enterTarget": "Enter the target",
+    "invalidAmount": "Enter a valid amount",
+    "saveProgress": "Save Progress",
+    "selectSubject": "Select the subject",
+    "selectType": "Select the goal type"
   },
   "water": {
     "title": "Water Intake",
@@ -426,5 +448,10 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous"
+  },
+  "groupMessages": {
+    "messageHistory": "Message History",
+    "placeholder": "Type your message...",
+    "send": "Send"
   }
 }

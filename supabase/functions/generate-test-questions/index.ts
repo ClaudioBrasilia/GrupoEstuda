@@ -60,8 +60,43 @@ const extractTextFromFile = async (fileUrl?: string) => {
   }
 
   const contentType = fileResponse.headers.get('content-type') ?? '';
+
   if (contentType.includes('application/pdf')) {
-    return '';
+    // Extrai texto do PDF usando a API pública pdf.co (sem chave para PDFs pequenos)
+    // Alternativa: lê os bytes e extrai texto bruto entre streams BT/ET
+    const arrayBuffer = await fileResponse.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const rawText = new TextDecoder('latin1').decode(bytes);
+
+    // Extrai blocos de texto entre BT (Begin Text) e ET (End Text) do PDF
+    const textBlocks: string[] = [];
+    const btEtRegex = /BT[\s\S]*?ET/g;
+    const matches = rawText.match(btEtRegex) ?? [];
+
+    for (const block of matches) {
+      // Captura strings entre parênteses: (texto)
+      const parenMatches = block.match(/\(([^)\\]|\\.)*\)/g) ?? [];
+      for (const m of parenMatches) {
+        const inner = m.slice(1, -1)
+          .replace(/\\n/g, '\n')
+          .replace(/\\r/g, '')
+          .replace(/\\t/g, ' ')
+          .replace(/\\\\/g, '\\')
+          .replace(/\\'/g, "'")
+          .replace(/\\\(/g, '(')
+          .replace(/\\\)/g, ')')
+          .trim();
+        if (inner.length > 2) textBlocks.push(inner);
+      }
+    }
+
+    const extracted = textBlocks.join(' ').replace(/\s+/g, ' ').trim().slice(0, 8000);
+
+    if (extracted.length < 50) {
+      throw new Error('Não foi possível extrair texto do PDF. Tente um arquivo TXT ou PDF com texto selecionável (não escaneado).');
+    }
+
+    return extracted;
   }
 
   const text = await fileResponse.text();

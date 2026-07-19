@@ -1,10 +1,9 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthError, Session } from '@supabase/supabase-js';
 import { withTimeout } from '@/lib/authUtils';
 
-export type PlanType = 'free' | 'basic' | 'premium';
+export type PlanType = 'free' | 'premium';
 
 interface UserProfile {
   id: string;
@@ -108,17 +107,14 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
   }, []);
 
   const fetchUserProfile = async (userId: string, email: string) => {
+    const fallbackName = email.split('@')[0];
+
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
 
       if (profile) {
         setUser({
@@ -127,9 +123,38 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
           name: profile.name,
           plan: profile.plan as PlanType
         });
+        return;
       }
+
+      // Perfil ausente (trigger de criação pode ter falhado) ou erro ao buscar:
+      // tenta criar o registro para corrigir o problema na raiz.
+      if (error?.code === 'PGRST116') {
+        const { data: created, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, name: fallbackName })
+          .select()
+          .single();
+
+        if (created && !insertError) {
+          setUser({
+            id: created.id,
+            email,
+            name: created.name,
+            plan: created.plan as PlanType
+          });
+          return;
+        }
+        console.error('Error creating missing profile:', insertError);
+      } else if (error) {
+        console.error('Error fetching profile:', error);
+      }
+
+      // Nunca deixa o usuário travado na tela de login: garante um usuário
+      // funcional mesmo que a tabela profiles esteja temporariamente inacessível.
+      setUser({ id: userId, email, name: fallbackName, plan: 'free' });
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
+      setUser({ id: userId, email, name: fallbackName, plan: 'free' });
     }
   };
 
@@ -173,9 +198,20 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         if (isInvalidCredentials) {
           return { error: { message: 'Email ou senha inválidos. Confira os dados e tente novamente.' } };
         }
+
+        return { error: result.error };
       }
 
-      return { error: result.error };
+      // Busca o perfil aqui, diretamente, em vez de depender só do listener
+      // assíncrono onAuthStateChange. Isso evita a tela ficar presa no login
+      // quando esse evento demora (comum em WebView/Capacitor): o toast de
+      // sucesso aparecia mas a navegação (que depende de `user`) só viria
+      // depois que o listener disparasse, às vezes nunca.
+      if (result.data.user) {
+        await fetchUserProfile(result.data.user.id, result.data.user.email!);
+      }
+
+      return { error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao fazer login';
 

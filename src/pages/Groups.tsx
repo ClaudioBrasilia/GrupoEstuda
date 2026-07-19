@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, User, Users, Crown, AlertCircle, FileText } from 'lucide-react';
+import { Plus, Search, User, Users, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Group, useGroups } from '@/hooks/useGroups';
@@ -10,15 +10,12 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { GlobalActivityFeed } from '@/components/group/GlobalActivityFeed';
-import { FloatingActionButton } from '@/components/group/FloatingActionButton';
-import { CreateActivityDialog } from '@/components/group/CreateActivityDialog';
+import GlobalActiveChallengeBanner from '@/components/group/GlobalActiveChallengeBanner';
 
 // Fixed group ID for Vestibular Brasil
 const VESTIBULAR_GROUP_ID = 'b47ac10b-58cc-4372-a567-0e02b2c3d479';
@@ -127,7 +124,6 @@ const Groups: React.FC = () => {
   const { groups, loading, createGroup, joinGroup } = useGroups();
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
-  const [isActivityDialogOpen, setIsActivityDialogOpen] = useState(false);
 
   const handleCreateGroup = async (name: string, description: string) => {
     const result = await createGroup(name, description);
@@ -216,51 +212,7 @@ const Groups: React.FC = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
         </div>
         
-        <div className="flex gap-2">
-          {/* Botão Criar Teste IA - COM GATE PREMIUM */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => {
-                      if (user?.plan !== 'premium') {
-                        toast.error('Recurso exclusivo para usuários Premium');
-                        navigate('/plans');
-                        return;
-                      }
-                      navigate('/generate-test');
-                    }}
-                    variant="outline"
-                    className="flex items-center gap-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50 dark:text-yellow-400 dark:hover:bg-yellow-950"
-                  >
-                    <FileText size={18} />
-                    <span>Criar Teste IA</span>
-                    <Crown size={14} className="text-yellow-500" />
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      if (user?.plan !== 'premium') {
-                        toast.error('Recurso exclusivo para usuários Premium');
-                        navigate('/plans');
-                        return;
-                      }
-                      navigate('/train-mistakes');
-                    }}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    Treinar erros
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Gere testes personalizados com Inteligência Artificial</p>
-                <p className="text-xs text-yellow-600 dark:text-yellow-500">🔒 Exclusivo Premium</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
+        <div className="flex flex-wrap gap-2">
           {/* Botão Criar Grupo */}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -279,11 +231,7 @@ const Groups: React.FC = () => {
         </div>
       </div>
 
-      {/* Atividades Recentes */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">🔥 Atividades Recentes</h2>
-        <GlobalActivityFeed />
-      </div>
+      <GlobalActiveChallengeBanner groups={groups} />
 
       {/* Lista de Grupos */}
       <div className="mb-4">
@@ -327,18 +275,6 @@ const Groups: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Floating Action Button */}
-      <FloatingActionButton onClick={() => setIsActivityDialogOpen(true)} />
-
-      {/* Create Activity Dialog */}
-      <CreateActivityDialog
-        open={isActivityDialogOpen}
-        onOpenChange={setIsActivityDialogOpen}
-        userGroups={groups
-          .filter(g => g.isMember)
-          .map(g => ({ id: g.id, name: g.name }))}
-      />
     </PageLayout>
   );
 };

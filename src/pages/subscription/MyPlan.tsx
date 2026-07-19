@@ -31,17 +31,14 @@ const MyPlan: React.FC = () => {
   const features = [
     { key: 'maxGroups', label: 'Grupos de estudo', getValue: (plan: PlanType) => PLAN_LIMITS[plan].maxGroups === null ? 'Ilimitado' : PLAN_LIMITS[plan].maxGroups },
     { key: 'maxMembersPerGroup', label: 'Membros por grupo', getValue: (plan: PlanType) => PLAN_LIMITS[plan].maxMembersPerGroup === null ? 'Ilimitado' : PLAN_LIMITS[plan].maxMembersPerGroup },
-    { key: 'maxUploadSizeMB', label: 'Limite de upload', getValue: (plan: PlanType) => `${PLAN_LIMITS[plan].maxUploadSizeMB >= 1024 ? '1 GB' : PLAN_LIMITS[plan].maxUploadSizeMB + ' MB'}` },
+    { key: 'canUploadFiles', label: 'Upload de arquivos', getValue: (plan: PlanType) => PLAN_LIMITS[plan].canUploadFiles ? `${PLAN_LIMITS[plan].maxUploadSizeMB} MB` : false },
     { key: 'historyDays', label: 'Histórico de atividades', getValue: (plan: PlanType) => PLAN_LIMITS[plan].historyDays === null ? 'Completo' : `${PLAN_LIMITS[plan].historyDays} dias` },
-    { key: 'hasAds', label: 'Sem anúncios', getValue: (plan: PlanType) => !PLAN_LIMITS[plan].hasAds },
-    { key: 'canUploadFiles', label: 'Upload de arquivos', getValue: (plan: PlanType) => PLAN_LIMITS[plan].canUploadFiles },
     { key: 'hasAdvancedStats', label: 'Estatísticas avançadas', getValue: (plan: PlanType) => PLAN_LIMITS[plan].hasAdvancedStats },
-    { key: 'hasAITests', label: 'Gerador de testes com IA', getValue: (plan: PlanType) => PLAN_LIMITS[plan].hasAITests },
     { key: 'hasPremiumBadge', label: 'Badge Premium exclusivo', getValue: (plan: PlanType) => PLAN_LIMITS[plan].hasPremiumBadge },
     { key: 'hasPrioritySupport', label: 'Suporte prioritário', getValue: (plan: PlanType) => PLAN_LIMITS[plan].hasPrioritySupport },
   ];
 
-  const plans: PlanType[] = ['free', 'basic', 'premium'];
+  const plans: PlanType[] = ['free', 'premium'];
 
   const groupsPercentage = limits.maxGroups 
     ? Math.min((usage.groupsCreated / limits.maxGroups) * 100, 100)
@@ -61,7 +58,7 @@ const MyPlan: React.FC = () => {
 
         {/* Current Plan Card */}
         <Card className="overflow-hidden">
-          <div className={`h-2 ${currentPlan === 'premium' ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : currentPlan === 'basic' ? 'bg-primary' : 'bg-muted'}`} />
+          <div className={`h-2 ${currentPlan === 'premium' ? 'bg-gradient-to-r from-amber-400 to-yellow-500' : 'bg-muted'}`} />
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -76,14 +73,13 @@ const MyPlan: React.FC = () => {
             </div>
             <CardDescription>
               {currentPlan === 'free' && 'Plano gratuito com recursos básicos'}
-              {currentPlan === 'basic' && 'Recursos avançados para estudantes dedicados'}
               {currentPlan === 'premium' && 'Acesso completo a todos os recursos'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold">
-                ${PLAN_PRICES[currentPlan].monthly}
+                R$ {PLAN_PRICES[currentPlan].monthly.toFixed(2).replace('.', ',')}
                 <span className="text-sm font-normal text-muted-foreground">/mês</span>
               </span>
               {currentPlan !== 'premium' && (
@@ -123,15 +119,17 @@ const MyPlan: React.FC = () => {
             </div>
 
             {/* Storage Usage */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Armazenamento Usado</span>
-                <span className="font-medium">
-                  {usage.storageUsedMB.toFixed(2)} MB / {limits.maxUploadSizeMB >= 1024 ? '1 GB' : `${limits.maxUploadSizeMB} MB`}
-                </span>
+            {limits.canUploadFiles && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Armazenamento Usado</span>
+                  <span className="font-medium">
+                    {usage.storageUsedMB.toFixed(2)} MB / {limits.maxUploadSizeMB} MB
+                  </span>
+                </div>
+                <Progress value={storagePercentage} className="h-2" />
               </div>
-              <Progress value={storagePercentage} className="h-2" />
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -197,7 +195,7 @@ const MyPlan: React.FC = () => {
                         key={plan} 
                         className={`text-center py-3 px-2 font-bold ${plan === currentPlan ? 'bg-primary/5' : ''}`}
                       >
-                        {PLAN_PRICES[plan].monthly === 0 ? 'Grátis' : `$${PLAN_PRICES[plan].monthly}`}
+                        {PLAN_PRICES[plan].monthly === 0 ? 'Grátis' : `R$ ${PLAN_PRICES[plan].monthly.toFixed(2).replace('.', ',')}`}
                       </td>
                     ))}
                   </tr>

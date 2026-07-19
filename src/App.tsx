@@ -2,13 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { useState, useCallback } from "react";
 import { ThemeProvider } from "next-themes";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { TimerProvider } from "./context/TimerContext";
 import Home from "./pages/Home";
 import Groups from "./pages/Groups";
+import Feed from "./pages/Feed";
 import GroupDetail from "./pages/GroupDetail";
 import Progress from "./pages/Progress";
 import Timer from "./pages/Timer";
@@ -36,7 +37,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showingSplash, setShowingSplash] = useState(true);
-  
+
   const handleSplashFinished = useCallback(() => {
     setShowingSplash(false);
   }, []);
@@ -52,7 +53,7 @@ const App = () => {
               {showingSplash ? (
                 <SplashScreen onFinished={handleSplashFinished} />
               ) : (
-                <BrowserRouter>
+                <HashRouter>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
@@ -60,6 +61,7 @@ const App = () => {
                     <Route path="/terms" element={<TermsOfUse />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
                     <Route path="/groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
+                    <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
                     <Route path="/group/:groupId" element={<ProtectedRoute><GroupDetail /></ProtectedRoute>} />
                     <Route path="/invitations" element={<ProtectedRoute><Invitations /></ProtectedRoute>} />
                     <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
@@ -78,7 +80,7 @@ const App = () => {
                     <Route path="/train-mistakes" element={<ProtectedRoute><TrainMistakes /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
-                </BrowserRouter>
+                </HashRouter>
               )}
             </TooltipProvider>
           </TimerProvider>

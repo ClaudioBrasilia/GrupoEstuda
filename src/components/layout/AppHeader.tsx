@@ -1,12 +1,14 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LanguagesIcon, UserIcon } from 'lucide-react';
+import { UserIcon, Flame } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useNewActivities } from '@/hooks/useNewActivities';
 import NotificationBell from '@/components/NotificationBell';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +22,8 @@ const getPageTitle = (pathname: string, t: (key: string) => string): string => {
       return t('app.name');
     case '/groups':
       return t('navigation.groups');
+    case '/feed':
+      return t('navigation.feed');
     case '/progress':
       return t('navigation.progress');
     case '/water':
@@ -51,12 +55,24 @@ const AppHeader: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  
+  const { newCount, markActivitiesSeen } = useNewActivities();
+
   const title = getPageTitle(location.pathname, t);
-  
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-  };
+
+  // Clear the "new activities" badge once the user is viewing the feed.
+  useEffect(() => {
+    if (location.pathname === '/feed') {
+      void markActivitiesSeen();
+    }
+  }, [location.pathname, markActivitiesSeen]);
+
+  // Sem seletor de idioma: garante que o app sempre abre em português,
+  // mesmo que o navegador do usuário esteja configurado em outro idioma.
+  useEffect(() => {
+    if (i18n.language !== 'pt') {
+      i18n.changeLanguage('pt');
+    }
+  }, [i18n]);
   
   return (
     <header className="bg-gradient-to-r from-background via-background to-primary/5 border-b border-border/50 backdrop-blur-sm py-4 px-6 sticky top-0 z-10 flex items-center justify-between shadow-elegant">
@@ -66,23 +82,29 @@ const AppHeader: React.FC = () => {
       
       <div className="flex items-center gap-2 flex-1 justify-end">
         <ThemeToggle />
-        
+
+        {user && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative text-foreground hover:bg-primary/10 transition-smooth gap-1.5 px-2"
+            onClick={() => navigate('/feed')}
+            aria-label={t('navigation.feed')}
+          >
+            <Flame size={18} />
+            <span>{t('navigation.feed')}</span>
+            {newCount > 0 && location.pathname !== '/feed' && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center p-0 px-1 text-xs"
+              >
+                {newCount > 9 ? '9+' : newCount}
+              </Badge>
+            )}
+          </Button>
+        )}
+
         {user && <NotificationBell />}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-foreground hover:bg-primary/10 transition-smooth">
-              <LanguagesIcon size={20} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => changeLanguage('en')}>
-              {t('language.english')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => changeLanguage('pt')}>
-              {t('language.portuguese')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
         
         {user ? (
           <DropdownMenu>
@@ -96,9 +118,7 @@ const AppHeader: React.FC = () => {
                 {user.name}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/plans')}>
-                {user.plan === 'free' ? t('plans.free.name') : 
-                 user.plan === 'basic' ? t('plans.basic.name') : 
-                 t('plans.premium.name')}
+                {user.plan === 'free' ? t('plans.free.name') : t('plans.premium.name')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 logout();

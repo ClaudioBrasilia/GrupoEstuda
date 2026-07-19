@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trophy, Clock, Users, ChevronRight, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 interface Props {
   groupId: string;
   isAdmin: boolean;
+  openChallenge?: { id: string; token: number } | null;
 }
 
 const METRIC_ICONS: Record<string, React.ReactNode> = {
@@ -66,11 +67,17 @@ function ChallengeCard({ challenge, onClick }: { challenge: Challenge; onClick: 
   );
 }
 
-export default function GroupChallengesTab({ groupId, isAdmin }: Props) {
+export default function GroupChallengesTab({ groupId, isAdmin, openChallenge }: Props) {
   const { challenges, isLoading, finishChallenge } = useChallenges(groupId);
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (openChallenge?.id) {
+      setSelectedId(openChallenge.id);
+    }
+  }, [openChallenge]);
 
   const handleFinish = async (challengeId: string) => {
     try {

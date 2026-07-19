@@ -75,15 +75,8 @@ export const usePlanLimits = () => {
   };
 
   const getUpgradeRequiredPlan = (feature: string): PlanType | null => {
-    // Check which plan is needed for a feature
-    if (feature === 'aiTests' || feature === 'premiumBadge' || feature === 'customThemes') {
-      return currentPlan === 'premium' ? null : 'premium';
-    }
-    if (feature === 'uploadFiles' || feature === 'advancedStats') {
-      if (currentPlan === 'premium' || currentPlan === 'basic') return null;
-      return 'basic';
-    }
-    return null;
+    // Com apenas 2 planos, qualquer recurso bloqueado sempre aponta para o Premium
+    return currentPlan === 'premium' ? null : 'premium';
   };
 
   return {

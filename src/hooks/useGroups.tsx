@@ -93,7 +93,7 @@ export const useGroups = () => {
       const maxGroups = PLAN_LIMITS[userPlan].maxGroups;
       
       if (maxGroups !== null && groupCount !== null && groupCount >= maxGroups) {
-        const upgradeText = userPlan === 'free' ? ' Faça upgrade para Basic ou Premium.' : userPlan === 'basic' ? ' Faça upgrade para Premium.' : '';
+        const upgradeText = userPlan === 'free' ? ' Faça upgrade para Premium.' : '';
         return { 
           success: false, 
           error: `Limite de ${maxGroups} grupo(s) atingido.${upgradeText}` 
@@ -204,6 +204,18 @@ export const useGroups = () => {
         });
 
       if (error) throw error;
+
+      // Avisa o grupo no chat que um novo membro entrou
+      const { error: welcomeMessageError } = await supabase
+        .from('messages')
+        .insert({
+          group_id: groupId,
+          user_id: user.id,
+          content: '👋 Entrou no grupo! Sejam bem-vindos(as) 🎉',
+        });
+      if (welcomeMessageError) {
+        console.error('Erro ao enviar mensagem de boas-vindas:', welcomeMessageError);
+      }
 
       // Refresh groups list
       await fetchGroups();

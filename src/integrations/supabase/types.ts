@@ -25,6 +25,7 @@ export type Database = {
           name_key: string
           points_required: number | null
           sessions_required: number | null
+          streak_required: number | null
           water_days_required: number | null
         }
         Insert: {
@@ -37,6 +38,7 @@ export type Database = {
           name_key: string
           points_required?: number | null
           sessions_required?: number | null
+          streak_required?: number | null
           water_days_required?: number | null
         }
         Update: {
@@ -49,6 +51,7 @@ export type Database = {
           name_key?: string
           points_required?: number | null
           sessions_required?: number | null
+          streak_required?: number | null
           water_days_required?: number | null
         }
         Relationships: []
@@ -355,6 +358,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          activities_seen_at: string
           created_at: string
           id: string
           name: string
@@ -363,6 +367,7 @@ export type Database = {
           water_goal_ml: number
         }
         Insert: {
+          activities_seen_at?: string
           created_at?: string
           id: string
           name: string
@@ -371,6 +376,7 @@ export type Database = {
           water_goal_ml?: number
         }
         Update: {
+          activities_seen_at?: string
           created_at?: string
           id?: string
           name?: string
@@ -821,6 +827,328 @@ export type Database = {
         }
         Relationships: []
       }
+      avatar_items: {
+        Row: {
+          category: string
+          created_at: string | null
+          icon: string
+          id: string
+          name: string
+          requirement_label: string
+          requirement_type: string
+          requirement_value: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          icon: string
+          id?: string
+          name: string
+          requirement_label: string
+          requirement_type: string
+          requirement_value?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          icon?: string
+          id?: string
+          name?: string
+          requirement_label?: string
+          requirement_type?: string
+          requirement_value?: string | null
+        }
+        Relationships: []
+      }
+      challenge_badges: {
+        Row: {
+          awarded_at: string | null
+          challenge_id: string | null
+          id: string
+          kind: string
+          user_id: string | null
+        }
+        Insert: {
+          awarded_at?: string | null
+          challenge_id?: string | null
+          id?: string
+          kind: string
+          user_id?: string | null
+        }
+        Update: {
+          awarded_at?: string | null
+          challenge_id?: string | null
+          id?: string
+          kind?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_badges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_participants: {
+        Row: {
+          challenge_id: string
+          joined_at: string | null
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          joined_at?: string | null
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          joined_at?: string | null
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      challenge_teams: {
+        Row: {
+          challenge_id: string | null
+          color: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          challenge_id?: string | null
+          color?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          challenge_id?: string | null
+          color?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      challenges: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          ends_at: string | null
+          goal_value: number | null
+          group_id: string
+          id: string
+          metric: Database["public"]["Enums"]["challenge_metric"]
+          mode: Database["public"]["Enums"]["challenge_mode"]
+          season_id: string | null
+          starts_at: string
+          status: Database["public"]["Enums"]["challenge_status"]
+          title: string
+          winner_team_id: string | null
+          winner_user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          ends_at?: string | null
+          goal_value?: number | null
+          group_id: string
+          id?: string
+          metric: Database["public"]["Enums"]["challenge_metric"]
+          mode: Database["public"]["Enums"]["challenge_mode"]
+          season_id?: string | null
+          starts_at?: string
+          status?: Database["public"]["Enums"]["challenge_status"]
+          title: string
+          winner_team_id?: string | null
+          winner_user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          ends_at?: string | null
+          goal_value?: number | null
+          group_id?: string
+          id?: string
+          metric?: Database["public"]["Enums"]["challenge_metric"]
+          mode?: Database["public"]["Enums"]["challenge_mode"]
+          season_id?: string | null
+          starts_at?: string
+          status?: Database["public"]["Enums"]["challenge_status"]
+          title?: string
+          winner_team_id?: string | null
+          winner_user_id?: string | null
+        }
+        Relationships: []
+      }
+      season_badges: {
+        Row: {
+          awarded_at: string | null
+          id: string
+          kind: string
+          season_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          awarded_at?: string | null
+          id?: string
+          kind: string
+          season_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          awarded_at?: string | null
+          id?: string
+          kind?: string
+          season_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_badges_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seasons: {
+        Row: {
+          champion_user_id: string | null
+          created_at: string | null
+          ends_at: string
+          id: string
+          starts_at: string
+          status: string
+          title: string
+        }
+        Insert: {
+          champion_user_id?: string | null
+          created_at?: string | null
+          ends_at: string
+          id?: string
+          starts_at: string
+          status?: string
+          title: string
+        }
+        Update: {
+          champion_user_id?: string | null
+          created_at?: string | null
+          ends_at?: string
+          id?: string
+          starts_at?: string
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      user_avatar: {
+        Row: {
+          equipped_item_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          equipped_item_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          equipped_item_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_avatar_items: {
+        Row: {
+          item_id: string
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          item_id: string
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          item_id?: string
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_leagues: {
+        Row: {
+          tier: Database["public"]["Enums"]["league_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          tier?: Database["public"]["Enums"]["league_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          tier?: Database["public"]["Enums"]["league_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_streaks: {
+        Row: {
+          best_streak: number
+          current_streak: number
+          last_study_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_streak?: number
+          current_streak?: number
+          last_study_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_streak?: number
+          current_streak?: number
+          last_study_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_xp: {
+        Row: {
+          level: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          level?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -830,6 +1158,23 @@ export type Database = {
         Args: { p_group_id: string; p_points: number; p_user_id: string }
         Returns: undefined
       }
+      challenge_ranking: {
+        Args: { _challenge_id: string }
+        Returns: {
+          user_id: string
+          team_id: string
+          progress: number
+          rank: number
+        }[]
+      }
+      finish_challenge: {
+        Args: { _challenge_id: string }
+        Returns: undefined
+      }
+      finish_season: {
+        Args: { _season_id: string }
+        Returns: undefined
+      }
       get_user_admin_groups: { Args: { user_uuid: string }; Returns: string[] }
       get_user_email: { Args: { user_uuid: string }; Returns: string }
       get_user_groups: { Args: { user_uuid: string }; Returns: string[] }
@@ -837,9 +1182,42 @@ export type Database = {
         Args: { group_uuid: string; user_uuid: string }
         Returns: boolean
       }
+      league_leaderboard: {
+        Args: {
+          _tier: Database["public"]["Enums"]["league_tier"]
+          _starts_at: string
+          _ends_at: string
+        }
+        Returns: {
+          user_id: string
+          score: number
+          rank: number
+        }[]
+      }
+      period_leaderboard: {
+        Args: { _starts_at: string; _ends_at: string; _group_id?: string }
+        Returns: {
+          user_id: string
+          score: number
+          rank: number
+        }[]
+      }
+      process_weekly_leagues: {
+        Args: { _starts_at: string; _ends_at: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      challenge_metric: "study_minutes" | "exercises_solved" | "pages_read"
+      challenge_mode: "first_to_goal" | "deadline" | "teams"
+      challenge_status: "draft" | "active" | "finished" | "cancelled"
+      league_tier:
+        | "bronze"
+        | "silver"
+        | "gold"
+        | "platinum"
+        | "diamond"
+        | "master"
     }
     CompositeTypes: {
       [_ in never]: never
