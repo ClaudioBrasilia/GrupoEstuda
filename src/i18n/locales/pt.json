@@ -170,7 +170,10 @@
     "subject": "Matéria",
     "duration": "Duração",
     "date": "Data",
-    "noSessions": "Nenhuma sessão de estudo ainda"
+    "noSessions": "Nenhuma sessão de estudo ainda",
+    "pagesRead": "Páginas lidas",
+    "exercisesSolved": "Exercícios resolvidos",
+    "optional": "Opcional"
   },
   "files": {
     "title": "Arquivos do Grupo",

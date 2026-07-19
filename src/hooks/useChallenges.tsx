@@ -207,6 +207,11 @@ export function useChallengeDetail(challengeId: string) {
       )
       .on(
         'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'goal_progress_events' },
+        () => queryClient.invalidateQueries({ queryKey: ['challenge-ranking', challengeId] })
+      )
+      .on(
+        'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'challenges', filter: `id=eq.${challengeId}` },
         () => {
           queryClient.invalidateQueries({ queryKey: ['challenge', challengeId] });

@@ -242,7 +242,10 @@
     "subject": "Subject",
     "duration": "Duration",
     "date": "Date",
-    "noSessions": "No study sessions yet"
+    "noSessions": "No study sessions yet",
+    "pagesRead": "Pages read",
+    "exercisesSolved": "Exercises solved",
+    "optional": "Optional"
   },
   "group": {
     "members": "Group Members",
