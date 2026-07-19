@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useChallengeDetail } from '@/hooks/useChallenges';
+import { useChallengeDetail, ChallengeMetric, ChallengeMode } from '@/hooks/useChallenges';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import WinnerOverlay from './WinnerOverlay';
@@ -50,6 +51,19 @@ const PROGRESS_INPUT_LABELS = {
   pages_read: 'Páginas lidas',
 };
 
+// Rótulos completos usados nos seletores de edição.
+const METRIC_OPTIONS: Record<ChallengeMetric, string> = {
+  study_minutes: 'Minutos estudados',
+  exercises_solved: 'Exercícios resolvidos',
+  pages_read: 'Páginas lidas',
+};
+
+const MODE_OPTIONS: Record<ChallengeMode, string> = {
+  first_to_goal: 'Primeiro a atingir meta',
+  deadline: 'Por prazo',
+  teams: 'Por equipes',
+};
+
 const STATUS_COLORS = {
   draft: 'secondary',
   active: 'default',
@@ -72,6 +86,8 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
   const [progressValue, setProgressValue] = useState('');
   const [savingProgress, setSavingProgress] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [editMetric, setEditMetric] = useState<ChallengeMetric>('study_minutes');
+  const [editMode, setEditMode] = useState<ChallengeMode>('deadline');
   const [editGoal, setEditGoal] = useState('');
   const [editDeadline, setEditDeadline] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
@@ -182,11 +198,15 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
   };
 
   const openEdit = () => {
+    setEditMetric(challenge.metric);
+    setEditMode(challenge.mode);
     setEditGoal(challenge.goal_value ? String(challenge.goal_value) : '');
     // datetime-local espera "yyyy-MM-ddTHH:mm" no fuso local
     setEditDeadline(challenge.ends_at ? format(new Date(challenge.ends_at), "yyyy-MM-dd'T'HH:mm") : '');
     setEditOpen(true);
   };
+
+  const editUnit = METRIC_LABELS[editMetric];
 
   const handleSaveEdit = async () => {
     const goal = parseInt(editGoal, 10);
@@ -200,6 +220,8 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
       const { error } = await supabase
         .from('challenges')
         .update({
+          metric: editMetric,
+          mode: editMode,
           goal_value: editGoal === '' ? null : goal,
           ends_at: editDeadline ? new Date(editDeadline).toISOString() : null,
         })
@@ -374,7 +396,33 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-goal">Meta — quantidade de {unit} a atingir</Label>
+              <Label>Métrica</Label>
+              <Select value={editMetric} onValueChange={(v) => setEditMetric(v as ChallengeMetric)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(METRIC_OPTIONS) as [ChallengeMetric, string][]).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Modo</Label>
+              <Select value={editMode} onValueChange={(v) => setEditMode(v as ChallengeMode)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.entries(MODE_OPTIONS) as [ChallengeMode, string][]).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-goal">Meta — quantidade de {editUnit} a atingir</Label>
               <Input
                 id="edit-goal"
                 type="number"
