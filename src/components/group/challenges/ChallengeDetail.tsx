@@ -18,7 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useChallengeDetail, ChallengeMetric, ChallengeMode } from '@/hooks/useChallenges';
+import { useChallengeDetail, isChallengeExpired, ChallengeMetric, ChallengeMode } from '@/hooks/useChallenges';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import WinnerOverlay from './WinnerOverlay';
@@ -119,10 +119,10 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
 
   const maxProgress = Math.max(...ranking.map(r => r.progress), challenge.goal_value ?? 1, 1);
   const unit = METRIC_LABELS[challenge.metric];
-  // Nada encerra o desafio automaticamente quando o prazo vence (só o admin, manualmente).
-  // Por isso o status pode continuar 'active' mesmo com o prazo já vencido, e o registro de
-  // progresso precisa ser bloqueado nesse caso — o ranking já ignora entradas após ends_at.
-  const isExpired = Boolean(challenge.ends_at && new Date(challenge.ends_at) < new Date());
+  // useChallengeDetail já dispara o auto-encerramento assim que detecta o prazo vencido;
+  // isExpired cobre a pequena janela até essa chamada terminar, bloqueando o registro
+  // de progresso nesse intervalo (o ranking já ignora entradas após ends_at de qualquer forma).
+  const isExpired = isChallengeExpired(challenge);
 
   // Explicações contextuais mostradas ao tocar em cada card de informação.
   const getInfoContent = (field: InfoField): { title: string; description: string } => {
