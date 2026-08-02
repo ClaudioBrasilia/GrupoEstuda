@@ -18,7 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useChallengeDetail, ChallengeMetric, ChallengeMode } from '@/hooks/useChallenges';
+import { useChallengeDetail, isChallengeExpired, ChallengeMetric, ChallengeMode } from '@/hooks/useChallenges';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import WinnerOverlay from './WinnerOverlay';
@@ -119,6 +119,10 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
 
   const maxProgress = Math.max(...ranking.map(r => r.progress), challenge.goal_value ?? 1, 1);
   const unit = METRIC_LABELS[challenge.metric];
+  // useChallengeDetail já dispara o auto-encerramento assim que detecta o prazo vencido;
+  // isExpired cobre a pequena janela até essa chamada terminar, bloqueando o registro
+  // de progresso nesse intervalo (o ranking já ignora entradas após ends_at de qualquer forma).
+  const isExpired = isChallengeExpired(challenge);
 
   // Explicações contextuais mostradas ao tocar em cada card de informação.
   const getInfoContent = (field: InfoField): { title: string; description: string } => {
@@ -158,6 +162,11 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
 
   const handleRegisterProgress = async () => {
     if (!user) return;
+    if (isExpired) {
+      toast.error('O prazo deste desafio já venceu. Peça para o admin encerrá-lo — progresso registrado agora não conta para o ranking.');
+      setProgressOpen(false);
+      return;
+    }
     const value = parseInt(progressValue, 10);
     if (Number.isNaN(value) || value <= 0) {
       toast.error('Informe um número maior que zero');
@@ -296,12 +305,20 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h2 className="text-xl font-bold flex-1">{challenge.title}</h2>
-        <Badge variant={STATUS_COLORS[challenge.status]}>
-          {challenge.status === 'active' ? 'Ativo' :
+        <Badge variant={challenge.status === 'active' && isExpired ? 'outline' : STATUS_COLORS[challenge.status]}>
+          {challenge.status === 'active' && isExpired ? 'Prazo vencido' :
+           challenge.status === 'active' ? 'Ativo' :
            challenge.status === 'finished' ? 'Encerrado' :
            challenge.status === 'draft' ? 'Rascunho' : 'Cancelado'}
         </Badge>
       </div>
+
+      {challenge.status === 'active' && isExpired && (
+        <p className="text-sm text-muted-foreground bg-muted rounded-lg p-3">
+          O prazo deste desafio já venceu e nenhum progresso novo conta mais para o ranking.
+          {isAdmin ? ' Clique em "Encerrar desafio" para fechar e definir o vencedor.' : ' Peça para o admin do grupo encerrar o desafio.'}
+        </p>
+      )}
 
       {challenge.description && (
         <p className="text-muted-foreground text-sm">{challenge.description}</p>
@@ -337,7 +354,7 @@ export default function ChallengeDetail({ challengeId, onBack, isAdmin, onFinish
             {joinChallenge.isPending ? 'Entrando...' : 'Participar'}
           </Button>
         )}
-        {challenge.status === 'active' && isParticipant && (
+        {challenge.status === 'active' && isParticipant && !isExpired && (
           <Button onClick={() => setProgressOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Registrar progresso
