@@ -65,7 +65,8 @@ export const useGroups = () => {
           return {
             ...group,
             members: count || 0,
-            isMember: !!membership
+            isMember: !!membership,
+            isPremium: group.type === 'premium'
           };
         })
       );
