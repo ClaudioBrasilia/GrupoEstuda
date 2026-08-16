@@ -18,12 +18,14 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/layout/PageLayout';
-import { Droplet, Palette } from 'lucide-react';
+import { AlertTriangle, Droplet, Palette } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { ThemeSelector } from '@/components/ui/theme-toggle';
 
+const DELETE_CONFIRMATION = 'EXCLUIR';
+
 const ProfileSettings: React.FC = () => {
-  const { user, updateUserPlan } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useTranslation();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -33,6 +35,9 @@ const ProfileSettings: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [waterGoal, setWaterGoal] = useState('2500');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -151,7 +156,35 @@ const ProfileSettings: React.FC = () => {
       setIsUpdating(false);
     }
   };
-  
+
+  const handleDeleteDialogChange = (open: boolean) => {
+    if (isDeleting) return;
+    setDeleteDialogOpen(open);
+    if (!open) setDeleteConfirmation('');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== DELETE_CONFIRMATION) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke('delete-account', {
+        method: 'POST',
+      });
+
+      if (error) throw error;
+
+      toast.success('Conta excluída. Sentiremos sua falta!');
+      await logout();
+    } catch (error) {
+      console.error('Erro ao excluir conta:', error);
+      toast.error(
+        'Não foi possível excluir a conta. Tente novamente ou fale com o suporte.'
+      );
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <PageLayout>
       <div className="space-y-6">
@@ -269,6 +302,26 @@ const ProfileSettings: React.FC = () => {
                 </Link>
               </div>
             </div>
+
+            <Separator />
+
+            <div className="space-y-3 pt-2">
+              <h3 className="font-medium flex items-center gap-2 text-destructive">
+                <AlertTriangle className="w-4 h-4" />
+                Excluir conta
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Apaga definitivamente sua conta e todos os seus dados: perfil,
+                sessões de estudo, pontos, conquistas e participação nos grupos.
+                Esta ação não pode ser desfeita.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                Excluir minha conta
+              </Button>
+            </div>
           </div>
         </TabsContent>
         
@@ -350,6 +403,48 @@ const ProfileSettings: React.FC = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={handleDeleteDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Excluir conta</DialogTitle>
+            <DialogDescription>
+              Sua conta e todos os dados ligados a ela serão apagados
+              permanentemente. Não é possível recuperar depois.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor="deleteConfirmation">
+              Digite <strong>{DELETE_CONFIRMATION}</strong> para confirmar
+            </Label>
+            <Input
+              id="deleteConfirmation"
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder={DELETE_CONFIRMATION}
+              autoComplete="off"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => handleDeleteDialogChange(false)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting || deleteConfirmation !== DELETE_CONFIRMATION}
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir permanentemente'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageLayout>

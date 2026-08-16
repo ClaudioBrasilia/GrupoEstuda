@@ -356,6 +356,51 @@ export type Database = {
         }
         Relationships: []
       }
+      app_events: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          platform: string | null
+          properties: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          name: string
+          platform?: string | null
+          properties?: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          name?: string
+          platform?: string | null
+          properties?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      premium_waitlist: {
+        Row: {
+          billing_period: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_period: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_period?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           activities_seen_at: string

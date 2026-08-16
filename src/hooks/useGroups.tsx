@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { PLAN_LIMITS, PlanType } from '@/config/planLimits';
+import { track } from '@/lib/analytics';
 
 export interface Group {
   id: string;
@@ -138,6 +139,8 @@ export const useGroups = () => {
       // Refresh groups list
       await fetchGroups();
 
+      void track('group_created');
+
       return { success: true, groupId: newGroup.id };
     } catch (error) {
       console.error('Error creating group:', error);
@@ -219,6 +222,8 @@ export const useGroups = () => {
 
       // Refresh groups list
       await fetchGroups();
+
+      void track('group_joined');
 
       return { success: true };
     } catch (error) {

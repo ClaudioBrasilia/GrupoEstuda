@@ -3,7 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
-import { useState, useCallback } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { ThemeProvider } from "next-themes";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { TimerProvider } from "./context/TimerContext";
@@ -11,29 +12,39 @@ import Home from "./pages/Home";
 import Groups from "./pages/Groups";
 import Feed from "./pages/Feed";
 import GroupDetail from "./pages/GroupDetail";
-import Progress from "./pages/Progress";
 import Timer from "./pages/Timer";
-import Water from "./pages/Water";
-import Leaderboard from "./pages/Leaderboard";
-import SeasonDashboard from "./pages/SeasonDashboard";
-import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
-import Plans from "./pages/subscription/Plans";
-import MyPlan from "./pages/subscription/MyPlan";
-import TestGenerator from "./pages/premium/TestGenerator";
-import TrainMistakes from "./pages/premium/TrainMistakes";
-import TermsOfUse from "./pages/TermsOfUse";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import ProfileSettings from "./components/profile/ProfileSettings";
-import Invitations from "./pages/Invitations";
-import Notifications from "./pages/Notifications";
 import SplashScreen from "./components/SplashScreen";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import "./i18n";
 
+// Telas fora do caminho de entrada (login → grupos → cronômetro) carregam sob
+// demanda. Gráficos e leitura de PDF só chegam ao aparelho de quem abre a tela
+// que usa cada um.
+const Progress = lazy(() => import("./pages/Progress"));
+const Water = lazy(() => import("./pages/Water"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const SeasonDashboard = lazy(() => import("./pages/SeasonDashboard"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Plans = lazy(() => import("./pages/subscription/Plans"));
+const MyPlan = lazy(() => import("./pages/subscription/MyPlan"));
+const TestGenerator = lazy(() => import("./pages/premium/TestGenerator"));
+const TrainMistakes = lazy(() => import("./pages/premium/TrainMistakes"));
+const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const ProfileSettings = lazy(() => import("./components/profile/ProfileSettings"));
+const Invitations = lazy(() => import("./pages/Invitations"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+
 const queryClient = new QueryClient();
+
+const RouteFallback = () => (
+  <div className="flex min-h-[60vh] items-center justify-center">
+    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+  </div>
+);
 
 const App = () => {
   const [showingSplash, setShowingSplash] = useState(true);
@@ -54,6 +65,7 @@ const App = () => {
                 <SplashScreen onFinished={handleSplashFinished} />
               ) : (
                 <HashRouter>
+                  <Suspense fallback={<RouteFallback />}>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
@@ -80,6 +92,7 @@ const App = () => {
                     <Route path="/train-mistakes" element={<ProtectedRoute><TrainMistakes /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </Suspense>
                 </HashRouter>
               )}
             </TooltipProvider>

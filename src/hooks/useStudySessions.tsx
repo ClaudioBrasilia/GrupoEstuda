@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { track } from '@/lib/analytics';
 
 export const STUDY_SESSION_SAVED_EVENT = 'study-session-saved';
 
@@ -331,6 +332,11 @@ export const useStudySessions = () => {
       };
 
       setStudySessions(prev => [newSession, ...prev]);
+
+      void track('study_session_completed', {
+        duration_minutes: durationMinutes,
+        points,
+      });
 
       return { success: true, points };
     } catch (error) {

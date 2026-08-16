@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import { AuthError, Session } from '@supabase/supabase-js';
 import { withTimeout } from '@/lib/authUtils';
+import { track, trackAppOpen } from '@/lib/analytics';
 
 export type PlanType = 'free' | 'premium';
 
@@ -20,7 +21,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ error: AuthError | { message: string } | null }>;
   register: (name: string, email: string, password: string) => Promise<{ error: AuthError | { message: string } | null }>;
   logout: () => Promise<void>;
-  updateUserPlan: (plan: PlanType) => Promise<void>;
+  // O plano não é alterável pelo cliente: um trigger no banco rejeita a
+  // mudança de `profiles.plan` vinda de usuário final. A concessão do Premium
+  // acontece no servidor, a partir da confirmação de compra da loja.
 }
 
 const defaultAuthContext: AuthContextType = {
@@ -31,7 +34,6 @@ const defaultAuthContext: AuthContextType = {
   login: async () => ({ error: null }),
   register: async () => ({ error: null }),
   logout: async () => {},
-  updateUserPlan: async () => {},
 };
 
 export const AuthContext = createContext<AuthContextType>(defaultAuthContext);
@@ -158,6 +160,12 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     }
   };
 
+  // Uma abertura por dia, por usuário logado: é a base da curva de retenção.
+  useEffect(() => {
+    if (!user) return;
+    void trackAppOpen();
+  }, [user?.id]);
+
   const login = async (email: string, password: string) => {
     setIsAuthActionLoading(true);
 
@@ -258,12 +266,16 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
         'Sem resposta do servidor. Verifique sua conexão e tente novamente.'
       );
       
+      if (!result.error) {
+        void track('sign_up');
+      }
+
       return { error: result.error };
     } catch (error) {
-      return { 
-        error: { 
-          message: error instanceof Error ? error.message : 'Erro ao registrar' 
-        } 
+      return {
+        error: {
+          message: error instanceof Error ? error.message : 'Erro ao registrar'
+        }
       };
     } finally {
       setIsAuthActionLoading(false);
@@ -290,29 +302,15 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     }
   };
 
-  const updateUserPlan = async (plan: PlanType) => {
-    if (!user || !session) return;
-    
-    const { error } = await supabase
-      .from('profiles')
-      .update({ plan })
-      .eq('id', user.id);
-      
-    if (!error) {
-      setUser({ ...user, plan });
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      isLoading, 
+    <AuthContext.Provider value={{
+      user,
+      session,
+      isLoading,
       isAuthActionLoading,
-      login, 
-      register, 
-      logout, 
-      updateUserPlan 
+      login,
+      register,
+      logout
     }}>
       {children}
     </AuthContext.Provider>

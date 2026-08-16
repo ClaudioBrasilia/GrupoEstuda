@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, X, Crown, Sparkles } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { track } from '@/lib/analytics';
 import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,19 +12,53 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
-import { PLAN_NAMES, PLAN_PRICES, PlanType } from '@/config/planLimits';
+import { PLAN_LIMITS, PLAN_NAMES, PLAN_PRICES, PlanType, formatLimit } from '@/config/planLimits';
 
 const Plans: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, updateUserPlan } = useAuth();
+  const { user } = useAuth();
   const [isYearly, setIsYearly] = useState(false);
+  const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
+  const [isOnWaitlist, setIsOnWaitlist] = useState(false);
 
-  const handleSubscribe = (planId: PlanType) => {
-    // Em um app real, isso conectaria com o Stripe
-    updateUserPlan(planId);
-    toast.success(`Você assinou o plano ${PLAN_NAMES[planId]}!`);
-    navigate('/my-plan');
+  useEffect(() => {
+    if (!user) return;
+
+    supabase
+      .from('premium_waitlist')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setIsOnWaitlist(Boolean(data)));
+  }, [user]);
+
+  // A cobrança ainda não está integrada às lojas (Google Play Billing /
+  // StoreKit). Até lá a tela registra interesse — conceder o plano aqui
+  // liberaria o Premium de graça para qualquer um.
+  const handleJoinWaitlist = async () => {
+    if (!user) return;
+
+    setIsJoiningWaitlist(true);
+    try {
+      const { error } = await supabase.from('premium_waitlist').upsert({
+        user_id: user.id,
+        billing_period: isYearly ? 'yearly' : 'monthly',
+      });
+
+      if (error) throw error;
+
+      setIsOnWaitlist(true);
+      void track('premium_waitlist_joined', {
+        billing_period: isYearly ? 'yearly' : 'monthly',
+      });
+      toast.success('Pronto! Avisaremos assim que o Premium estiver disponível.');
+    } catch (error) {
+      console.error('Erro ao entrar na lista do Premium:', error);
+      toast.error('Não foi possível registrar seu interesse. Tente novamente.');
+    } finally {
+      setIsJoiningWaitlist(false);
+    }
   };
 
   const formatPrice = (value: number) => value.toFixed(2).replace('.', ',');
@@ -50,14 +86,32 @@ const Plans: React.FC = () => {
     return Math.round(((monthly - yearly) / monthly) * 100);
   };
 
+  // Os números vêm de PLAN_LIMITS para a tela nunca prometer um limite
+  // diferente do que o app aplica de fato.
   const features = [
-    { label: 'Grupos de estudo criados', free: '3', premium: 'Ilimitado' },
-    { label: 'Membros por grupo', free: '15', premium: 'Ilimitado' },
+    {
+      label: 'Grupos de estudo criados',
+      free: formatLimit(PLAN_LIMITS.free.maxGroups),
+      premium: formatLimit(PLAN_LIMITS.premium.maxGroups),
+    },
+    {
+      label: 'Membros por grupo',
+      free: formatLimit(PLAN_LIMITS.free.maxMembersPerGroup),
+      premium: formatLimit(PLAN_LIMITS.premium.maxMembersPerGroup),
+    },
     { label: 'Cronômetro de estudos', free: true, premium: true },
     { label: 'Controle de água', free: true, premium: true },
     { label: 'Desafios e ranking', free: true, premium: true },
-    { label: 'Histórico de progresso', free: '30 dias', premium: 'Ilimitado' },
-    { label: 'Upload de arquivos no grupo', free: false, premium: '500 MB' },
+    {
+      label: 'Histórico de progresso',
+      free: `${PLAN_LIMITS.free.historyDays} dias`,
+      premium: formatLimit(PLAN_LIMITS.premium.historyDays),
+    },
+    {
+      label: 'Upload de arquivos no grupo',
+      free: false,
+      premium: `${PLAN_LIMITS.premium.maxUploadSizeMB} MB`,
+    },
     { label: 'Estatísticas avançadas', free: false, premium: true },
     { label: 'Badge exclusivo no perfil', free: false, premium: true },
     { label: 'Suporte prioritário', free: false, premium: true },
@@ -120,7 +174,7 @@ const Plans: React.FC = () => {
                   <div className="absolute top-4 right-4">
                     <Badge className="bg-gradient-to-r from-amber-400 to-yellow-500 text-white">
                       <Crown className="h-3 w-3 mr-1" />
-                      Recomendado
+                      Em breve
                     </Badge>
                   </div>
                 )}
@@ -168,27 +222,34 @@ const Plans: React.FC = () => {
                 </CardContent>
 
                 <CardFooter>
-                  <Button
-                    className={`w-full ${
-                      isPremium
-                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white'
-                        : ''
-                    }`}
-                    variant={plan.id === 'free' ? 'outline' : 'default'}
-                    disabled={isCurrent}
-                    onClick={() => handleSubscribe(plan.id)}
-                  >
-                    {isCurrent ? (
-                      'Plano Atual'
-                    ) : plan.id === 'free' ? (
-                      'Começar Grátis'
-                    ) : (
-                      <>
-                        <Crown className="mr-2 h-4 w-4" />
-                        Assinar {PLAN_NAMES[plan.id]}
-                      </>
-                    )}
-                  </Button>
+                  {isPremium ? (
+                    <Button
+                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
+                      disabled={isJoiningWaitlist || isOnWaitlist}
+                      onClick={handleJoinWaitlist}
+                    >
+                      {isOnWaitlist ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Você será avisado
+                        </>
+                      ) : (
+                        <>
+                          <Crown className="mr-2 h-4 w-4" />
+                          {isJoiningWaitlist ? 'Registrando...' : 'Avise-me no lançamento'}
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      disabled={isCurrent}
+                      onClick={() => navigate('/')}
+                    >
+                      {isCurrent ? 'Plano Atual' : 'Começar Grátis'}
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             );
@@ -197,8 +258,14 @@ const Plans: React.FC = () => {
 
         {/* FAQ or additional info */}
         <div className="text-center text-sm text-muted-foreground space-y-2">
-          <p>O plano Premium inclui 7 dias de garantia de reembolso.</p>
-          <p>Cancele a qualquer momento, sem taxas adicionais.</p>
+          <p>
+            O Premium ainda não está à venda. Os valores acima são o preço
+            previsto de lançamento.
+          </p>
+          <p>
+            Quando abrir, a assinatura será cobrada pela App Store ou Google Play
+            e poderá ser cancelada a qualquer momento pela própria loja.
+          </p>
         </div>
       </div>
     </PageLayout>

@@ -21,9 +21,47 @@ em que ordem, e traz os **textos prontos** da ficha da loja.
 - [x] App web/PWA no ar (Vercel)
 - [x] Ícones nos tamanhos corretos (192, 512, 1024, apple-touch, favicon)
 - [x] Manifest PWA completo (instalável, maskable, portrait)
-- [x] Páginas de Política de Privacidade e Termos com URL pública
+- [x] Service worker registrado — o navegador passa a oferecer "instalar app"
+- [x] Política de Privacidade e Termos em **páginas estáticas** (`/privacy` e
+      `/terms` abrem direto, sem depender do app carregar)
+- [x] **Exclusão de conta dentro do app** (Perfil → Configurações → Segurança)
 - [x] Capacitor configurado (`com.grupoestuda.app`, splash screen)
+- [x] Eventos de produto gravados em `app_events` (retenção D1/D7)
 - [x] Versão 1.0.0
+
+## 🔴 Passo obrigatório antes de qualquer envio — Supabase
+
+O app já tem o código; o backend precisa receber as migrações e a função.
+Sem isso a exclusão de conta falha e o Premium continua liberável de graça.
+
+```bash
+supabase link --project-ref nwtodahupgqbatxeluat
+supabase db push                          # aplica as migrações pendentes
+supabase functions deploy delete-account  # função de exclusão de conta
+```
+
+O que essas migrações fazem:
+
+| Migração | Efeito |
+|---|---|
+| `..._fix_user_deletion_cascades` | Faz o `DELETE` do usuário funcionar (sem ela, chave estrangeira barra) |
+| `..._protect_plan_column` | Impede o usuário de se conceder Premium pela API |
+| `..._add_premium_waitlist` | Lista de interesse no Premium |
+| `..._add_app_events` | Eventos de produto + view `retention_by_signup_day` |
+
+Depois de aplicar, confirme numa conta de teste: criar conta → excluir conta →
+tentar logar de novo (deve falhar) e o e-mail deve poder se cadastrar de novo.
+
+## 💳 Sobre o Premium
+
+A cobrança **ainda não está integrada** às lojas. A tela de planos mostra o que
+o Premium terá e registra interesse (`premium_waitlist`) em vez de vender —
+o botão antigo concedia o plano de graça, o que vazava receita e é motivo de
+rejeição na App Store (compra digital fora do In-App Purchase).
+
+Para lançar o Premium de verdade depois: integrar Google Play Billing / StoreKit,
+validar o recibo numa edge function e gravar `profiles.plan` de lá com
+`service_role` — o trigger do banco bloqueia qualquer outro caminho.
 
 ## ⏳ O que ainda depende de você (fora do código)
 
@@ -65,11 +103,17 @@ npx cap open android     # abre o Android Studio
 ### Ficha da loja (textos prontos — ver seção no fim)
 
 ### Formulários obrigatórios no Console
-- [ ] **Política de Privacidade**: colar a URL acima
+- [ ] **Política de Privacidade**: colar https://grupoestuda.vercel.app/privacy
+- [ ] **Exclusão de conta**: o Play exige o link de um caminho para apagar a
+      conta. Informe https://grupoestuda.vercel.app/privacy — a seção 6 explica
+      o caminho no app e o e-mail alternativo.
 - [ ] **Data safety** (Segurança dos dados): declarar o que o app coleta
       (e-mail/conta, conteúdo gerado pelo usuário como fotos de atividade,
-      dados de uso). O backend é Supabase.
-- [ ] **Content rating** (questionário): app educacional, tende a "Livre"
+      dados de uso). O backend é Supabase. Marque **"os dados podem ser
+      excluídos pelo usuário"** — agora isso é verdade.
+- [ ] **Content rating** (questionário): app educacional, tende a "Livre".
+      Responda **sim** para "interação entre usuários" — o app tem chat de
+      grupo e feed, e omitir isso é causa comum de reclassificação depois.
 - [ ] **Público-alvo**: definir faixa etária (atenção a regras para <13 anos)
 - [ ] **Permissões**: o app usa Câmera (foto de atividade) e Internet —
       justificar no formulário se pedir
@@ -115,9 +159,13 @@ Requer **Mac + conta Apple Developer (US$ 99/ano)**. Detalhes em
 - [ ] Desafio: entrar, registrar progresso, ver ranking atualizar
 - [ ] Upload de foto de atividade + feed
 - [ ] Notificações
+- [ ] **Excluir conta**: apaga mesmo e permite recadastrar o mesmo e-mail
+- [ ] **Premium**: confirmar que ninguém consegue virar Premium pelo app
+- [ ] Abrir https://grupoestuda.vercel.app/privacy e `/terms` numa aba anônima —
+      precisam abrir direto, sem passar pelo app
 - [ ] Testar em pelo menos 2 aparelhos reais
-- [ ] Rodar a migração `challenge_ranking` no Supabase (desafios de
-      exercícios/páginas) — ver histórico de commits
+- [ ] Aplicar as migrações pendentes (`supabase db push`) — inclui a
+      `challenge_ranking` dos desafios de exercícios/páginas
 
 ---
 

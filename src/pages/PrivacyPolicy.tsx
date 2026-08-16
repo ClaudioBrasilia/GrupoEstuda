@@ -92,7 +92,31 @@ const PrivacyPolicy: React.FC = () => {
           </section>
           
           <section>
-            <h2 className="text-xl font-semibold mb-2">6. Dados de Crianças</h2>
+            <h2 className="text-xl font-semibold mb-2">6. Exclusão da Conta e dos Dados</h2>
+            <p className="mb-2">
+              Você pode apagar sua conta a qualquer momento, direto no aplicativo, em{' '}
+              <strong>Perfil → Configurações → Segurança → Excluir minha conta</strong>.
+              A exclusão é imediata e definitiva.
+            </p>
+            <p className="mb-2">São removidos permanentemente:</p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Seu perfil e dados de cadastro</li>
+              <li>Suas sessões de estudo e histórico de progresso</li>
+              <li>Seus pontos, XP, conquistas e medalhas</li>
+              <li>Sua participação em grupos e desafios</li>
+              <li>As fotos e arquivos que você enviou</li>
+            </ul>
+            <p className="mt-2">
+              Mensagens enviadas em grupos e arquivos compartilhados com um grupo podem
+              permanecer visíveis para os demais membros, de forma anonimizada, para
+              preservar o histórico da conversa. Se preferir solicitar a exclusão por
+              e-mail, escreva para privacidade@grupoestuda.com.br a partir do endereço
+              cadastrado — respondemos em até 30 dias.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-2">7. Dados de Crianças</h2>
             <p>
               Nossos serviços não são direcionados a menores de 13 anos, e não coletamos intencionalmente 
               informações pessoais de crianças menores de 13 anos. Se descobrirmos que coletamos informações 
@@ -101,7 +125,7 @@ const PrivacyPolicy: React.FC = () => {
           </section>
           
           <section>
-            <h2 className="text-xl font-semibold mb-2">7. Alterações na Política de Privacidade</h2>
+            <h2 className="text-xl font-semibold mb-2">8. Alterações na Política de Privacidade</h2>
             <p>
               Podemos atualizar nossa Política de Privacidade periodicamente. Notificaremos você sobre 
               quaisquer alterações publicando a nova Política de Privacidade nesta página e, se as alterações 
@@ -110,7 +134,7 @@ const PrivacyPolicy: React.FC = () => {
           </section>
           
           <section>
-            <h2 className="text-xl font-semibold mb-2">8. Contato</h2>
+            <h2 className="text-xl font-semibold mb-2">9. Contato</h2>
             <p>
               Se você tiver dúvidas ou preocupações sobre esta Política de Privacidade ou sobre nossas 
               práticas de dados, entre em contato conosco pelo e-mail: privacidade@grupoestuda.com.br
