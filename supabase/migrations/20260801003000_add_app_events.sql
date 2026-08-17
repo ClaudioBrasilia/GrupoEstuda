@@ -25,6 +25,7 @@ alter table public.app_events enable row level security;
 
 -- O cliente só escreve, e só em nome de si mesmo. Ninguém lê pelo app:
 -- a análise é feita no painel do Supabase com service_role.
+drop policy if exists "user inserts own events" on public.app_events;
 create policy "user inserts own events"
   on public.app_events for insert
   with check (user_id = auth.uid());

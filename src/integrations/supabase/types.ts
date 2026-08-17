@@ -982,7 +982,7 @@ export type Database = {
       challenges: {
         Row: {
           created_at: string | null
-          created_by: string
+          created_by: string | null
           description: string | null
           ends_at: string | null
           goal_value: number | null

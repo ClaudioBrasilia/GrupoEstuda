@@ -12,14 +12,17 @@ create table if not exists public.premium_waitlist (
 
 alter table public.premium_waitlist enable row level security;
 
+drop policy if exists "user views own waitlist entry" on public.premium_waitlist;
 create policy "user views own waitlist entry"
   on public.premium_waitlist for select
   using (user_id = auth.uid());
 
+drop policy if exists "user joins waitlist" on public.premium_waitlist;
 create policy "user joins waitlist"
   on public.premium_waitlist for insert
   with check (user_id = auth.uid());
 
+drop policy if exists "user updates own waitlist entry" on public.premium_waitlist;
 create policy "user updates own waitlist entry"
   on public.premium_waitlist for update
   using (user_id = auth.uid());

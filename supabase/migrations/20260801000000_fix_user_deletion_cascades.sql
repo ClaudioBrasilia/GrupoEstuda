@@ -36,16 +36,3 @@ alter table seasons add constraint seasons_champion_user_id_fkey
 alter table season_badges drop constraint if exists season_badges_user_id_fkey;
 alter table season_badges add constraint season_badges_user_id_fkey
   foreign key (user_id) references auth.users(id) on delete cascade;
-
--- season_leaderboard pode não existir em bases antigas; por isso o bloco condicional.
-do $$
-begin
-  if exists (
-    select 1 from information_schema.tables
-    where table_schema = 'public' and table_name = 'season_leaderboard'
-  ) then
-    alter table season_leaderboard drop constraint if exists season_leaderboard_user_id_fkey;
-    alter table season_leaderboard add constraint season_leaderboard_user_id_fkey
-      foreign key (user_id) references auth.users(id) on delete cascade;
-  end if;
-end $$;
