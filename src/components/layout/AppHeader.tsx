@@ -20,6 +20,8 @@ const getPageTitle = (pathname: string, t: (key: string) => string): string => {
   switch (pathname) {
     case '/':
       return t('app.name');
+    case '/today':
+      return 'Hoje';
     case '/groups':
       return t('navigation.groups');
     case '/feed':

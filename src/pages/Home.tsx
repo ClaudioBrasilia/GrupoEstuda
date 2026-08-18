@@ -13,7 +13,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (!isLoading && user) {
-      navigate('/groups');
+      navigate('/today');
     }
   }, [user, isLoading, navigate]);
 
