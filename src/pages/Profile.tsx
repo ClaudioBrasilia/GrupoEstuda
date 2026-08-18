@@ -16,7 +16,7 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { AchievementsGrid } from '@/components/profile/AchievementsGrid';
 import ChallengeBadges from '@/components/profile/ChallengeBadges';
-import XpLevelCard from '@/components/profile/XpLevelCard';
+import ProfileMotivationCard from '@/components/profile/ProfileMotivationCard';
 import SeasonBadges from '@/components/profile/SeasonBadges';
 import LeagueCard from '@/components/profile/LeagueCard';
 import AvatarWithFrame from '@/components/profile/AvatarWithFrame';
@@ -127,7 +127,7 @@ const Profile: React.FC = () => {
       </div>
 
       <div className="mb-6 space-y-3">
-        <XpLevelCard userId={user?.id} />
+        <ProfileMotivationCard userId={user?.id} achievements={achievements} />
         <LeagueCard userId={user?.id} />
       </div>
 
