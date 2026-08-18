@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BookOpen, CheckCircle2, Clock3, Compass, Flame, Target, Trophy, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, Compass, Flame, Target, Trophy, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useStudySessions } from '@/hooks/useStudySessions';
@@ -27,6 +27,11 @@ const Today: React.FC = () => {
   const todaySessions = studySessions.filter((session) =>
     session.started_at.toLocaleDateString('en-CA') === todayKey
   );
+  const weekStart = new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - 6);
+  const weeklySessions = studySessions.filter((session) => session.started_at >= weekStart);
+  const weeklyMinutes = weeklySessions.reduce((total, session) => total + session.duration_minutes, 0);
   const minutesToday = todaySessions.reduce((total, session) => total + session.duration_minutes, 0);
   const onboardingPreferences = getOnboardingPreferences();
   const dailyGoalMinutes = onboardingPreferences?.dailyMinutes || DEFAULT_DAILY_GOAL_MINUTES;
@@ -131,6 +136,36 @@ const Today: React.FC = () => {
               </div>
               <p className="text-2xl font-bold text-foreground">{todaySessions.reduce((total, session) => total + session.points, 0)} XP</p>
               <p className="mt-2 text-xs text-muted-foreground">Cada minuto estudado conta para sua evolução.</p>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]" aria-label="Resumo semanal">
+          <Card className="border-primary/15 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <CalendarDays size={23} aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold text-foreground">Seu ritmo nos últimos 7 dias</p>
+                  <span className="text-sm font-bold text-primary">{formatDuration(weeklyMinutes)}</span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{weeklySessions.length} {weeklySessions.length === 1 ? 'sessão concluída' : 'sessões concluídas'} nesta semana.</p>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-gradient-to-r from-primary to-secondary" style={{ width: `${Math.min(100, Math.round((weeklyMinutes / (dailyGoalMinutes * 7)) * 100))}%` }} /></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-secondary/15 bg-secondary/5 shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary/15 text-secondary">
+                <Flame size={23} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Continue seu ritmo</p>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{minutesToday > 0 ? 'Você já começou bem hoje. Mais um bloco mantém sua evolução.' : 'Uma sessão curta hoje já ajuda a manter a sequência.'}</p>
+              </div>
             </CardContent>
           </Card>
         </section>

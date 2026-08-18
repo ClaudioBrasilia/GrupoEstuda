@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Pause, StopCircle, RotateCcw, Clock } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Flame, Play, Pause, StopCircle, Trophy, RotateCcw } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { useStudySessions } from '@/hooks/useStudySessions';
 import { toast } from '@/components/ui/sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Points per minute of study
 const POINTS_PER_MINUTE = 1;
@@ -33,6 +34,7 @@ const Timer: React.FC = () => {
   const { studySessions, subjects, groups, loading, createStudySession, getSubjectsByGroup } = useStudySessions();
   const [pagesRead, setPagesRead] = React.useState('');
   const [exercisesSolved, setExercisesSolved] = React.useState('');
+  const [completedSession, setCompletedSession] = React.useState<{ minutes: number; points: number; subject: string } | null>(null);
 
   // Format time display (HH:MM:SS)
   const formatTime = (totalSeconds: number) => {
@@ -94,6 +96,11 @@ const Timer: React.FC = () => {
     });
 
     if (result.success) {
+      setCompletedSession({
+        minutes: Math.floor(seconds / 60),
+        points: result.points || calculatePoints(seconds),
+        subject: selectedSubject === 'general' ? 'Estudo geral' : (subjects.find(subject => subject.id === selectedSubject)?.name || 'Sua matéria'),
+      });
       toast.success(`Sessão de estudo concluída! Você ganhou ${result.points} pontos!`);
       setPagesRead('');
       setExercisesSolved('');
@@ -121,6 +128,48 @@ const Timer: React.FC = () => {
 
   return (
     <PageLayout>
+      <Dialog open={Boolean(completedSession)} onOpenChange={(open) => !open && setCompletedSession(null)}>
+        <DialogContent className="max-w-md overflow-hidden p-0">
+          <div className="bg-gradient-to-br from-primary via-primary/90 to-accent px-6 py-8 text-center text-white">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 shadow-inner">
+              <CheckCircle2 size={36} aria-hidden="true" />
+            </div>
+            <DialogHeader className="mt-4">
+              <DialogTitle className="text-2xl text-white">Sessão concluída!</DialogTitle>
+              <DialogDescription className="text-white/80">Cada sessão conta para a sua evolução.</DialogDescription>
+            </DialogHeader>
+          </div>
+          {completedSession && (
+            <div className="space-y-5 px-6 py-6">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-primary/5 p-4 text-center">
+                  <Clock className="mx-auto mb-2 text-primary" size={21} aria-hidden="true" />
+                  <p className="text-2xl font-bold text-foreground">{completedSession.minutes} min</p>
+                  <p className="text-xs text-muted-foreground">tempo focado</p>
+                </div>
+                <div className="rounded-2xl bg-amber-500/10 p-4 text-center">
+                  <Trophy className="mx-auto mb-2 text-amber-500" size={21} aria-hidden="true" />
+                  <p className="text-2xl font-bold text-foreground">+{completedSession.points} XP</p>
+                  <p className="text-xs text-muted-foreground">conquistados</p>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border bg-muted/40 p-4">
+                <p className="text-sm font-semibold text-foreground">Você estudou {completedSession.subject}.</p>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Volte à tela Hoje para acompanhar sua meta e escolher o próximo bloco de foco.</p>
+              </div>
+              <DialogFooter className="flex-col gap-2 sm:flex-col">
+                <Button className="w-full" onClick={() => { setCompletedSession(null); window.location.hash = '#/today'; }}>
+                  Ver meu progresso <ArrowRight className="ml-2" size={16} />
+                </Button>
+                <Button variant="ghost" className="w-full" onClick={() => setCompletedSession(null)}>
+                  Continuar no cronômetro
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <h1 className="text-2xl font-bold mb-6">{t('timer.title')}</h1>
       
       <div className="flex flex-col gap-6">
