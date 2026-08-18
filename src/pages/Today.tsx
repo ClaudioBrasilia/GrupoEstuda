@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, Compass, Flame, Target, Trophy, Users } from 'lucide-react';
+import { ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, Clock3, Compass, Flame, Target, Trophy, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useStudySessions } from '@/hooks/useStudySessions';
@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { getOnboardingPreferences, isOnboardingComplete } from '@/lib/onboarding';
+import { getReminderSettings } from '@/hooks/useReminderSettings';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 const DEFAULT_DAILY_GOAL_MINUTES = 60;
 
@@ -22,6 +24,13 @@ const Today: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { studySessions, groups, loading } = useStudySessions();
+  const { preferences } = useUserPreferences();
+  const [now, setNow] = React.useState(() => new Date());
+
+  React.useEffect(() => {
+    const interval = window.setInterval(() => setNow(new Date()), 30000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   const todayKey = new Date().toLocaleDateString('en-CA');
   const todaySessions = studySessions.filter((session) =>
@@ -40,6 +49,21 @@ const Today: React.FC = () => {
   const latestSession = todaySessions[0];
   const firstName = user?.name?.split(' ')[0] || 'estudante';
   const onboardingComplete = isOnboardingComplete();
+  const reminderSettings = getReminderSettings();
+  const [reminderHour, reminderMinute] = reminderSettings.time.split(':').map(Number);
+  const reminderDue = reminderSettings.enabled && preferences.goalReminders && (now.getHours() > reminderHour || (now.getHours() === reminderHour && now.getMinutes() >= reminderMinute));
+  const reminderStorageKey = `grupo-estuda-reminder-sent-${todayKey}-${reminderSettings.time}`;
+
+  React.useEffect(() => {
+    if (!reminderDue || remainingMinutes <= 0 || window.localStorage.getItem(reminderStorageKey)) return;
+    window.localStorage.setItem(reminderStorageKey, 'true');
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Seu momento de estudar chegou', {
+        body: `Ainda faltam ${remainingMinutes} minutos para completar sua meta de hoje.`,
+        icon: '/favicon.ico',
+      });
+    }
+  }, [reminderDue, remainingMinutes, reminderStorageKey]);
 
   if (loading) {
     return (
@@ -79,6 +103,18 @@ const Today: React.FC = () => {
             </Button>
           </div>
         </section>
+
+        {reminderDue && remainingMinutes > 0 && (
+          <Card className="border-amber-500/25 bg-amber-500/5 shadow-sm">
+            <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600"><Bell size={21} aria-hidden="true" /></div>
+                <div><p className="font-semibold text-foreground">Lembrete de estudo</p><p className="mt-1 text-sm text-muted-foreground">Ainda faltam {formatDuration(remainingMinutes)} para sua meta. Um bloco curto já faz diferença.</p></div>
+              </div>
+              <Button variant="outline" className="shrink-0" onClick={() => navigate('/timer')}>Começar agora <ArrowRight className="ml-2" size={16} /></Button>
+            </CardContent>
+          </Card>
+        )}
 
         {!onboardingComplete && (
           <Card className="overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 via-card to-secondary/5 shadow-sm">
