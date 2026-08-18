@@ -9,6 +9,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { TimerProvider } from "./context/TimerContext";
 import Home from "./pages/Home";
 import Today from "./pages/Today";
+import Onboarding from "./pages/Onboarding";
 import Groups from "./pages/Groups";
 import Feed from "./pages/Feed";
 import GroupDetail from "./pages/GroupDetail";
@@ -58,6 +59,7 @@ const App = () => {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/today" element={<ProtectedRoute><Today /></ProtectedRoute>} />
+                    <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/terms" element={<TermsOfUse />} />

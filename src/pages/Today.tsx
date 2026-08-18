@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BookOpen, CheckCircle2, Clock3, Flame, Target, Trophy, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, CheckCircle2, Clock3, Compass, Flame, Target, Trophy, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useStudySessions } from '@/hooks/useStudySessions';
@@ -7,8 +7,9 @@ import PageLayout from '@/components/layout/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { getOnboardingPreferences, isOnboardingComplete } from '@/lib/onboarding';
 
-const DAILY_GOAL_MINUTES = 60;
+const DEFAULT_DAILY_GOAL_MINUTES = 60;
 
 const formatDuration = (minutes: number) => {
   if (minutes < 60) return `${minutes} min`;
@@ -27,10 +28,13 @@ const Today: React.FC = () => {
     session.started_at.toLocaleDateString('en-CA') === todayKey
   );
   const minutesToday = todaySessions.reduce((total, session) => total + session.duration_minutes, 0);
-  const goalProgress = Math.min(100, Math.round((minutesToday / DAILY_GOAL_MINUTES) * 100));
-  const remainingMinutes = Math.max(0, DAILY_GOAL_MINUTES - minutesToday);
+  const onboardingPreferences = getOnboardingPreferences();
+  const dailyGoalMinutes = onboardingPreferences?.dailyMinutes || DEFAULT_DAILY_GOAL_MINUTES;
+  const goalProgress = Math.min(100, Math.round((minutesToday / dailyGoalMinutes) * 100));
+  const remainingMinutes = Math.max(0, dailyGoalMinutes - minutesToday);
   const latestSession = todaySessions[0];
   const firstName = user?.name?.split(' ')[0] || 'estudante';
+  const onboardingComplete = isOnboardingComplete();
 
   if (loading) {
     return (
@@ -70,6 +74,26 @@ const Today: React.FC = () => {
             </Button>
           </div>
         </section>
+
+        {!onboardingComplete && (
+          <Card className="overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 via-card to-secondary/5 shadow-sm">
+            <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Compass size={22} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-primary">Personalize seu começo</p>
+                  <h2 className="mt-1 text-lg font-bold text-foreground">Defina seu objetivo e sua primeira meta</h2>
+                  <p className="mt-1 max-w-xl text-sm leading-relaxed text-muted-foreground">Leva menos de um minuto e ajuda o Grupo Estuda a orientar seu próximo passo.</p>
+                </div>
+              </div>
+              <Button variant="outline" className="shrink-0" onClick={() => navigate('/onboarding')}>
+                Fazer configuração <ArrowRight className="ml-2" size={16} />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <section className="grid gap-4 sm:grid-cols-3" aria-label="Resumo do dia">
           <Card className="border-primary/15 shadow-sm">
