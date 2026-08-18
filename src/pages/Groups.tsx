@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, User, Users, AlertCircle } from 'lucide-react';
+import { Activity, ArrowRight, Crown, LockKeyhole, Plus, Search, Sparkles, User, Users, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { Group, useGroups } from '@/hooks/useGroups';
@@ -144,40 +144,45 @@ const Groups: React.FC = () => {
   };
 
   const handleGroupClick = async (group: Group) => {
-    // Premium gating for premium groups
-    if (group.isPremium && user?.plan !== 'premium') {
-      toast.error('Este é um grupo exclusivo para usuários Premium');
-      navigate('/plans');
-      return;
-    }
+    const isPremiumGroup = group.isPremium || group.id === VESTIBULAR_GROUP_ID;
 
-    // Special case: Vestibular Brasil group (premium-only join allowed)
-    if (group.id === VESTIBULAR_GROUP_ID) {
-      if (user?.plan !== 'premium') {
-        toast.error('Este é um grupo exclusivo para usuários Premium');
-        navigate('/plans');
-        return;
-      }
-      if (!group.isMember) {
-        const result = await joinGroup(group.id);
-        if (result.success) {
-          toast.success('Você entrou no grupo!');
-        } else {
-          toast.error(result.error);
-          return;
-        }
-      }
+    if (group.isMember) {
       navigate(`/group/${group.id}`);
       return;
     }
 
-    // Other groups: only allow access if already a member
-    if (!group.isMember) {
-      toast.error('Você não faz parte deste grupo');
+    if (isPremiumGroup && user?.plan !== 'premium') {
+      toast.info('Este grupo inclui desafios e estatísticas exclusivas do Premium.');
+      navigate('/plans');
       return;
     }
 
-    navigate(`/group/${group.id}`);
+    const result = await joinGroup(group.id);
+    if (result.success) {
+      toast.success('Você entrou no grupo!');
+      navigate(`/group/${group.id}`);
+    } else {
+      toast.error(result.error || 'Não foi possível entrar no grupo.');
+    }
+  };
+
+  const getGroupMeta = (group: Group) => {
+    const isPremiumGroup = group.isPremium || group.id === VESTIBULAR_GROUP_ID;
+    if (isPremiumGroup) {
+      return {
+        label: 'Premium',
+        description: 'Desafios exclusivos, estatísticas avançadas e temporadas competitivas.',
+        icon: Crown,
+        className: 'bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300'
+      };
+    }
+
+    return {
+      label: group.isMember ? 'Seu grupo' : 'Grupo aberto',
+      description: group.isMember ? 'Continue sua jornada com este grupo.' : 'Entre agora e comece a estudar com outras pessoas.',
+      icon: Users,
+      className: 'bg-primary/10 text-primary border-primary/20'
+    };
   };
 
   const filteredGroups = groups.filter(group => 
@@ -233,43 +238,79 @@ const Groups: React.FC = () => {
 
       <GlobalActiveChallengeBanner groups={groups} />
 
-      {/* Lista de Grupos */}
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold mb-4">📚 Grupos Disponíveis</h2>
+      <div className="mb-5">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold">Grupos para estudar junto</h2>
+          <Sparkles size={18} className="text-secondary" aria-hidden="true" />
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Entre em um grupo aberto ou descubra os benefícios dos grupos Premium.
+        </p>
       </div>
       
-      <div className="space-y-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         {filteredGroups.length > 0 ? (
-          filteredGroups.map(group => (
-            <div 
-              key={group.id}
-              className="card hover:border-study-primary cursor-pointer transition-colors"
-              onClick={() => handleGroupClick(group)}
-            >
-              <div className="flex justify-between items-start">
-                <h3 className="font-semibold text-lg flex items-center">
-                  {group.name}
-                </h3>
-                <div className="flex gap-1">
-                  {group.isMember && (
-                    <Badge variant="secondary">Membro</Badge>
-                  )}
+          filteredGroups.map(group => {
+            const meta = getGroupMeta(group);
+            const MetaIcon = meta.icon;
+            const isPremiumGroup = group.isPremium || group.id === VESTIBULAR_GROUP_ID;
+
+            return (
+              <article
+                key={group.id}
+                className="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${meta.className}`}>
+                      <MetaIcon size={21} aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-lg font-semibold text-foreground">{group.name}</h3>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className={meta.className}>{meta.label}</Badge>
+                        {group.isMember && <Badge variant="secondary">Você participa</Badge>}
+                      </div>
+                    </div>
+                  </div>
+                  {isPremiumGroup && <LockKeyhole size={18} className="shrink-0 text-amber-500" aria-label="Grupo Premium" />}
                 </div>
-              </div>
-              <p className="text-sm text-gray-500">{group.description}</p>
-              <div className="flex items-center mt-2">
-                <Users size={16} className="mr-1 text-gray-400" />
-                <span className="text-sm text-gray-500">{group.members} {t('groups.members')}</span>
-              </div>
-            </div>
-          ))
+
+                <p className="mt-4 line-clamp-2 min-h-10 text-sm leading-relaxed text-muted-foreground">
+                  {group.description || meta.description}
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5"><Users size={16} aria-hidden="true" />{group.members} {t('groups.members')}</span>
+                  <span className="inline-flex items-center gap-1.5"><Activity size={16} aria-hidden="true" />Ativo para novos estudantes</span>
+                </div>
+
+                <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/70 pt-4">
+                  <p className="text-xs text-muted-foreground">{meta.description}</p>
+                  <Button
+                    size="sm"
+                    variant={group.isMember ? 'outline' : 'default'}
+                    className="shrink-0"
+                    onClick={() => handleGroupClick(group)}
+                  >
+                    {group.isMember ? 'Abrir grupo' : isPremiumGroup ? 'Ver Premium' : 'Entrar no grupo'}
+                    <ArrowRight className="ml-1.5" size={15} />
+                  </Button>
+                </div>
+              </article>
+            );
+          })
         ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500">{t('groups.noGroups')}</p>
-            <Button 
-              className="mt-4 bg-study-primary"
-              onClick={() => setOpen(true)}
-            >
+          <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 px-6 py-10 text-center lg:col-span-2">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Users size={24} aria-hidden="true" />
+            </div>
+            <h3 className="mt-4 font-semibold text-foreground">Ainda não encontramos esse grupo</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+              Crie um grupo com seus amigos e transforme o estudo em um compromisso compartilhado.
+            </p>
+            <Button className="mt-5 bg-study-primary" onClick={() => setOpen(true)}>
+              <Plus size={18} className="mr-2" />
               {t('groups.createFirst')}
             </Button>
           </div>
