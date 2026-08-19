@@ -1,11 +1,11 @@
 import React from 'react';
-import { Clock, BookOpen, TrendingUp, Camera } from 'lucide-react';
+import { BookOpen, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoalType } from '@/types/groupTypes';
-import { useNavigate } from 'react-router-dom';
 import { useStudyActivities } from '@/hooks/useStudyActivities';
 import { ActivityCard } from './ActivityCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import ChallengeParticipantsProgress from './ChallengeParticipantsProgress';
 
 interface GroupOverviewTabProps {
   goals: GoalType[];
@@ -20,7 +20,6 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
   onViewAllGoals,
   groupId 
 }) => {
-  const navigate = useNavigate();
   const { activities, loading, toggleLike, deleteActivity } = useStudyActivities(groupId);
   
   return (
@@ -55,33 +54,9 @@ const GroupOverviewTab: React.FC<GroupOverviewTabProps> = ({
           </div>
         )}
       </div>
-      
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold">Atividade Recente</h3>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate(`/group/${groupId}/progress`)}
-            className="flex items-center gap-1"
-          >
-            <TrendingUp className="h-4 w-4" />
-            Ver Progresso
-          </Button>
-        </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="flex items-start space-x-3">
-              <Clock size={18} className="text-gray-400 mt-1" />
-              <div>
-                <p className="text-sm font-medium">Usuário completou uma sessão de estudo</p>
-                <p className="text-xs text-gray-500">2 horas atrás</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      
+
+      <ChallengeParticipantsProgress groupId={groupId} />
+
       <div className="card">
         <h3 className="font-semibold mb-2">Metas do Grupo</h3>
         <div className="space-y-3">

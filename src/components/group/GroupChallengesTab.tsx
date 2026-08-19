@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trophy, Clock, Users, ChevronRight, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,10 +10,12 @@ import { useChallenges, Challenge } from '@/hooks/useChallenges';
 import ChallengeCreateModal from './challenges/ChallengeCreateModal';
 import ChallengeDetail from './challenges/ChallengeDetail';
 import { useToast } from '@/hooks/use-toast';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface Props {
   groupId: string;
   isAdmin: boolean;
+  openChallenge?: { id: string; token: number } | null;
 }
 
 const METRIC_ICONS: Record<string, React.ReactNode> = {
@@ -66,11 +68,17 @@ function ChallengeCard({ challenge, onClick }: { challenge: Challenge; onClick: 
   );
 }
 
-export default function GroupChallengesTab({ groupId, isAdmin }: Props) {
+export default function GroupChallengesTab({ groupId, isAdmin, openChallenge }: Props) {
   const { challenges, isLoading, finishChallenge } = useChallenges(groupId);
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (openChallenge?.id) {
+      setSelectedId(openChallenge.id);
+    }
+  }, [openChallenge]);
 
   const handleFinish = async (challengeId: string) => {
     try {
@@ -114,15 +122,13 @@ export default function GroupChallengesTab({ groupId, isAdmin }: Props) {
       {isLoading ? (
         <p className="text-muted-foreground text-sm text-center py-8">Carregando...</p>
       ) : challenges.length === 0 ? (
-        <div className="text-center py-12 space-y-3">
-          <Trophy className="h-12 w-12 text-muted-foreground mx-auto opacity-40" />
-          <p className="text-muted-foreground">Nenhum desafio ainda.</p>
-          {isAdmin && (
-            <Button variant="outline" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Criar primeiro desafio
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={Trophy}
+          title="Um desafio pode dar ritmo à sua semana"
+          description={isAdmin ? 'Escolha um modelo pronto e convide o grupo para transformar o estudo em uma meta compartilhada.' : 'Peça ao administrador do grupo para iniciar um desafio e comece a acompanhar seu progresso.'}
+          actionLabel={isAdmin ? 'Criar primeiro desafio' : undefined}
+          onAction={isAdmin ? () => setCreateOpen(true) : undefined}
+        />
       ) : (
         <Tabs defaultValue="active">
           <TabsList>
@@ -134,7 +140,14 @@ export default function GroupChallengesTab({ groupId, isAdmin }: Props) {
 
           <TabsContent value="active" className="space-y-2 mt-3">
             {[...upcoming, ...active].length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-6">Nenhum desafio ativo.</p>
+              <EmptyState
+                icon={Flame}
+                title="Nenhum desafio ativo"
+                description={isAdmin ? 'Crie um desafio curto para dar um próximo passo concreto ao grupo.' : 'Quando um novo desafio começar, ele aparecerá aqui para você participar.'}
+                actionLabel={isAdmin ? 'Explorar modelos' : undefined}
+                onAction={isAdmin ? () => setCreateOpen(true) : undefined}
+                className="py-8"
+              />
             ) : (
               [...upcoming, ...active].map(c => (
                 <ChallengeCard key={c.id} challenge={c} onClick={() => setSelectedId(c.id)} />
@@ -144,7 +157,12 @@ export default function GroupChallengesTab({ groupId, isAdmin }: Props) {
 
           <TabsContent value="finished" className="space-y-2 mt-3">
             {finished.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-6">Nenhum desafio encerrado.</p>
+              <EmptyState
+                icon={Trophy}
+                title="Seu histórico começa com o primeiro desafio"
+                description="Conclua um desafio para registrar sua evolução e desbloquear novas conquistas."
+                className="py-8"
+              />
             ) : (
               finished.map(c => (
                 <ChallengeCard key={c.id} challenge={c} onClick={() => setSelectedId(c.id)} />

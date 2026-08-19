@@ -248,6 +248,18 @@ export const useGroupInvitations = () => {
         }
       } else {
         toast.success('Você entrou no grupo!');
+
+        // Avisa o grupo no chat que um novo membro entrou
+        const { error: welcomeMessageError } = await supabase
+          .from('messages')
+          .insert({
+            group_id: groupId,
+            user_id: user.id,
+            content: '👋 Entrou no grupo! Sejam bem-vindos(as) 🎉',
+          });
+        if (welcomeMessageError) {
+          console.error('Erro ao enviar mensagem de boas-vindas:', welcomeMessageError);
+        }
       }
 
       await fetchPendingInvitations();

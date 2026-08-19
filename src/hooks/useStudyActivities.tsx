@@ -37,6 +37,40 @@ export const useStudyActivities = (groupId?: string) => {
     }
   }, [user, groupId]);
 
+  // Atualização em tempo real: reage a novas atividades, exclusões e curtidas
+  // feitas por qualquer membro, mesmo sem recarregar a página.
+  useEffect(() => {
+    if (!user) return;
+
+    const refetch = () => {
+      if (groupId) {
+        fetchGroupActivities();
+      } else {
+        fetchGlobalActivities();
+      }
+    };
+
+    const channel = supabase
+      .channel(`study-activities:${groupId || 'global'}`)
+      .on(
+        'postgres_changes',
+        groupId
+          ? { event: '*', schema: 'public', table: 'study_activities', filter: `group_id=eq.${groupId}` }
+          : { event: '*', schema: 'public', table: 'study_activities' },
+        refetch
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_activity_likes' },
+        refetch
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, groupId]);
+
   const fetchGlobalActivities = async () => {
     try {
       setLoading(true);

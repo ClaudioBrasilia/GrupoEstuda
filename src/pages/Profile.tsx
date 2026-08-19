@@ -1,11 +1,12 @@
 
 import React from 'react';
-import { Trophy, Book, Calendar, Award, Bell, Settings, Crown } from 'lucide-react';
+import { Clock3, Trophy, Book, Calendar, Award, Bell, Settings, Crown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,13 +16,14 @@ import { useAchievements } from '@/hooks/useAchievements';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { AchievementsGrid } from '@/components/profile/AchievementsGrid';
 import ChallengeBadges from '@/components/profile/ChallengeBadges';
-import XpLevelCard from '@/components/profile/XpLevelCard';
+import ProfileMotivationCard from '@/components/profile/ProfileMotivationCard';
 import SeasonBadges from '@/components/profile/SeasonBadges';
 import LeagueCard from '@/components/profile/LeagueCard';
 import AvatarWithFrame from '@/components/profile/AvatarWithFrame';
 import AvatarShop from '@/components/profile/AvatarShop';
 import { useAuth } from '@/context/AuthContext';
 import { PremiumBadge } from '@/components/premium/PremiumBadge';
+import { useReminderSettings } from '@/hooks/useReminderSettings';
 
 const Profile: React.FC = () => {
   const { t } = useTranslation();
@@ -30,6 +32,11 @@ const Profile: React.FC = () => {
   const { profileStats, loading } = useProfileData();
   const { achievements } = useAchievements();
   const { preferences, loading: preferencesLoading, updatePreference } = useUserPreferences();
+  const { settings: reminderSettings, updateSettings: updateReminderSettings, requestBrowserPermission } = useReminderSettings();
+  const [browserPermission, setBrowserPermission] = React.useState<NotificationPermission | 'unsupported'>(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+    return Notification.permission;
+  });
   
   const handleNotificationChange = (key: keyof typeof preferences) => {
     updatePreference(key, !preferences[key]);
@@ -120,7 +127,7 @@ const Profile: React.FC = () => {
       </div>
 
       <div className="mb-6 space-y-3">
-        <XpLevelCard userId={user?.id} />
+        <ProfileMotivationCard userId={user?.id} achievements={achievements} />
         <LeagueCard userId={user?.id} />
       </div>
 
@@ -150,7 +157,34 @@ const Profile: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Clock3 size={19} aria-hidden="true" />
+                  </div>
+                  <div>
+                    <Label htmlFor="reminders-enabled" className="font-semibold">Lembrete diário de estudo</Label>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Escolha um horário para receber um convite gentil quando ainda não tiver completado sua meta.</p>
+                  </div>
+                </div>
+                <Switch id="reminders-enabled" checked={reminderSettings.enabled} onCheckedChange={(checked) => updateReminderSettings({ enabled: checked })} />
+              </div>
+              {reminderSettings.enabled && (
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="reminder-time">Horário do lembrete</Label>
+                    <Input id="reminder-time" type="time" value={reminderSettings.time} onChange={(event) => updateReminderSettings({ time: event.target.value })} className="w-36 bg-background" />
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={async () => setBrowserPermission(await requestBrowserPermission())}>
+                    {browserPermission === 'granted' ? 'Notificações ativas' : browserPermission === 'denied' ? 'Permissão bloqueada' : 'Ativar no navegador'}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="goal-reminders" className="font-medium">{t('profile.goalReminders')}</Label>
@@ -201,6 +235,7 @@ const Profile: React.FC = () => {
                 onCheckedChange={() => handleNotificationChange('weeklyReport')}
                 disabled={preferencesLoading}
               />
+            </div>
             </div>
           </div>
         </CardContent>

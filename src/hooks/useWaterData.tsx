@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/sonner';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { toLocalDateKey } from '@/lib/progressDateRange';
 
 export interface WaterStats {
   todayIntake: number;
@@ -25,7 +26,7 @@ export function useWaterData() {
     try {
       setLoading(true);
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateKey(new Date());
       
       // Fetch user's water goal from profile
       const { data: profile } = await supabase
@@ -52,7 +53,7 @@ export function useWaterData() {
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = toLocalDateKey(date);
         const dayName = weekDays[date.getDay()];
 
         const { data: dayData } = await supabase
@@ -112,11 +113,12 @@ export function useWaterData() {
           filter: `id=eq.${user.id}`
         },
         (payload: RealtimePostgresChangesPayload<{ water_goal_ml: number }>) => {
-          if (payload.new && payload.new.water_goal_ml) {
+          const updated = payload.new as { water_goal_ml?: number };
+          if (updated && updated.water_goal_ml) {
             console.log('📡 Meta de água atualizada');
             setWaterStats(prev => ({
               ...prev,
-              dailyGoal: payload.new.water_goal_ml
+              dailyGoal: updated.water_goal_ml as number
             }));
           }
         }
@@ -132,7 +134,7 @@ export function useWaterData() {
     if (!user) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateKey(new Date());
 
       const { error } = await supabase
         .from('water_intake')
@@ -167,7 +169,7 @@ export function useWaterData() {
     if (!user) return;
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = toLocalDateKey(new Date());
 
       // Get the most recent intake record to remove
       const { data: records } = await supabase

@@ -18,7 +18,7 @@ export const UpgradePrompt = ({
   feature,
   description,
   currentPlan = 'free',
-  requiredPlan = 'basic',
+  requiredPlan = 'premium',
   compact = false,
   className,
 }: UpgradePromptProps) => {
@@ -85,7 +85,7 @@ export const UpgradePrompt = ({
           </Button>
 
           <p className="text-xs text-muted-foreground">
-            A partir de $4.99/mês
+            A partir de R$ 9,90/mês
           </p>
         </div>
       </CardContent>

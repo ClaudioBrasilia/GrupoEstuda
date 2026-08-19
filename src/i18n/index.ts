@@ -1,13 +1,13 @@
 
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
 import enTranslation from './locales/en.json';
 import ptTranslation from './locales/pt.json';
 
+// Sem seletor de idioma no app: sempre abre em português, independentemente
+// do idioma configurado no navegador do usuário.
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
@@ -18,14 +18,11 @@ i18n
         translation: ptTranslation
       }
     },
+    lng: 'pt',
     fallbackLng: 'pt',
     interpolation: {
       escapeValue: false,
     },
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-    }
   });
 
 export default i18n;

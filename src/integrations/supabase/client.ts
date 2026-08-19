@@ -3,26 +3,36 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 const runtimeSupabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const runtimeSupabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const runtimeSupabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Chaves de fallback para garantir que o app real funcione mesmo sem arquivo .env
+// Fallback para garantir que o app real funcione mesmo sem .env
 const fallbackUrl = 'https://nwtodahupgqbatxeluat.supabase.co';
-const fallbackKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53dG9kYWh1cGdxYmF0eGVsdWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzE3NDMsImV4cCI6MjA3NDIwNzc0M30.FH3qU9RKH5KzEuDPWqFXqOVtUzwgb_vRCqcgl6_ydhM';
+const fallbackKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53dG9kYWh1cGdxYmF0eGVsdWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzE3NDMsImV4cCI6MjA3NDIwNzc0M30.FH3qU9RKH5KzEuDPWqFXqOVtUzwgb_vRCqcgl6_ydhM';
 
 const SUPABASE_URL = runtimeSupabaseUrl || fallbackUrl;
 const SUPABASE_PUBLISHABLE_KEY = runtimeSupabaseAnonKey || fallbackKey;
 
 if (!runtimeSupabaseUrl || !runtimeSupabaseAnonKey) {
-  console.info('Usando chaves de fallback do Supabase. Recomendamos configurar variáveis de ambiente no futuro.');
+  console.info(
+    'Usando chaves de fallback do Supabase. Recomendamos configurar variáveis de ambiente no futuro.'
+  );
 }
 
-// Import the supabase client like this:
+// Import:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'grupoestuda.auth',
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: false,
+    flowType: 'pkce',
+    // Evita travamento do signInWithPassword após F5 no modo privado / WebView.
+    // O lock padrão usa navigator.locks e pode ficar preso entre reloads.
+    lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
+  },
 });

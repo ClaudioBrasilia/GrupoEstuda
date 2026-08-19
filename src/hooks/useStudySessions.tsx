@@ -20,6 +20,8 @@ interface StudySessionMetricsInput {
   subject_id?: string | null;
   group_id?: string | null;
   duration_minutes?: number;
+  pages?: number | null;
+  exercises?: number | null;
 }
 
 interface GoalSnapshot {
@@ -192,6 +194,8 @@ export const useStudySessions = () => {
         subject_id: insertSubjectId,
         group_id: groupId,
         duration_minutes: durationMinutes,
+        pages: metrics?.pages ?? null,
+        exercises: metrics?.exercises ?? null,
         started_at: new Date(Date.now() - durationSeconds * 1000).toISOString(),
         completed_at: new Date().toISOString()
       };

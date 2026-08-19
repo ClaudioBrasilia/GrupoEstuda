@@ -10,10 +10,14 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { SubjectMetric, useProgressData } from '@/hooks/useProgressData';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { usePlanLimits } from '@/hooks/usePlanLimits';
+import AdvancedStatsCard from '@/components/progress/AdvancedStatsCard';
+import { UpgradePrompt } from '@/components/premium/UpgradePrompt';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 const ProgressPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState('week');
@@ -24,7 +28,9 @@ const ProgressPage: React.FC = () => {
   const [subjectMetric, setSubjectMetric] = useState<SubjectMetric>('time');
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { limits } = usePlanLimits();
   const params = useParams();
+  const navigate = useNavigate();
   const routeGroupId = params?.groupId;
   const { toast } = useToast();
 
@@ -410,9 +416,16 @@ const ProgressPage: React.FC = () => {
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p>{t('progress.noGoalsToday')}</p>
-                      </div>
+                      <EmptyState
+                        icon={Target}
+                        title="Sua próxima meta ainda não foi definida"
+                        description="Comece uma sessão ou volte para Hoje para transformar seu objetivo em um próximo passo concreto."
+                        actionLabel="Começar sessão"
+                        onAction={() => navigate('/timer')}
+                        secondaryLabel="Ver Hoje"
+                        onSecondary={() => navigate('/today')}
+                        className="py-8"
+                      />
                     )
                   ) : (
                     remainingGoals.length > 0 ? (
@@ -428,9 +441,16 @@ const ProgressPage: React.FC = () => {
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p>{t('progress.noGoalsToday')}</p>
-                      </div>
+                      <EmptyState
+                        icon={Target}
+                        title="Sua próxima meta ainda não foi definida"
+                        description="Comece uma sessão ou volte para Hoje para transformar seu objetivo em um próximo passo concreto."
+                        actionLabel="Começar sessão"
+                        onAction={() => navigate('/timer')}
+                        secondaryLabel="Ver Hoje"
+                        onSecondary={() => navigate('/today')}
+                        className="py-8"
+                      />
                     )
                   )}
                 </div>
@@ -481,11 +501,14 @@ const ProgressPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Clock className="mx-auto h-12 w-12 opacity-50 mb-3" />
-                  <p className="text-sm">{t('progress.noSessionsToday')}</p>
-                  <p className="text-xs mt-1">{t('progress.startSessionHint')}</p>
-                </div>
+                <EmptyState
+                  icon={Clock}
+                  title="Comece hoje; sua primeira sequência nasce com uma sessão"
+                  description="Registre pelo menos 15 minutos para colocar seu progresso em movimento e fazer este painel ganhar vida."
+                  actionLabel="Estudar por 15 min"
+                  onAction={() => navigate('/timer')}
+                  className="py-8"
+                />
               )}
             </CardContent>
           </Card>
@@ -721,6 +744,17 @@ const ProgressPage: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Estatísticas Avançadas — exclusivo do plano Premium */}
+        {limits.hasAdvancedStats ? (
+          <AdvancedStatsCard userId={user?.id} groupId={view === 'group' ? groupId : undefined} />
+        ) : (
+          <UpgradePrompt
+            feature="Estatísticas Avançadas"
+            description="Veja seu padrão de estudo por dia da semana, tendência dos últimos 6 meses, comparação com a média do grupo e exporte seu histórico completo."
+            requiredPlan="premium"
+          />
         )}
       </div>
     </PageLayout>

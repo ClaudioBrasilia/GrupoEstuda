@@ -1,70 +1,46 @@
-export type PlanType = 'free' | 'basic' | 'premium';
+export type PlanType = 'free' | 'premium';
 
 export interface PlanLimits {
-  maxGroups: number | null; // null = unlimited
+  maxGroups: number | null; // null = ilimitado
   maxMembersPerGroup: number | null;
   maxUploadSizeMB: number;
-  historyDays: number | null; // null = unlimited
-  hasAds: boolean;
-  hasAITests: boolean;
+  historyDays: number | null; // null = ilimitado
+  canUploadFiles: boolean;
   hasPremiumBadge: boolean;
-  hasCustomThemes: boolean;
   hasAdvancedStats: boolean;
   hasPrioritySupport: boolean;
-  canUploadFiles: boolean;
 }
 
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   free: {
-    maxGroups: 1,
+    maxGroups: 3,
     maxMembersPerGroup: 5,
-    maxUploadSizeMB: 5,
+    maxUploadSizeMB: 0,
     historyDays: 30,
-    hasAds: true,
-    hasAITests: false,
+    canUploadFiles: false,
     hasPremiumBadge: false,
-    hasCustomThemes: false,
     hasAdvancedStats: false,
     hasPrioritySupport: false,
-    canUploadFiles: false,
-  },
-  basic: {
-    maxGroups: 5,
-    maxMembersPerGroup: 20,
-    maxUploadSizeMB: 100,
-    historyDays: null,
-    hasAds: false,
-    hasAITests: false,
-    hasPremiumBadge: false,
-    hasCustomThemes: false,
-    hasAdvancedStats: true,
-    hasPrioritySupport: false,
-    canUploadFiles: true,
   },
   premium: {
     maxGroups: null,
     maxMembersPerGroup: null,
-    maxUploadSizeMB: 1024,
+    maxUploadSizeMB: 500,
     historyDays: null,
-    hasAds: false,
-    hasAITests: true,
+    canUploadFiles: true,
     hasPremiumBadge: true,
-    hasCustomThemes: true,
     hasAdvancedStats: true,
     hasPrioritySupport: true,
-    canUploadFiles: true,
   }
 };
 
 export const PLAN_PRICES = {
   free: { monthly: 0, yearly: 0 },
-  basic: { monthly: 4.99, yearly: 49.99 },
-  premium: { monthly: 9.99, yearly: 99.99 },
+  premium: { monthly: 9.90, yearly: 99.00 },
 };
 
 export const PLAN_NAMES: Record<PlanType, string> = {
-  free: 'Free',
-  basic: 'Basic',
+  free: 'Grátis',
   premium: 'Premium',
 };
 

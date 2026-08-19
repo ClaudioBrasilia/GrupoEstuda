@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'leaderboard' | 'invitation' | 'achievement' | 'water_reminder' | 'goal_reminder';
+  type: 'leaderboard' | 'invitation' | 'achievement' | 'water_reminder' | 'goal_reminder' | 'challenge_invitation';
   title: string;
   message: string;
   link: string | null;
@@ -19,34 +19,7 @@ export function useNotifications() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      
-      // Setup realtime subscription
-      const channel = supabase
-        .channel('notifications-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          () => {
-            fetchNotifications();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -67,7 +40,49 @@ export function useNotifications() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetchNotifications();
+
+    // Setup realtime subscription
+    const channel = supabase
+      .channel('notifications-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    // Realtime websockets frequently drop when the app is backgrounded
+    // (especially in the mobile WebView), so any notifications created while
+    // away would be missed. Refetch whenever the app regains focus/visibility
+    // to guarantee the bell stays current.
+    const handleRefresh = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleRefresh);
+    window.addEventListener('focus', handleRefresh);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleRefresh);
+      window.removeEventListener('focus', handleRefresh);
+    };
+  }, [user, fetchNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {

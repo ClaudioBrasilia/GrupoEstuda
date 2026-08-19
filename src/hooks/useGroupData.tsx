@@ -274,9 +274,10 @@ export const useGroupData = (groupId: string | undefined) => {
           filter: `user_id=eq.${user.id}`
         },
         (payload: RealtimePostgresChangesPayload<{ group_id: string; points: number }>) => {
-          if (payload.new && payload.new.group_id === groupId) {
+          const updated = payload.new as { group_id?: string; points?: number };
+          if (updated && updated.group_id === groupId) {
             console.log('📡 Pontos do usuário atualizados');
-            setUserPoints(payload.new.points);
+            setUserPoints(updated.points ?? 0);
           }
         }
       )

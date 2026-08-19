@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Trophy, Users, RefreshCw } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,8 +18,11 @@ import { Shield } from 'lucide-react';
 
 const Leaderboard: React.FC = () => {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [timeRange, setTimeRange] = useState('week');
-  const [leaderboardType, setLeaderboardType] = useState('global');
+  const [leaderboardType, setLeaderboardType] = useState(
+    searchParams.get('type') === 'league' ? 'league' : 'global'
+  );
   const [selectedGroup, setSelectedGroup] = useState('');
   
   const { globalLeaderboard, groupLeaderboards, loading, refreshData } = useLeaderboardData(timeRange);

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export type ChallengeMetric = 'study_minutes' | 'exercises_solved' | 'pages_read';
 export type ChallengeMode = 'first_to_goal' | 'deadline' | 'teams';
@@ -54,9 +54,28 @@ export interface ChallengeBadge {
   challenges?: { title: string; group_id: string };
 }
 
+// Não há pg_cron disponível no plano do Supabase, então nada encerra um desafio
+// sozinho quando o prazo (ends_at) vence. Em vez disso, qualquer cliente que carregar
+// a lista/detalhe de um desafio expirado dispara o encerramento — a função é segura
+// para chamadas concorrentes/repetidas (trava a linha e só age se ainda estiver 'active').
+export function isChallengeExpired(challenge: Pick<Challenge, 'status' | 'ends_at'>) {
+  return challenge.status === 'active' && !!challenge.ends_at && new Date(challenge.ends_at) < new Date();
+}
+
+async function autoFinishExpiredChallenge(challengeId: string, queryClient: ReturnType<typeof useQueryClient>) {
+  const { error } = await supabase.rpc('finish_challenge', { _challenge_id: challengeId });
+  if (!error) {
+    queryClient.invalidateQueries({ queryKey: ['challenges'] });
+    queryClient.invalidateQueries({ queryKey: ['challenge', challengeId] });
+    queryClient.invalidateQueries({ queryKey: ['challenge-ranking', challengeId] });
+  }
+  return !error;
+}
+
 export function useChallenges(groupId: string) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const autoFinishingRef = useRef<Set<string>>(new Set());
 
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ['challenges', groupId],
@@ -84,6 +103,16 @@ export function useChallenges(groupId: string) {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [groupId, queryClient]);
+
+  useEffect(() => {
+    for (const challenge of challenges) {
+      if (!isChallengeExpired(challenge) || autoFinishingRef.current.has(challenge.id)) continue;
+      autoFinishingRef.current.add(challenge.id);
+      autoFinishExpiredChallenge(challenge.id, queryClient).then((succeeded) => {
+        if (!succeeded) autoFinishingRef.current.delete(challenge.id);
+      });
+    }
+  }, [challenges, queryClient]);
 
   const createChallenge = useMutation({
     mutationFn: async (payload: {
@@ -129,6 +158,7 @@ export function useChallenges(groupId: string) {
 export function useChallengeDetail(challengeId: string) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const autoFinishingRef = useRef(false);
 
   const { data: challenge } = useQuery({
     queryKey: ['challenge', challengeId],
@@ -143,6 +173,14 @@ export function useChallengeDetail(challengeId: string) {
     },
     enabled: !!challengeId,
   });
+
+  useEffect(() => {
+    if (!challenge || !isChallengeExpired(challenge) || autoFinishingRef.current) return;
+    autoFinishingRef.current = true;
+    autoFinishExpiredChallenge(challengeId, queryClient).then((succeeded) => {
+      if (!succeeded) autoFinishingRef.current = false;
+    });
+  }, [challenge, challengeId, queryClient]);
 
   const { data: ranking = [] } = useQuery({
     queryKey: ['challenge-ranking', challengeId],
@@ -203,6 +241,11 @@ export function useChallengeDetail(challengeId: string) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'study_sessions' },
+        () => queryClient.invalidateQueries({ queryKey: ['challenge-ranking', challengeId] })
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'goal_progress_events' },
         () => queryClient.invalidateQueries({ queryKey: ['challenge-ranking', challengeId] })
       )
       .on(

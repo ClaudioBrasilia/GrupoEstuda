@@ -41,6 +41,13 @@ interface TestResult {
   }>;
 }
 
+interface PerformanceSummary {
+  overallAccuracy: number | null;
+  totalTestsTaken: number;
+  bestSubject: string | null;
+  worstSubject: string | null;
+}
+
 interface SavedTestSummary {
   id: string;
   title: string;
@@ -735,7 +742,9 @@ const TestGenerator: React.FC = () => {
                       className="cursor-pointer"
                     />
                   </div>
-                  {fileUrl && <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Arquivo pronto</p>}
+                  {isUploading && <p className="text-xs text-gray-500">Enviando arquivo...</p>}
+                  {fileUrl && !isUploading && <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Arquivo pronto</p>}
+                  <p className="text-xs text-gray-400">PDF com texto selecionável ou arquivo TXT. Máx. 5MB.</p>
                 </div>
               </div>
 

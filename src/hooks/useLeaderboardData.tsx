@@ -176,6 +176,31 @@ export function useLeaderboardData(timeRange: string = 'week') {
     }
   }, [user, timeRange, fetchLeaderboardData]);
 
+  // Atualização em tempo real: qualquer sessão de estudo nova (ou pontos
+  // creditados a qualquer usuário) recalcula o ranking na hora, sem precisar
+  // apertar "Atualizar" ou sair e voltar pra tela.
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('leaderboard-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'study_sessions' },
+        () => fetchLeaderboardData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_points' },
+        () => fetchLeaderboardData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchLeaderboardData]);
+
   return {
     globalLeaderboard,
     groupLeaderboards,

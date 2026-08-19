@@ -121,16 +121,21 @@ export function useSeasonBadges(userId?: string) {
   });
 }
 
-// Início da semana (segunda-feira 00:00) e do mês atual, em UTC.
+// Início da semana (segunda-feira 00:00) e do mês atual, no horário local
+// do dispositivo (Brasil). Usar métodos UTC aqui faria a semana/mês "virar"
+// até 3h mais cedo do que deveria para quem está no fuso do Brasil.
 export function getWeekStart(): Date {
   const now = new Date();
-  const day = now.getUTCDay();
+  const day = now.getDay();
   const diff = (day === 0 ? -6 : 1) - day; // volta até segunda-feira
-  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diff));
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
   return monday;
 }
 
 export function getMonthStart(): Date {
   const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  start.setHours(0, 0, 0, 0);
+  return start;
 }

@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import PageLayout from '@/components/layout/PageLayout';
 import { useNotifications } from '@/hooks/useNotifications';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CheckCheck } from 'lucide-react';
+import { BellRing, CheckCheck, Settings2 } from 'lucide-react';
 
 const Notifications: React.FC = () => {
   const { t } = useTranslation();
@@ -53,18 +53,31 @@ const Notifications: React.FC = () => {
                 : 'Todas as notificações foram lidas'}
             </p>
           </div>
-          {unreadCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={markAllAsRead}
-              className="gap-2"
-            >
-              <CheckCheck size={16} />
-              Marcar todas como lidas
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/profile')} className="gap-2">
+              <Settings2 size={16} />
+              <span className="hidden sm:inline">Configurar avisos</span>
             </Button>
-          )}
+            {unreadCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={markAllAsRead}
+                className="gap-2"
+              >
+                <CheckCheck size={16} />
+                <span className="hidden sm:inline">Marcar todas como lidas</span>
+              </Button>
+            )}
+          </div>
         </div>
+
+        <Card className="border-primary/15 bg-primary/5">
+          <CardContent className="flex items-start gap-3 p-4">
+            <BellRing className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <p className="text-sm leading-relaxed text-muted-foreground">Escolha o horário do seu lembrete diário e os tipos de atividade que deseja acompanhar no seu <button type="button" className="font-semibold text-primary hover:underline" onClick={() => navigate('/profile')}>perfil</button>.</p>
+          </CardContent>
+        </Card>
 
         <Tabs value={filter} onValueChange={(v) => setFilter(v as 'all' | 'unread')}>
           <TabsList className="grid w-full max-w-md grid-cols-2">

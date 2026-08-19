@@ -8,11 +8,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { X, MessageCircle } from 'lucide-react';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { useTranslation } from 'react-i18next';
 import { Combobox } from '@/components/ui/combobox';
@@ -21,6 +20,7 @@ interface InvitationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   groupId: string;
+  groupName?: string;
 }
 
 interface SearchedUser {
@@ -33,14 +33,23 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
   open,
   onOpenChange,
   groupId,
+  groupName,
 }) => {
   const { t } = useTranslation();
   const { sendInvitation, loading, searchUsersByName, searchLoading } = useGroupInvitations();
-  const [mode, setMode] = useState<'search' | 'email'>('search');
-  const [email, setEmail] = useState('');
+  const [mode, setMode] = useState<'search' | 'whatsapp'>('search');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<SearchedUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<SearchedUser | null>(null);
+
+  const handleWhatsAppShare = () => {
+    const registerUrl = `${window.location.origin}/register`;
+    const message = groupName
+      ? `Oi! Vem estudar comigo no GrupoEstuda 📚 Entrei no grupo "${groupName}" e queria te chamar. Cadastre-se por aqui: ${registerUrl}`
+      : `Oi! Vem estudar comigo no GrupoEstuda 📚 Cadastre-se por aqui: ${registerUrl}`;
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -55,7 +64,6 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
   }, [searchTerm]);
 
   const handleReset = () => {
-    setEmail('');
     setSearchTerm('');
     setSearchResults([]);
     setSelectedUser(null);
@@ -65,14 +73,13 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (mode === 'whatsapp') {
+      handleWhatsAppShare();
+      return;
+    }
+
     if (mode === 'search' && selectedUser) {
       const { error } = await sendInvitation(groupId, selectedUser.email, selectedUser.id);
-      if (!error) {
-        handleReset();
-        onOpenChange(false);
-      }
-    } else if (mode === 'email' && email.includes('@')) {
-      const { error } = await sendInvitation(groupId, email);
       if (!error) {
         handleReset();
         onOpenChange(false);
@@ -81,9 +88,9 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
   };
 
   const isSubmitDisabled = () => {
+    if (mode === 'whatsapp') return false;
     if (loading) return true;
     if (mode === 'search') return !selectedUser;
-    if (mode === 'email') return !email.includes('@');
     return true;
   };
 
@@ -96,15 +103,15 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{t('group.inviteMember')}</DialogTitle>
           <DialogDescription>
-            Busque por nome ou digite o email diretamente
+            Busque um amigo dentro do app ou chame pelo WhatsApp
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <Tabs value={mode} onValueChange={(v) => setMode(v as 'search' | 'email')} className="w-full">
+          <Tabs value={mode} onValueChange={(v) => setMode(v as 'search' | 'whatsapp')} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="search">Buscar por Nome</TabsTrigger>
-              <TabsTrigger value="email">Digitar Email</TabsTrigger>
+              <TabsTrigger value="search">Buscar no App</TabsTrigger>
+              <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
             </TabsList>
 
             <TabsContent value="search" className="space-y-4 mt-4">
@@ -146,16 +153,13 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
               )}
             </TabsContent>
 
-            <TabsContent value="email" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="usuario@exemplo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+            <TabsContent value="whatsapp" className="space-y-4 mt-4">
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <MessageCircle className="h-10 w-10 text-green-600" />
+                <p className="text-sm text-muted-foreground">
+                  Vamos abrir o WhatsApp com uma mensagem de convite pronta.
+                  Você escolhe o contato e envia.
+                </p>
               </div>
             </TabsContent>
           </Tabs>
@@ -173,7 +177,11 @@ export const InvitationDialog: React.FC<InvitationDialogProps> = ({
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitDisabled()}>
-              {loading ? 'Enviando...' : 'Enviar Convite'}
+              {mode === 'whatsapp'
+                ? 'Abrir WhatsApp'
+                : loading
+                ? 'Enviando...'
+                : 'Enviar Convite'}
             </Button>
           </DialogFooter>
         </form>

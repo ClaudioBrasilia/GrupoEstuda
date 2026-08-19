@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Users, BarChart2, Droplet, Award, User, Clock } from 'lucide-react';
+import { Users, BarChart2, Droplet, Award, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTimer } from '@/context/TimerContext';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +24,6 @@ const BottomNav: React.FC = () => {
     { to: '/timer', label: t('navigation.timer'), icon: Clock },
     { to: '/water', label: t('navigation.water'), icon: Droplet },
     { to: '/leaderboard', label: t('navigation.leaders'), icon: Award },
-    { to: '/profile', label: t('navigation.profile'), icon: User },
   ];
   
   return (
