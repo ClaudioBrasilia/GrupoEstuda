@@ -3,6 +3,8 @@ import { Progress } from '@/components/ui/progress';
 import { useChallenges, useChallengeDetail } from '@/hooks/useChallenges';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Trophy } from 'lucide-react';
 
 interface Props {
   groupId: string;
@@ -16,7 +18,7 @@ const METRIC_UNITS: Record<string, string> = {
 
 export default function ChallengeParticipantsProgress({ groupId }: Props) {
   const { user } = useAuth();
-  const { challenges } = useChallenges(groupId);
+  const { challenges, isLoading } = useChallenges(groupId);
 
   const activeChallenges = challenges.filter(c => c.status === 'active');
 
@@ -47,7 +49,29 @@ export default function ChallengeParticipantsProgress({ groupId }: Props) {
       });
   }, [participants]);
 
-  if (!featured || !challenge || participants.length === 0) return null;
+  if (isLoading) return null;
+
+  if (!featured || !challenge) {
+    return (
+      <EmptyState
+        icon={Trophy}
+        title="O progresso do desafio aparecerá aqui"
+        description="Inicie um desafio no grupo para acompanhar quem está avançando e celebrar cada etapa."
+        className="py-7"
+      />
+    );
+  }
+
+  if (participants.length === 0) {
+    return (
+      <EmptyState
+        icon={Trophy}
+        title="O desafio está pronto para começar"
+        description="Convide os participantes e registre a primeira sessão para o ranking ganhar vida."
+        className="py-7"
+      />
+    );
+  }
 
   const unit = METRIC_UNITS[challenge.metric];
   const goal = challenge.goal_value;

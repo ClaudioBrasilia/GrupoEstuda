@@ -2,8 +2,11 @@ import { useStudyActivities } from '@/hooks/useStudyActivities';
 import { ActivityCard } from './ActivityCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Camera } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export const GlobalActivityFeed = () => {
+  const navigate = useNavigate();
   const { activities, loading, toggleLike, deleteActivity } = useStudyActivities();
 
   if (loading) {
@@ -18,15 +21,13 @@ export const GlobalActivityFeed = () => {
 
   if (activities.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-          <Camera className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-semibold mb-2">Nenhuma atividade ainda</h3>
-        <p className="text-muted-foreground">
-          Seja o primeiro a compartilhar uma atividade de estudo!
-        </p>
-      </div>
+      <EmptyState
+        icon={Camera}
+        title="Seu feed começa com a sua primeira sessão"
+        description="Compartilhe seu progresso e inspire outras pessoas do Grupo Estuda a manterem o ritmo."
+        actionLabel="Registrar estudo"
+        onAction={() => navigate('/timer')}
+      />
     );
   }
 

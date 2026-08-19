@@ -16,6 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import GlobalActiveChallengeBanner from '@/components/group/GlobalActiveChallengeBanner';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // Fixed group ID for Vestibular Brasil
 const VESTIBULAR_GROUP_ID = 'b47ac10b-58cc-4372-a567-0e02b2c3d479';
@@ -300,20 +301,28 @@ const Groups: React.FC = () => {
               </article>
             );
           })
+        ) : searchTerm ? (
+          <EmptyState
+            className="lg:col-span-2"
+            icon={Search}
+            title="Nenhum grupo encontrado"
+            description={`Não encontramos grupos para “${searchTerm}”. Tente outro termo ou crie um grupo novo para estudar com seus amigos.`}
+            actionLabel="Limpar busca"
+            onAction={() => setSearchTerm('')}
+            secondaryLabel="Criar grupo"
+            onSecondary={() => setOpen(true)}
+          />
         ) : (
-          <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 px-6 py-10 text-center lg:col-span-2">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Users size={24} aria-hidden="true" />
-            </div>
-            <h3 className="mt-4 font-semibold text-foreground">Ainda não encontramos esse grupo</h3>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Crie um grupo com seus amigos e transforme o estudo em um compromisso compartilhado.
-            </p>
-            <Button className="mt-5 bg-study-primary" onClick={() => setOpen(true)}>
-              <Plus size={18} className="mr-2" />
-              {t('groups.createFirst')}
-            </Button>
-          </div>
+          <EmptyState
+            className="lg:col-span-2"
+            icon={Users}
+            title="Você ainda não está estudando com ninguém"
+            description="Entre em um grupo aberto ou crie um grupo com seus amigos para transformar o estudo em um compromisso compartilhado."
+            actionLabel="Criar meu primeiro grupo"
+            onAction={() => setOpen(true)}
+            secondaryLabel="Explorar grupos"
+            onSecondary={() => setSearchTerm('')}
+          />
         )}
       </div>
     </PageLayout>
